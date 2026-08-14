@@ -1,13 +1,15 @@
 # Garden Drop for macOS
 
-Garden Drop is a private, local-first capture utility for a personal Obsidian vault. The first slice is deliberately an ordinary macOS window: it proves the capture contract and file-writing behavior before the notch panel, clipboard inspection, and drag/drop surface are added.
+Garden Drop is a private, local-first capture utility for a personal Obsidian vault. The current slice provides a native menu-bar entry, an optional notch hover surface, and a URL composer that writes captures locally before any network metadata or publication work.
 
 ## First slice
 
 - Swift Package executable targeting macOS 14+.
 - Native SwiftUI composer with SF Symbols and system typography.
 - Persisted Notch, Menu Bar, or Both capture-surface selection.
+- Native AppKit status item with a menu-bar menu.
 - AppKit notch hover panel with a menu-bar fallback.
+- URL field accepting full links or hostnames and normalizing hostnames to HTTPS.
 - Deterministic Markdown rendering for capture notes.
 - Atomic note and attachment writes into a fixture vault.
 - Tests for YAML frontmatter, wikilinks, attachments, and invalid vault names.
@@ -29,6 +31,8 @@ The app starts as a menu-bar utility. Open Capture Surface from the tray menu or
 
 The notch peek includes a settings button so switching away from Notch-only remains possible.
 
+The composer starts with a sample link for visual testing. Replace it in **Link to capture**, add an optional thought, choose an area, and select **Save to Garden** or **Save Privately**.
+
 ## Build an installable DMG
 
 The release script builds a release Swift executable, wraps it in a macOS app bundle, ad-hoc signs it, and creates a drag-to-Applications DMG.
@@ -41,7 +45,7 @@ open dist/GardenDrop-0.1.0.dmg
 To create an explicitly versioned build:
 
 ```sh
-GARDEN_DROP_VERSION=0.2.0 ./scripts/build-dmg.sh
+GARDEN_DROP_VERSION=0.2.1 ./scripts/build-dmg.sh
 ```
 
 The DMG is intentionally ad-hoc signed for local testing. On first launch, macOS may require Control-click → Open. Installing a newer build means opening the new DMG and dragging Garden Drop into Applications again, replacing the previous copy.

@@ -15,7 +15,10 @@ struct CaptureComposerView: View {
                 .padding(.top, 12)
 
             sourcePreview
-                .padding(.vertical, 14)
+                .padding(.top, 14)
+
+            linkField
+                .padding(.bottom, 14)
 
             Divider()
 
@@ -31,7 +34,7 @@ struct CaptureComposerView: View {
                 .padding(.top, 12)
         }
         .padding(14)
-        .frame(width: 420, height: 380)
+        .frame(width: 420, height: 440)
         .background(Color(nsColor: .windowBackgroundColor))
         .accessibilityElement(children: .contain)
     }
@@ -65,7 +68,7 @@ struct CaptureComposerView: View {
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(model.source.title)
+                Text(model.activeSource.title)
                     .font(.system(size: 14, weight: .semibold))
                     .lineLimit(2)
 
@@ -92,6 +95,24 @@ struct CaptureComposerView: View {
             .accessibilityLabel("Open original")
         }
         .accessibilityElement(children: .combine)
+    }
+
+    private var linkField: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Link to capture")
+                .font(.system(size: 13, weight: .medium))
+
+            TextField("https://…", text: $model.linkText)
+                .textFieldStyle(.roundedBorder)
+                .font(.system(size: 13))
+                .accessibilityLabel("Link to capture")
+
+            if let validationMessage = model.linkValidationMessage {
+                Label(validationMessage, systemImage: "exclamationmark.circle")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.secondary)
+            }
+        }
     }
 
     private var thoughtField: some View {
@@ -179,7 +200,7 @@ struct CaptureComposerView: View {
                 .buttonStyle(.borderedProminent)
                 .tint(gardenRust)
                 .keyboardShortcut(.return, modifiers: [.command])
-                .disabled(model.isSaving)
+                .disabled(model.isSaving || !model.hasValidLink)
 
                 Text("⌘Return to save")
                     .font(.system(size: 10))
@@ -212,7 +233,7 @@ struct CaptureComposerView: View {
     }
 
     private var sourceSymbol: String {
-        switch model.source.type {
+        switch model.activeSource.type {
         case .web:
             return "link"
         case .image:
@@ -223,8 +244,8 @@ struct CaptureComposerView: View {
     }
 
     private var sourceMetadata: String {
-        let domain = model.source.domain ?? model.source.type.displayName
-        return "\(domain) · \(model.source.type.displayName)"
+        let domain = model.activeSource.domain ?? model.activeSource.type.displayName
+        return "\(domain) · \(model.activeSource.type.displayName)"
     }
 
     private var gardenRust: Color {

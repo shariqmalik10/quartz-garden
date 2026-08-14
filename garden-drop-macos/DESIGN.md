@@ -64,7 +64,7 @@ FORM: Temporary ordinary-window staging for the capture contract; the notch pane
 
 Garden Drop is an opening in the vault, not another place to manage work. The interface borrows the physical relationship of a native macOS sheet: quiet while idle, attached to the top edge when active, and clear about the destination before the user commits a thought.
 
-The first window is intentionally ordinary so the capture contract can be tested without making the notch a visual dependency. The durable surface language is still established now: one system-material surface, SF Pro hierarchy, monochrome SF Symbols, and Garden colors reserved for action, status, and confirmation. The user can keep the capture entrance in the notch, the menu bar, or both; the choice persists across launches.
+The capture surface is native and quiet while idle: a menu-bar status item, an optional top-center notch hover region, or both. The durable surface language is one system-material surface, SF Pro hierarchy, monochrome SF Symbols, and Garden colors reserved for action, status, and confirmation. The user can keep the capture entrance in the notch, the menu bar, or both; the choice persists across launches.
 
 **Key Characteristics:**
 
@@ -113,7 +113,7 @@ Night navy gives the structural surface a stable anchor; paper, rust, leaf, and 
 
 The composer is a single 420pt-wide surface with 14pt outer padding and 10pt grouping rhythm. The source preview reserves its media bounds before metadata arrives. The thought field grows from 44pt to a maximum of 96pt. The footer keeps status at left and the one primary action at right.
 
-The eventual notch state uses a 340pt peek, a 420pt URL composer, and a 16pt bottom corner radius. It remains top-center with a minimum 16pt display margin and falls back to a compact top-center capsule on displays without a notch. The menu-bar route uses a monochrome tray icon and a native menu containing Capture Now, Capture Surface, Settings, and Quit.
+The notch state uses a 340pt peek, a 420pt URL composer, and a 16pt bottom corner radius. It remains top-center with a minimum 16pt display margin and falls back to a compact top-center capsule on displays without a notch. The menu-bar route uses a monochrome tray icon and a native menu containing Capture Now, Capture Surface, Settings, and Quit.
 
 ## Elevation & Depth
 
@@ -127,7 +127,7 @@ The capture sheet has 16pt lower corners. Compact fields and action controls use
 
 ### Source preview
 
-The source is the first reading unit: representative image or source icon, editable title, domain/type metadata, and quiet replace/open actions. It never becomes a decorative card.
+The source is the first reading unit: representative image or source icon, editable link, domain/type metadata, and quiet replace/open actions. It never becomes a decorative card.
 
 ### Thought field
 

@@ -66,7 +66,7 @@ final class NotchPanelController {
 
         collapseWorkItem?.cancel()
         isComposerVisible = true
-        setContent(AnyView(CaptureComposerView()), size: NSSize(width: 420, height: 380))
+        setContent(AnyView(CaptureComposerView()), size: NSSize(width: 420, height: 440))
         panel.makeKeyAndOrderFront(nil)
     }
 

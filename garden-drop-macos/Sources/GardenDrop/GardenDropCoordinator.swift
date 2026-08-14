@@ -2,15 +2,16 @@ import AppKit
 import SwiftUI
 
 @MainActor
-final class GardenDropCoordinator: ObservableObject {
+final class GardenDropCoordinator: NSObject, ObservableObject {
     private static let surfaceModeKey = "gardenDrop.surfaceMode"
 
     @Published private(set) var surfaceMode: CaptureSurfaceMode
-    @Published var isMenuBarVisible: Bool
 
     private let defaults: UserDefaults
     private var notchController: NotchPanelController?
     private var captureWindowController: CaptureWindowController?
+    private var statusItem: NSStatusItem?
+    private var hasStarted = false
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -18,11 +19,17 @@ final class GardenDropCoordinator: ObservableObject {
             .flatMap(CaptureSurfaceMode.init(rawValue:))
             ?? .both
         self.surfaceMode = storedMode
-        self.isMenuBarVisible = storedMode.showsMenuBar
+        super.init()
+    }
 
-        Task { @MainActor [weak self] in
-            self?.applySurfaceMode()
+    func start() {
+        guard !hasStarted else {
+            return
         }
+
+        hasStarted = true
+        applySurfaceMode()
+        updateMenuBarItem()
     }
 
     func setSurfaceMode(_ mode: CaptureSurfaceMode) {
@@ -31,9 +38,9 @@ final class GardenDropCoordinator: ObservableObject {
         }
 
         surfaceMode = mode
-        isMenuBarVisible = mode.showsMenuBar
         defaults.set(mode.rawValue, forKey: Self.surfaceModeKey)
         applySurfaceMode()
+        updateMenuBarItem()
     }
 
     func openMenuBarCapture() {
@@ -81,46 +88,105 @@ final class GardenDropCoordinator: ObservableObject {
         }
         captureWindowController?.show()
     }
+
+    private func updateMenuBarItem() {
+        guard hasStarted else {
+            return
+        }
+
+        if surfaceMode.showsMenuBar {
+            if statusItem == nil {
+                let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+                item.button?.image = NSImage(
+                    systemSymbolName: "tray.and.arrow.down",
+                    accessibilityDescription: "Garden Drop"
+                )
+                item.button?.imagePosition = .imageOnly
+                item.button?.toolTip = "Garden Drop"
+                statusItem = item
+            }
+            statusItem?.menu = makeStatusMenu()
+        } else if let statusItem {
+            NSStatusBar.system.removeStatusItem(statusItem)
+            self.statusItem = nil
+        }
+    }
+
+    private func makeStatusMenu() -> NSMenu {
+        let menu = NSMenu(title: "Garden Drop")
+
+        let captureItem = NSMenuItem(
+            title: "Capture Now",
+            action: #selector(menuCaptureNow),
+            keyEquivalent: ""
+        )
+        captureItem.target = self
+        menu.addItem(captureItem)
+
+        let surfaceItem = NSMenuItem(title: "Capture Surface", action: nil, keyEquivalent: "")
+        let surfaceMenu = NSMenu(title: "Capture Surface")
+        for mode in CaptureSurfaceMode.allCases {
+            let modeItem = NSMenuItem(
+                title: mode.title,
+                action: #selector(menuSelectSurface(_:)),
+                keyEquivalent: ""
+            )
+            modeItem.target = self
+            modeItem.representedObject = mode.rawValue
+            modeItem.state = mode == surfaceMode ? .on : .off
+            surfaceMenu.addItem(modeItem)
+        }
+        surfaceItem.submenu = surfaceMenu
+        menu.addItem(surfaceItem)
+
+        menu.addItem(.separator())
+
+        let settingsItem = NSMenuItem(
+            title: "Settings…",
+            action: #selector(menuOpenSettings),
+            keyEquivalent: ","
+        )
+        settingsItem.target = self
+        menu.addItem(settingsItem)
+
+        let quitItem = NSMenuItem(
+            title: "Quit Garden Drop",
+            action: #selector(menuQuit),
+            keyEquivalent: "q"
+        )
+        quitItem.target = self
+        menu.addItem(quitItem)
+
+        return menu
+    }
+
+    @objc private func menuCaptureNow() {
+        openMenuBarCapture()
+    }
+
+    @objc private func menuSelectSurface(_ sender: NSMenuItem) {
+        guard let rawValue = sender.representedObject as? String,
+              let mode = CaptureSurfaceMode(rawValue: rawValue) else {
+            return
+        }
+        setSurfaceMode(mode)
+    }
+
+    @objc private func menuOpenSettings() {
+        openSettings()
+    }
+
+    @objc private func menuQuit() {
+        quit()
+    }
 }
 
-struct MenuBarView: View {
-    @ObservedObject var coordinator: GardenDropCoordinator
+@MainActor
+final class GardenDropAppDelegate: NSObject, NSApplicationDelegate {
+    let coordinator = GardenDropCoordinator()
 
-    var body: some View {
-        Button {
-            coordinator.openMenuBarCapture()
-        } label: {
-            Label("Capture Now", systemImage: "tray.and.arrow.down")
-        }
-
-        Menu {
-            ForEach(CaptureSurfaceMode.allCases) { mode in
-                Button {
-                    coordinator.setSurfaceMode(mode)
-                } label: {
-                    Label(
-                        mode.title,
-                        systemImage: mode == coordinator.surfaceMode ? "checkmark" : mode.symbolName
-                    )
-                }
-            }
-        } label: {
-            Label("Capture Surface", systemImage: coordinator.surfaceMode.symbolName)
-        }
-
-        Divider()
-
-        Button {
-            coordinator.openSettings()
-        } label: {
-            Label("Settings…", systemImage: "gearshape")
-        }
-
-        Button {
-            coordinator.quit()
-        } label: {
-            Label("Quit Garden Drop", systemImage: "power")
-        }
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        coordinator.start()
     }
 }
 
