@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct NotchIdleView: View {
+    let size: CGSize
+
     var body: some View {
         HStack(spacing: 7) {
             Image(systemName: "tray.and.arrow.down")
@@ -12,7 +14,7 @@ struct NotchIdleView: View {
                 .foregroundStyle(.white.opacity(0.92))
                 .lineLimit(1)
         }
-        .frame(width: 196, height: 32)
+        .frame(width: size.width, height: size.height)
         .background(Color.black)
         .clipShape(Capsule())
         .accessibilityElement(children: .combine)
@@ -21,6 +23,7 @@ struct NotchIdleView: View {
 }
 
 struct NotchPeekView: View {
+    let size: CGSize
     let onOpen: () -> Void
     let onSettings: () -> Void
 
@@ -69,7 +72,7 @@ struct NotchPeekView: View {
             .accessibilityLabel("Open capture composer")
         }
         .padding(.horizontal, 8)
-        .frame(width: 224, height: 48)
+        .frame(width: size.width, height: size.height)
         .background(Color.black)
         .clipShape(Capsule())
         .shadow(color: .black.opacity(0.28), radius: 10, y: 5)

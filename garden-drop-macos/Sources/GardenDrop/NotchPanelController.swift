@@ -23,8 +23,8 @@ final class NotchPanelController {
             contentRect: NSRect(
                 x: 0,
                 y: 0,
-                width: NotchMetrics.idleSize.width,
-                height: NotchMetrics.idleSize.height
+                width: 196,
+                height: 32
             ),
             styleMask: [.borderless],
             backing: .buffered,
@@ -85,10 +85,15 @@ final class NotchPanelController {
             return
         }
 
+        guard let screen = activeScreen else {
+            return
+        }
+
+        let size = NotchGeometry.idleSize(for: screen)
         isComposerVisible = false
         setContent(
-            AnyView(NotchIdleView()),
-            size: NotchMetrics.idleSize,
+            AnyView(NotchIdleView(size: size)),
+            size: size,
             onMouseEntered: { [weak self] in
                 self?.schedulePeek()
             },
@@ -105,16 +110,21 @@ final class NotchPanelController {
             return
         }
 
+        guard let screen = activeScreen else {
+            return
+        }
+
+        let size = NotchGeometry.peekSize(for: screen)
         collapseWorkItem?.cancel()
         setContent(
             AnyView(
-                NotchPeekView { [weak self] in
+                NotchPeekView(size: size) { [weak self] in
                     self?.onComposerRequested()
                 } onSettings: { [weak self] in
                     self?.onSettingsRequested()
                 }
             ),
-            size: NotchMetrics.peekSize,
+            size: size,
             onMouseEntered: { [weak self] in
                 self?.collapseWorkItem?.cancel()
             },
@@ -192,13 +202,7 @@ final class NotchPanelController {
             return
         }
 
-        let screenFrame = screen.frame
-        let frame = NSRect(
-            x: screenFrame.midX - size.width / 2,
-            y: screenFrame.maxY - size.height,
-            width: size.width,
-            height: size.height
-        )
+        let frame = NotchGeometry.frame(for: size, on: screen)
 
         if let animationDuration {
             NSAnimationContext.runAnimationGroup { context in
@@ -217,14 +221,63 @@ final class NotchPanelController {
 }
 
 private enum NotchMetrics {
-    static let idleSize = NSSize(width: 196, height: 32)
-    static let peekSize = NSSize(width: 224, height: 48)
     static let composerSize = NSSize(width: 420, height: 440)
     static let hoverDelay: TimeInterval = 0.12
     static let collapseDelay: TimeInterval = 0.12
     static let expandDuration: TimeInterval = 0.15
     static let collapseDuration: TimeInterval = 0.22
     static let composerDuration: TimeInterval = 0.24
+}
+
+private enum NotchGeometry {
+    static func notchRect(for screen: NSScreen) -> NSRect? {
+        guard let left = screen.auxiliaryTopLeftArea,
+              let right = screen.auxiliaryTopRightArea else {
+            return nil
+        }
+
+        return NSRect(
+            x: left.maxX,
+            y: left.minY,
+            width: right.minX - left.maxX,
+            height: max(left.height, right.height)
+        )
+    }
+
+    static func idleSize(for screen: NSScreen) -> NSSize {
+        guard let notchRect = notchRect(for: screen) else {
+            return NSSize(width: 196, height: 32)
+        }
+
+        return NSSize(
+            width: notchRect.width + 11,
+            height: notchRect.height
+        )
+    }
+
+    static func peekSize(for screen: NSScreen) -> NSSize {
+        guard let notchRect = notchRect(for: screen) else {
+            return NSSize(width: 224, height: 48)
+        }
+
+        return NSSize(
+            width: notchRect.width + 39,
+            height: notchRect.height + 16
+        )
+    }
+
+    static func frame(for size: NSSize, on screen: NSScreen) -> NSRect {
+        let screenFrame = screen.frame
+        let safeTop = max(0, screen.safeAreaInsets.top)
+        let visibleTop = screenFrame.maxY - safeTop
+
+        return NSRect(
+            x: screenFrame.midX - size.width / 2,
+            y: visibleTop - size.height,
+            width: size.width,
+            height: size.height
+        )
+    }
 }
 
 private final class HoverHostingView: NSHostingView<AnyView> {
