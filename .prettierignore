@@ -4,3 +4,4 @@ node_modules
 .build
 .swiftpm
 DerivedData
+garden-drop-macos/dist

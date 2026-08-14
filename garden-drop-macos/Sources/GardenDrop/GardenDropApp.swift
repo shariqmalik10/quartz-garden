@@ -2,11 +2,19 @@ import SwiftUI
 
 @main
 struct GardenDropApp: App {
+    @StateObject private var coordinator = GardenDropCoordinator()
+
     var body: some Scene {
-        WindowGroup("Garden Drop") {
-            CaptureComposerView()
+        MenuBarExtra(
+            "Garden Drop",
+            systemImage: "tray.and.arrow.down",
+            isInserted: $coordinator.isMenuBarVisible
+        ) {
+            MenuBarView(coordinator: coordinator)
         }
-        .defaultSize(width: 420, height: 380)
-        .windowResizability(.contentSize)
+
+        Settings {
+            GardenDropSettingsView(coordinator: coordinator)
+        }
     }
 }

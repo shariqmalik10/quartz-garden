@@ -18,3 +18,4 @@ quartz/cli/tui/dist/
 .build/
 .swiftpm/
 DerivedData/
+garden-drop-macos/dist/

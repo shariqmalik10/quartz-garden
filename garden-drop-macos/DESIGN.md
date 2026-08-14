@@ -64,7 +64,7 @@ FORM: Temporary ordinary-window staging for the capture contract; the notch pane
 
 Garden Drop is an opening in the vault, not another place to manage work. The interface borrows the physical relationship of a native macOS sheet: quiet while idle, attached to the top edge when active, and clear about the destination before the user commits a thought.
 
-The first window is intentionally ordinary so the capture contract can be tested without making the notch a visual dependency. The durable surface language is still established now: one system-material surface, SF Pro hierarchy, monochrome SF Symbols, and Garden colors reserved for action, status, and confirmation.
+The first window is intentionally ordinary so the capture contract can be tested without making the notch a visual dependency. The durable surface language is still established now: one system-material surface, SF Pro hierarchy, monochrome SF Symbols, and Garden colors reserved for action, status, and confirmation. The user can keep the capture entrance in the notch, the menu bar, or both; the choice persists across launches.
 
 **Key Characteristics:**
 
@@ -113,7 +113,7 @@ Night navy gives the structural surface a stable anchor; paper, rust, leaf, and 
 
 The composer is a single 420pt-wide surface with 14pt outer padding and 10pt grouping rhythm. The source preview reserves its media bounds before metadata arrives. The thought field grows from 44pt to a maximum of 96pt. The footer keeps status at left and the one primary action at right.
 
-The eventual notch state uses a 340pt peek, a 420pt URL composer, and a 16pt bottom corner radius. It remains top-center with a minimum 16pt display margin and falls back to a compact top-center capsule on displays without a notch.
+The eventual notch state uses a 340pt peek, a 420pt URL composer, and a 16pt bottom corner radius. It remains top-center with a minimum 16pt display margin and falls back to a compact top-center capsule on displays without a notch. The menu-bar route uses a monochrome tray icon and a native menu containing Capture Now, Capture Surface, Settings, and Quit.
 
 ## Elevation & Depth
 
@@ -137,6 +137,10 @@ The field is a multiline native editor with the prompt “Why did this catch you
 
 The row combines an SF Symbol, area name, visibility word, and chevron. The eventual picker is a native anchored popover with search, recent areas, Garden/private sections, and Create new area.
 
+### Capture surface selector
+
+Settings and the menu-bar menu expose three explicit choices: Notch, Menu Bar, and Both. The selected mode is written to the app's local preferences and is described in plain language alongside its icon.
+
 ### Primary action
 
 The action reads “Save to Garden” or “Save Privately,” shows a native saving state, and keeps the visibility meaning in copy and iconography as well as color.
@@ -153,6 +157,7 @@ Success contracts into a short planted marker and a destination-aware confirmati
 - **Do** follow Reduce Motion, Reduce Transparency, Increase Contrast, VoiceOver, and keyboard navigation.
 - **Do** keep the hidden state free of timers, rendering loops, and clipboard polling.
 - **Do** reserve Garden color for action, status, and confirmation.
+- **Do** keep the menu-bar management route available while the user configures a notch-only capture surface.
 
 ### Don't:
 
