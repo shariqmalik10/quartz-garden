@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#f6f7f2"/>
+  <path d="M0 0h22v630H0z" fill="#12675f"/>
+  <circle cx="1088" cy="92" r="24" fill="#c75b35"/>
+  <text x="86" y="112" fill="#5b6862" font-family="monospace" font-size="24" letter-spacing="2">SHARIQ NADEEM MALIK · SYSTEMS FIELDBOOK</text>
+  <text x="82" y="286" fill="#1d2421" font-family="Arial, sans-serif" font-weight="700" font-size="82" letter-spacing="-3">Data, systems,</text>
+  <text x="82" y="382" fill="#12675f" font-family="Arial, sans-serif" font-weight="700" font-size="82" letter-spacing="-3">and useful software.</text>
+  <path d="M86 492h1028" stroke="#d8ded8" stroke-width="2"/>
+  <text x="86" y="548" fill="#5b6862" font-family="Arial, sans-serif" font-size="28">Data engineering · Applied ML · Product engineering</text>
+</svg>

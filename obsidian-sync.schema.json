@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Obsidian vault sync configuration",
+  "type": "object",
+  "required": ["version", "mappings", "ignore"],
+  "properties": {
+    "version": { "const": 1 },
+    "mappings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["from", "to", "extensions"],
+        "properties": {
+          "from": { "type": "string", "minLength": 1 },
+          "to": { "type": "string", "minLength": 1 },
+          "extensions": {
+            "type": "array",
+            "items": { "type": "string", "pattern": "^\\." },
+            "minItems": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "ignore": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "additionalProperties": false
+}
