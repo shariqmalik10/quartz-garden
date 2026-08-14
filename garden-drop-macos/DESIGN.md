@@ -51,11 +51,11 @@ components:
 ---
 
 <!--
-THESIS: Garden Drop is a small native sheet attached to an existing macOS scene, not a dashboard or a permanent capsule.
+THESIS: Garden Drop is a small native sheet attached to an existing macOS scene, not a dashboard or a permanent window.
 OWN-WORLD: SF Pro, system materials, night navy structure, rust action, leaf confirmation, one quiet surface, and compact SF Symbols.
 STORY: A copied source becomes a thought in the right area; the user can see where it will land before saving.
 FIRST VIEWPORT: A 420-point composer begins with the source preview, keeps the thought field central, and ends with one visibility-aware Save action.
-FORM: Temporary ordinary-window staging for the capture contract; the notch panel and measured hover surface arrive after local writes are trustworthy.
+FORM: The notch is the origin: a black bridge begins at the physical screen edge, then grows into a drop zone where a link, file, or note can be planted.
 -->
 
 # Design System: Garden Drop Native Surface
@@ -113,7 +113,7 @@ Night navy gives the structural surface a stable anchor; paper, rust, leaf, and 
 
 The composer is a single 420pt-wide surface with 14pt outer padding and 10pt grouping rhythm. The source preview reserves its media bounds before metadata arrives. The thought field grows from 44pt to a maximum of 96pt. The footer keeps status at left and the one primary action at right.
 
-The notch state borrows the measured rhythm of the reference app: a 196pt × 32pt idle capsule, a 224pt × 48pt hover peek, and a 420pt URL composer as the deliberate next step. The idle-to-peek reveal uses a 120ms dwell and a 150ms ease-out expansion; leaving settles back over 220ms. It remains top-center with a minimum 16pt display margin and falls back to the same compact capsule on displays without a notch. The menu-bar route uses a monochrome tray icon and a native menu containing Capture Now, Capture Surface, Settings, and Quit.
+The notch state borrows the measured rhythm of the reference app: a 196pt × 32pt black bridge at the physical top edge, a 224pt × 48pt compact peek with its controls below the 32pt hardware band, and a 340pt × 500pt capture surface that grows from the same Y=0 origin. The idle-to-peek reveal uses a 120ms dwell and a 150ms ease-out expansion; the expanded composer arrives over 240ms and closes over 220ms. Its dotted drop zone accepts links, files, and text, while the bottom field accepts a note or link by hand. The menu-bar route uses a monochrome tray icon and a native menu containing Capture Now, Capture Surface, Settings, and Quit.
 
 ## Elevation & Depth
 
@@ -161,7 +161,7 @@ Success contracts into a short planted marker and a destination-aware confirmati
 
 ### Don't:
 
-- **Don't** keep a visible idle capsule or imitate a Dynamic Island.
+- **Don't** put readable controls inside the physical notch band; the black bridge may merge with it, but text and actions begin below the measured safe-area inset.
 - **Don't** use stacked glass cards, decorative gradients, pixel fonts, or handwritten controls.
 - **Don't** make capture wait on network metadata, GitHub, or publication.
 - **Don't** communicate privacy or errors with color alone.

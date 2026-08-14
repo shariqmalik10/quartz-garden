@@ -10,6 +10,7 @@ final class NotchPanelController {
 
     private var dwellWorkItem: DispatchWorkItem?
     private var collapseWorkItem: DispatchWorkItem?
+    private var notchComposerModel: CaptureComposerModel?
     private var isComposerVisible = false
     private var isStarted = false
 
@@ -59,6 +60,7 @@ final class NotchPanelController {
         dwellWorkItem?.cancel()
         collapseWorkItem?.cancel()
         panel.orderOut(nil)
+        notchComposerModel = nil
         isComposerVisible = false
     }
 
@@ -67,12 +69,30 @@ final class NotchPanelController {
             return
         }
 
+        guard let screen = activeScreen else {
+            return
+        }
+
         dwellWorkItem?.cancel()
         collapseWorkItem?.cancel()
         isComposerVisible = true
+
+        let model = CaptureComposerModel(source: .blank)
+        notchComposerModel = model
         setContent(
-            AnyView(CaptureComposerView()),
-            size: NotchMetrics.composerSize,
+            AnyView(
+                NotchComposerView(
+                    model: model,
+                    safeTopInset: screen.safeAreaInsets.top,
+                    onSettings: { [weak self] in
+                        self?.onSettingsRequested()
+                    },
+                    onClose: { [weak self] in
+                        self?.showIdle(animated: true)
+                    }
+                )
+            ),
+            size: NotchComposerLayout.size,
             onMouseEntered: {},
             onMouseExited: {},
             animationDuration: NotchMetrics.composerDuration
@@ -100,7 +120,10 @@ final class NotchPanelController {
             onMouseExited: { [weak self] in
                 self?.cancelDwell()
             },
-            animationDuration: animated ? NotchMetrics.collapseDuration : nil
+            animationDuration: animated ? NotchMetrics.collapseDuration : nil,
+            onMouseDown: { [weak self] in
+                self?.showComposer()
+            }
         )
         panel.orderFrontRegardless()
     }
@@ -118,7 +141,7 @@ final class NotchPanelController {
         collapseWorkItem?.cancel()
         setContent(
             AnyView(
-                NotchPeekView(size: size) { [weak self] in
+                NotchPeekView(size: size, safeTopInset: screen.safeAreaInsets.top) { [weak self] in
                     self?.onComposerRequested()
                 } onSettings: { [weak self] in
                     self?.onSettingsRequested()
@@ -191,11 +214,13 @@ final class NotchPanelController {
         size: NSSize,
         onMouseEntered: @escaping () -> Void,
         onMouseExited: @escaping () -> Void,
-        animationDuration: TimeInterval?
+        animationDuration: TimeInterval?,
+        onMouseDown: (() -> Void)? = nil
     ) {
         let hostingView = HoverHostingView(rootView: content)
         hostingView.onMouseEntered = onMouseEntered
         hostingView.onMouseExited = onMouseExited
+        hostingView.onMouseDown = onMouseDown
         panel.contentView = hostingView
 
         guard let screen = activeScreen else {
@@ -221,7 +246,6 @@ final class NotchPanelController {
 }
 
 private enum NotchMetrics {
-    static let composerSize = NSSize(width: 420, height: 440)
     static let hoverDelay: TimeInterval = 0.12
     static let collapseDelay: TimeInterval = 0.12
     static let expandDuration: TimeInterval = 0.15
@@ -268,12 +292,11 @@ private enum NotchGeometry {
 
     static func frame(for size: NSSize, on screen: NSScreen) -> NSRect {
         let screenFrame = screen.frame
-        let safeTop = max(0, screen.safeAreaInsets.top)
-        let visibleTop = screenFrame.maxY - safeTop
+        let topEdge = screenFrame.maxY
 
         return NSRect(
             x: screenFrame.midX - size.width / 2,
-            y: visibleTop - size.height,
+            y: topEdge - size.height,
             width: size.width,
             height: size.height
         )
@@ -283,6 +306,7 @@ private enum NotchGeometry {
 private final class HoverHostingView: NSHostingView<AnyView> {
     var onMouseEntered: (() -> Void)?
     var onMouseExited: (() -> Void)?
+    var onMouseDown: (() -> Void)?
 
     override func updateTrackingAreas() {
         trackingAreas.forEach(removeTrackingArea)
@@ -299,6 +323,11 @@ private final class HoverHostingView: NSHostingView<AnyView> {
 
     override func mouseEntered(with event: NSEvent) {
         onMouseEntered?()
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        onMouseDown?()
+        super.mouseDown(with: event)
     }
 
     override func mouseExited(with event: NSEvent) {

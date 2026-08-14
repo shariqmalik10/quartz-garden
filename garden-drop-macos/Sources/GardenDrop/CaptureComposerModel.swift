@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import UniformTypeIdentifiers
 
 enum CaptureComposerStatus: Sendable {
     case idle
@@ -10,8 +11,10 @@ enum CaptureComposerStatus: Sendable {
 @MainActor
 final class CaptureComposerModel: ObservableObject {
     @Published var linkText: String
+    @Published var draftInput = ""
     @Published var thought = ""
     @Published var selectedArea = AreaOption.defaults[0]
+    @Published private(set) var droppedAttachment: CaptureAttachment? = nil
     @Published private(set) var status: CaptureComposerStatus = .idle
 
     let source: CaptureSource
@@ -31,6 +34,20 @@ final class CaptureComposerModel: ObservableObject {
 
     var activeSource: CaptureSource {
         guard let url = validatedLinkURL else {
+            if let droppedAttachment {
+                let type: CaptureSourceType = droppedAttachment.mimeType?.hasPrefix("image/") == true
+                    ? .image
+                    : .text
+                return CaptureSource(
+                    type: type,
+                    title: droppedAttachment.fileName,
+                    url: nil,
+                    domain: nil,
+                    excerpt: nil,
+                    capturedText: nil,
+                    attachment: droppedAttachment
+                )
+            }
             return source
         }
 
@@ -48,6 +65,20 @@ final class CaptureComposerModel: ObservableObject {
 
     var hasValidLink: Bool {
         validatedLinkURL != nil
+    }
+
+    var hasCaptureContent: Bool {
+        hasValidLink
+            || !thought.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || droppedAttachment != nil
+    }
+
+    var hasPendingInput: Bool {
+        !draftInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    var canPlant: Bool {
+        hasCaptureContent || hasPendingInput
     }
 
     var linkValidationMessage: String? {
@@ -83,8 +114,8 @@ final class CaptureComposerModel: ObservableObject {
             return
         }
 
-        guard hasValidLink else {
-            status = .failed(linkValidationMessage ?? "Add a valid link to capture it.")
+        guard hasCaptureContent else {
+            status = .failed("Add a link, note, or file before planting it.")
             return
         }
 
@@ -92,7 +123,7 @@ final class CaptureComposerModel: ObservableObject {
 
         let draft = CaptureDraft(
             id: CaptureID.make(),
-            title: captureSource.title,
+            title: title(for: captureSource),
             source: captureSource,
             thought: thought,
             areaName: selectedArea.name,
@@ -113,8 +144,65 @@ final class CaptureComposerModel: ObservableObject {
         }
     }
 
+    func commitDraftInput() {
+        let trimmedInput = draftInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedInput.isEmpty else {
+            return
+        }
+
+        if let url = normalizedHTTPURL(from: trimmedInput) {
+            linkText = url.absoluteString
+        } else {
+            linkText = ""
+            if thought.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                thought = trimmedInput
+            } else {
+                thought += "\n\n\(trimmedInput)"
+            }
+        }
+
+        draftInput = ""
+        status = .idle
+    }
+
+    func acceptDroppedText(_ text: String) {
+        draftInput = text
+        commitDraftInput()
+    }
+
+    func acceptDroppedFile(_ url: URL) {
+        guard url.isFileURL,
+              let data = try? Data(contentsOf: url) else {
+            status = .failed("Garden Drop could not read that file.")
+            return
+        }
+
+        let fileName = url.lastPathComponent.isEmpty ? "Dropped file" : url.lastPathComponent
+        let mimeType = UTType(filenameExtension: url.pathExtension)?.preferredMIMEType
+        droppedAttachment = CaptureAttachment(
+            fileName: fileName,
+            data: data,
+            mimeType: mimeType
+        )
+        linkText = ""
+        draftInput = ""
+        status = .idle
+    }
+
+    func clearCapture() {
+        linkText = source.url?.absoluteString ?? ""
+        draftInput = ""
+        thought = ""
+        droppedAttachment = nil
+        status = .idle
+    }
+
     private var validatedLinkURL: URL? {
-        let trimmedLink = linkText.trimmingCharacters(in: .whitespacesAndNewlines)
+        normalizedHTTPURL(from: linkText)
+    }
+
+    private func normalizedHTTPURL(from value: String) -> URL? {
+        let trimmedLink = value.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedLink.isEmpty else {
             return nil
         }
@@ -131,5 +219,19 @@ final class CaptureComposerModel: ObservableObject {
         }
 
         return components.url
+    }
+
+    private func title(for captureSource: CaptureSource) -> String {
+        if captureSource.url != nil || captureSource.attachment != nil {
+            return captureSource.title
+        }
+
+        let firstLine = thought
+            .split(whereSeparator: \.isNewline)
+            .first
+            .map(String.init)
+            ?? ""
+        let trimmedTitle = firstLine.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmedTitle.isEmpty ? "Untitled note" : String(trimmedTitle.prefix(72))
     }
 }

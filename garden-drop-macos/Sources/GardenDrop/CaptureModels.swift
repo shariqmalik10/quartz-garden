@@ -72,6 +72,16 @@ struct CaptureSource: Equatable, Sendable {
     let capturedText: String?
     let attachment: CaptureAttachment?
 
+    static let blank = CaptureSource(
+        type: .text,
+        title: "New note",
+        url: nil,
+        domain: nil,
+        excerpt: nil,
+        capturedText: nil,
+        attachment: nil
+    )
+
     static let sample = CaptureSource(
         type: .web,
         title: "A small link, ready to plant",

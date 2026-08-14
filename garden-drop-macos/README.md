@@ -8,7 +8,8 @@ Garden Drop is a private, local-first capture utility for a personal Obsidian va
 - Native SwiftUI composer with SF Symbols and system typography.
 - Persisted Notch, Menu Bar, or Both capture-surface selection.
 - Native AppKit status item with a menu-bar menu.
-- AppKit notch hover panel with a compact 196pt idle capsule and 224pt hover peek.
+- AppKit notch surface that begins at the physical top edge, with a measured 196pt bridge, 224pt compact peek, and 340pt drop composer.
+- Click-to-expand capture zone accepting dropped links, files, and text alongside hand-entered notes and links.
 - URL field accepting full links or hostnames and normalizing hostnames to HTTPS.
 - Deterministic Markdown rendering for capture notes.
 - Atomic note and attachment writes into a fixture vault.
@@ -31,9 +32,9 @@ The app starts as a menu-bar utility. Open Capture Surface from the tray menu or
 
 The notch peek includes a settings button so switching away from Notch-only remains possible.
 
-The notch interaction uses a short 120ms hover dwell, 150ms ease-out reveal, and 220ms settle-back so it feels attached to the top edge rather than like a detached window.
+The notch interaction uses a short 120ms hover dwell, 150ms ease-out reveal, 240ms click-to-compose morph, and 220ms settle-back. The black surface starts at screen Y=0, while readable controls begin below the measured 32pt hardware notch band.
 
-The composer starts with a sample link for visual testing. Replace it in **Link to capture**, add an optional thought, choose an area, and select **Save to Garden** or **Save Privately**.
+The composer opens with a dotted drop zone. Drop a URL or file, or choose **Add a link** / **Add a note** from the input field. Select an area, then choose **Plant** to write the capture locally. The menu-bar composer keeps the original full source → thought → area flow.
 
 ## Build an installable DMG
 
@@ -41,7 +42,7 @@ The release script builds a release Swift executable, wraps it in a macOS app bu
 
 ```sh
 ./scripts/build-dmg.sh
-open dist/GardenDrop-0.1.0.dmg
+open dist/GardenDrop-0.4.0.dmg
 ```
 
 To create an explicitly versioned build:
