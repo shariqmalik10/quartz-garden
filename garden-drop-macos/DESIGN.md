@@ -113,7 +113,7 @@ Night navy gives the structural surface a stable anchor; paper, rust, leaf, and 
 
 The composer is a single 420pt-wide surface with 14pt outer padding and 10pt grouping rhythm. The source preview reserves its media bounds before metadata arrives. The thought field grows from 44pt to a maximum of 96pt. The footer keeps status at left and the one primary action at right.
 
-The notch state uses a 340pt peek, a 420pt URL composer, and a 16pt bottom corner radius. It remains top-center with a minimum 16pt display margin and falls back to a compact top-center capsule on displays without a notch. The menu-bar route uses a monochrome tray icon and a native menu containing Capture Now, Capture Surface, Settings, and Quit.
+The notch state borrows the measured rhythm of the reference app: a 196pt × 32pt idle capsule, a 224pt × 48pt hover peek, and a 420pt URL composer as the deliberate next step. The idle-to-peek reveal uses a 120ms dwell and a 150ms ease-out expansion; leaving settles back over 220ms. It remains top-center with a minimum 16pt display margin and falls back to the same compact capsule on displays without a notch. The menu-bar route uses a monochrome tray icon and a native menu containing Capture Now, Capture Surface, Settings, and Quit.
 
 ## Elevation & Depth
 

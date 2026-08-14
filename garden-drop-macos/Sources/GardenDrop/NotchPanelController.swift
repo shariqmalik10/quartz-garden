@@ -1,4 +1,5 @@
 import AppKit
+import QuartzCore
 import SwiftUI
 
 @MainActor
@@ -7,7 +8,6 @@ final class NotchPanelController {
     private let onComposerRequested: () -> Void
     private let onSettingsRequested: () -> Void
 
-    private var trackingWindow: NSWindow?
     private var dwellWorkItem: DispatchWorkItem?
     private var collapseWorkItem: DispatchWorkItem?
     private var isComposerVisible = false
@@ -20,7 +20,12 @@ final class NotchPanelController {
         self.onComposerRequested = onComposerRequested
         self.onSettingsRequested = onSettingsRequested
         self.panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 340, height: 76),
+            contentRect: NSRect(
+                x: 0,
+                y: 0,
+                width: NotchMetrics.idleSize.width,
+                height: NotchMetrics.idleSize.height
+            ),
             styleMask: [.borderless],
             backing: .buffered,
             defer: false
@@ -28,7 +33,7 @@ final class NotchPanelController {
 
         panel.isOpaque = false
         panel.backgroundColor = .clear
-        panel.hasShadow = true
+        panel.hasShadow = false
         panel.level = .statusBar
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.hidesOnDeactivate = false
@@ -42,7 +47,7 @@ final class NotchPanelController {
         }
 
         isStarted = true
-        installTrackingWindow()
+        showIdle(animated: false)
     }
 
     func stop() {
@@ -53,8 +58,6 @@ final class NotchPanelController {
         isStarted = false
         dwellWorkItem?.cancel()
         collapseWorkItem?.cancel()
-        trackingWindow?.orderOut(nil)
-        trackingWindow = nil
         panel.orderOut(nil)
         isComposerVisible = false
     }
@@ -64,68 +67,37 @@ final class NotchPanelController {
             return
         }
 
+        dwellWorkItem?.cancel()
         collapseWorkItem?.cancel()
         isComposerVisible = true
-        setContent(AnyView(CaptureComposerView()), size: NSSize(width: 420, height: 440))
+        setContent(
+            AnyView(CaptureComposerView()),
+            size: NotchMetrics.composerSize,
+            onMouseEntered: {},
+            onMouseExited: {},
+            animationDuration: NotchMetrics.composerDuration
+        )
         panel.makeKeyAndOrderFront(nil)
     }
 
-    private func installTrackingWindow() {
-        guard let screen = activeScreen else {
+    private func showIdle(animated: Bool) {
+        guard isStarted else {
             return
         }
 
-        let trackingRect = NotchGeometry.trackingRect(for: screen)
-        let window = NSWindow(
-            contentRect: trackingRect,
-            styleMask: [.borderless],
-            backing: .buffered,
-            defer: false
+        isComposerVisible = false
+        setContent(
+            AnyView(NotchIdleView()),
+            size: NotchMetrics.idleSize,
+            onMouseEntered: { [weak self] in
+                self?.schedulePeek()
+            },
+            onMouseExited: { [weak self] in
+                self?.cancelDwell()
+            },
+            animationDuration: animated ? NotchMetrics.collapseDuration : nil
         )
-        window.isOpaque = false
-        window.backgroundColor = .clear
-        window.hasShadow = false
-        window.alphaValue = 0.01
-        window.level = .statusBar
-        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-
-        let view = NotchTrackingView(frame: NSRect(origin: .zero, size: trackingRect.size))
-        view.onMouseEntered = { [weak self] in
-            self?.schedulePeek()
-        }
-        view.onMouseExited = { [weak self] in
-            self?.scheduleCollapse()
-        }
-        window.contentView = view
-        window.orderFrontRegardless()
-        trackingWindow = window
-    }
-
-    private func schedulePeek() {
-        guard !isComposerVisible else {
-            return
-        }
-
-        dwellWorkItem?.cancel()
-        let workItem = DispatchWorkItem { [weak self] in
-            self?.showPeek()
-        }
-        dwellWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12, execute: workItem)
-    }
-
-    private func scheduleCollapse() {
-        dwellWorkItem?.cancel()
-        guard !isComposerVisible else {
-            return
-        }
-
-        collapseWorkItem?.cancel()
-        let workItem = DispatchWorkItem { [weak self] in
-            self?.panel.orderOut(nil)
-        }
-        collapseWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4, execute: workItem)
+        panel.orderFrontRegardless()
     }
 
     private func showPeek() {
@@ -142,27 +114,101 @@ final class NotchPanelController {
                     self?.onSettingsRequested()
                 }
             ),
-            size: NSSize(width: 340, height: 76)
+            size: NotchMetrics.peekSize,
+            onMouseEntered: { [weak self] in
+                self?.collapseWorkItem?.cancel()
+            },
+            onMouseExited: { [weak self] in
+                self?.scheduleCollapse()
+            },
+            animationDuration: NotchMetrics.expandDuration
         )
         panel.orderFrontRegardless()
     }
 
-    private func setContent(_ content: AnyView, size: NSSize) {
-        panel.contentView = NSHostingView(rootView: content)
+    private func schedulePeek() {
+        guard !isComposerVisible else {
+            return
+        }
+
+        dwellWorkItem?.cancel()
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.showPeek()
+        }
+        dwellWorkItem = workItem
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + NotchMetrics.hoverDelay,
+            execute: workItem
+        )
+    }
+
+    private func cancelDwell() {
+        dwellWorkItem?.cancel()
+        dwellWorkItem = nil
+    }
+
+    private func scheduleCollapse() {
+        cancelDwell()
+        guard !isComposerVisible else {
+            return
+        }
+
+        collapseWorkItem?.cancel()
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.collapseIfPointerOutside()
+        }
+        collapseWorkItem = workItem
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + NotchMetrics.collapseDelay,
+            execute: workItem
+        )
+    }
+
+    private func collapseIfPointerOutside() {
+        guard isStarted, !isComposerVisible else {
+            return
+        }
+
+        guard !panel.frame.contains(NSEvent.mouseLocation) else {
+            return
+        }
+
+        showIdle(animated: true)
+    }
+
+    private func setContent(
+        _ content: AnyView,
+        size: NSSize,
+        onMouseEntered: @escaping () -> Void,
+        onMouseExited: @escaping () -> Void,
+        animationDuration: TimeInterval?
+    ) {
+        let hostingView = HoverHostingView(rootView: content)
+        hostingView.onMouseEntered = onMouseEntered
+        hostingView.onMouseExited = onMouseExited
+        panel.contentView = hostingView
+
         guard let screen = activeScreen else {
             return
         }
 
         let screenFrame = screen.frame
-        let origin = NSPoint(
+        let frame = NSRect(
             x: screenFrame.midX - size.width / 2,
-            y: screenFrame.maxY - size.height
+            y: screenFrame.maxY - size.height,
+            width: size.width,
+            height: size.height
         )
-        panel.setFrame(
-            NSRect(origin: origin, size: size),
-            display: true,
-            animate: true
-        )
+
+        if let animationDuration {
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = animationDuration
+                context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+                panel.animator().setFrame(frame, display: true)
+            }
+        } else {
+            panel.setFrame(frame, display: true)
+        }
     }
 
     private var activeScreen: NSScreen? {
@@ -170,25 +216,18 @@ final class NotchPanelController {
     }
 }
 
-private enum NotchGeometry {
-    static func trackingRect(for screen: NSScreen) -> NSRect {
-        let frame = screen.frame
-        let topInset = screen.safeAreaInsets.top
-        let height = max(22, min(topInset, 44))
-        let width = topInset > 0
-            ? min(260, max(190, frame.width * 0.16))
-            : 160
-
-        return NSRect(
-            x: frame.midX - width / 2,
-            y: frame.maxY - height,
-            width: width,
-            height: height
-        )
-    }
+private enum NotchMetrics {
+    static let idleSize = NSSize(width: 196, height: 32)
+    static let peekSize = NSSize(width: 224, height: 48)
+    static let composerSize = NSSize(width: 420, height: 440)
+    static let hoverDelay: TimeInterval = 0.12
+    static let collapseDelay: TimeInterval = 0.12
+    static let expandDuration: TimeInterval = 0.15
+    static let collapseDuration: TimeInterval = 0.22
+    static let composerDuration: TimeInterval = 0.24
 }
 
-private final class NotchTrackingView: NSView {
+private final class HoverHostingView: NSHostingView<AnyView> {
     var onMouseEntered: (() -> Void)?
     var onMouseExited: (() -> Void)?
 

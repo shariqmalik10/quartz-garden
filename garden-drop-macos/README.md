@@ -8,7 +8,7 @@ Garden Drop is a private, local-first capture utility for a personal Obsidian va
 - Native SwiftUI composer with SF Symbols and system typography.
 - Persisted Notch, Menu Bar, or Both capture-surface selection.
 - Native AppKit status item with a menu-bar menu.
-- AppKit notch hover panel with a menu-bar fallback.
+- AppKit notch hover panel with a compact 196pt idle capsule and 224pt hover peek.
 - URL field accepting full links or hostnames and normalizing hostnames to HTTPS.
 - Deterministic Markdown rendering for capture notes.
 - Atomic note and attachment writes into a fixture vault.
@@ -30,6 +30,8 @@ The app starts as a menu-bar utility. Open Capture Surface from the tray menu or
 - Both: keep both entry points available.
 
 The notch peek includes a settings button so switching away from Notch-only remains possible.
+
+The notch interaction uses a short 120ms hover dwell, 150ms ease-out reveal, and 220ms settle-back so it feels attached to the top edge rather than like a detached window.
 
 The composer starts with a sample link for visual testing. Replace it in **Link to capture**, add an optional thought, choose an area, and select **Save to Garden** or **Save Privately**.
 
