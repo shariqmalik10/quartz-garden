@@ -1,0 +1,101 @@
+import Foundation
+
+enum CaptureWriteError: LocalizedError, Equatable {
+    case invalidPathComponent(String)
+    case vaultUnavailable(URL)
+    case noteAlreadyExists(URL)
+    case attachmentAlreadyExists(URL)
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidPathComponent:
+            return "The area or attachment name contains characters that cannot be used safely."
+        case .vaultUnavailable:
+            return "The vault folder is unavailable. Choose it again in Settings."
+        case .noteAlreadyExists:
+            return "A capture with this id already exists."
+        case .attachmentAlreadyExists:
+            return "The capture attachment already exists."
+        }
+    }
+}
+actor CaptureWriter {
+    private let vaultRoot: URL
+    private let fileManager: FileManager
+    private let renderer: CaptureMarkdownRenderer
+
+    init(
+        vaultRoot: URL,
+        fileManager: FileManager = .default,
+        renderer: CaptureMarkdownRenderer = CaptureMarkdownRenderer()
+    ) {
+        self.vaultRoot = vaultRoot
+        self.fileManager = fileManager
+        self.renderer = renderer
+    }
+
+    func write(_ draft: CaptureDraft) throws -> CaptureResult {
+        let areaName = try VaultNameValidator.validate(draft.areaName)
+        let captureID = try VaultNameValidator.validate(draft.id)
+        let attachmentName = try draft.source.attachment.map {
+            try VaultNameValidator.validate($0.fileName)
+        }
+
+        try ensureDirectory(vaultRoot)
+
+        let captureDirectory = vaultRoot
+            .appendingPathComponent("Areas", isDirectory: true)
+            .appendingPathComponent(areaName, isDirectory: true)
+            .appendingPathComponent("Captures", isDirectory: true)
+        let noteURL = captureDirectory.appendingPathComponent("\(captureID).md")
+
+        guard !fileManager.fileExists(atPath: noteURL.path) else {
+            throw CaptureWriteError.noteAlreadyExists(noteURL)
+        }
+
+        var attachmentURL: URL?
+        var attachmentRelativePath: String?
+
+        if let attachmentName, let attachment = draft.source.attachment {
+            let attachmentDirectory = vaultRoot
+                .appendingPathComponent("Attachments", isDirectory: true)
+                .appendingPathComponent("Captures", isDirectory: true)
+                .appendingPathComponent(captureID, isDirectory: true)
+            let destination = attachmentDirectory.appendingPathComponent(attachmentName)
+
+            guard !fileManager.fileExists(atPath: destination.path) else {
+                throw CaptureWriteError.attachmentAlreadyExists(destination)
+            }
+
+            try ensureDirectory(attachmentDirectory)
+            try writeAtomically(attachment.data, to: destination)
+            attachmentURL = destination
+            attachmentRelativePath = "Attachments/Captures/\(captureID)/\(attachmentName)"
+        }
+
+        try ensureDirectory(captureDirectory)
+        let markdown = renderer.render(draft, attachmentRelativePath: attachmentRelativePath)
+        try writeAtomically(Data(markdown.utf8), to: noteURL)
+
+        return CaptureResult(noteURL: noteURL, attachmentURL: attachmentURL)
+    }
+
+    private func ensureDirectory(_ directory: URL) throws {
+        do {
+            try fileManager.createDirectory(
+                at: directory,
+                withIntermediateDirectories: true
+            )
+        } catch {
+            throw CaptureWriteError.vaultUnavailable(vaultRoot)
+        }
+    }
+
+    private func writeAtomically(_ data: Data, to url: URL) throws {
+        do {
+            try data.write(to: url, options: [.atomic])
+        } catch {
+            throw CaptureWriteError.vaultUnavailable(vaultRoot)
+        }
+    }
+}
