@@ -64,7 +64,7 @@ FORM: The notch is the origin: a black bridge begins at the physical screen edge
 
 Garden Drop is an opening in the vault, not another place to manage work. The interface borrows the physical relationship of a native macOS sheet: quiet while idle, attached to the top edge when active, and clear about the destination before the user commits a thought.
 
-The capture surface is native and quiet while idle: a menu-bar status item, an optional top-center notch hover region, or both. The durable surface language is one system-material surface, SF Pro hierarchy, monochrome SF Symbols, and Garden colors reserved for action, status, and confirmation. The user can keep the capture entrance in the notch, the menu bar, or both; the choice persists across launches.
+The capture surface is native and quiet while idle: the menu-bar status item is always present, while the top-center notch is an optional shortcut. The durable surface language is one system-material surface, SF Pro hierarchy, monochrome SF Symbols, and Garden colors reserved for action, status, and confirmation. The notch preference persists across launches without ever removing the primary menu-bar route.
 
 **Key Characteristics:**
 
@@ -113,7 +113,7 @@ Night navy gives the structural surface a stable anchor; paper, rust, leaf, and 
 
 The composer is a single 420pt-wide surface with 14pt outer padding and 10pt grouping rhythm. The source preview reserves its media bounds before metadata arrives. The thought field grows from 44pt to a maximum of 96pt. The footer keeps status at left and the one primary action at right.
 
-The notch state borrows the measured rhythm of the reference app: a 196pt × 32pt black bridge at the physical top edge, a 224pt × 48pt compact peek with its controls below the 32pt hardware band, and a 340pt × 500pt capture surface that grows from the same Y=0 origin. The idle-to-peek reveal uses a 120ms dwell and a 150ms ease-out expansion; the expanded composer arrives over 240ms and closes over 220ms. Its dotted drop zone accepts links, files, and text, while the bottom field accepts a note or link by hand. The menu-bar route uses a monochrome tray icon and a native menu containing Capture Now, Capture Surface, Settings, and Quit.
+The notch state borrows the measured rhythm of the reference app: a 196pt × 32pt black bridge at the physical top edge, a 224pt × 48pt compact peek with its controls below the 32pt hardware band, and a 340pt × 500pt capture surface that grows from the same Y=0 origin. One persistent hosting surface owns all three states so frame motion remains monotonic while content fades and scales in place. The idle-to-peek reveal uses a 100ms dwell and a 220ms ease-out expansion; collapse takes 180ms, the expanded composer arrives over 320ms, and close takes 220ms. Its dotted drop zone accepts links, files, and text, while the bottom field accepts a note or link by hand. The menu-bar route is always present and contains New Capture, Enable Notch Surface, Settings, and Quit.
 
 ## Elevation & Depth
 
@@ -139,7 +139,7 @@ The row combines an SF Symbol, area name, visibility word, and chevron. The even
 
 ### Capture surface selector
 
-Settings and the menu-bar menu expose three explicit choices: Notch, Menu Bar, and Both. The selected mode is written to the app's local preferences and is described in plain language alongside its icon.
+Settings and the menu-bar menu expose one explicit toggle: Enable Notch Surface. Menu-bar capture remains available in either state, and legacy Notch-only preferences migrate to Menu Bar + Notch.
 
 ### Primary action
 
@@ -157,7 +157,7 @@ Success contracts into a short planted marker and a destination-aware confirmati
 - **Do** follow Reduce Motion, Reduce Transparency, Increase Contrast, VoiceOver, and keyboard navigation.
 - **Do** keep the hidden state free of timers, rendering loops, and clipboard polling.
 - **Do** reserve Garden color for action, status, and confirmation.
-- **Do** keep the menu-bar management route available while the user configures a notch-only capture surface.
+- **Do** keep the menu-bar route installed at all times and treat the notch as an optional companion.
 
 ### Don't:
 

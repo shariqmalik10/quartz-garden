@@ -99,7 +99,7 @@ struct CaptureComposerView: View {
 
     private var linkField: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Link to capture")
+            Text("Link to capture (optional)")
                 .font(.system(size: 13, weight: .medium))
 
             TextField("https://…", text: $model.linkText)
@@ -200,7 +200,7 @@ struct CaptureComposerView: View {
                 .buttonStyle(.borderedProminent)
                 .tint(gardenRust)
                 .keyboardShortcut(.return, modifiers: [.command])
-                .disabled(model.isSaving || !model.hasValidLink)
+                .disabled(model.isSaving || !model.canPlant)
 
                 Text("⌘Return to save")
                     .font(.system(size: 10))

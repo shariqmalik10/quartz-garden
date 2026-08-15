@@ -1,7 +1,6 @@
 import SwiftUI
 
 enum CaptureSurfaceMode: String, CaseIterable, Codable, Identifiable, Sendable {
-    case notch
     case menuBar
     case both
 
@@ -9,30 +8,24 @@ enum CaptureSurfaceMode: String, CaseIterable, Codable, Identifiable, Sendable {
 
     var title: String {
         switch self {
-        case .notch:
-            return "Notch"
         case .menuBar:
-            return "Menu Bar"
+            return "Menu Bar Only"
         case .both:
-            return "Both"
+            return "Menu Bar + Notch"
         }
     }
 
     var summary: String {
         switch self {
-        case .notch:
-            return "Hover the top-center notch to reveal Garden Drop."
         case .menuBar:
-            return "Use the tray icon in the menu bar to capture."
+            return "Garden Drop stays available from the menu bar."
         case .both:
-            return "Use either the notch or the menu-bar tray icon."
+            return "Use the menu bar anytime, with the notch as an optional shortcut."
         }
     }
 
     var symbolName: String {
         switch self {
-        case .notch:
-            return "rectangle.topthird.inset.filled"
         case .menuBar:
             return "menubar.arrow.up.rectangle"
         case .both:
@@ -41,10 +34,19 @@ enum CaptureSurfaceMode: String, CaseIterable, Codable, Identifiable, Sendable {
     }
 
     var showsMenuBar: Bool {
-        self != .notch
+        true
     }
 
     var showsNotch: Bool {
-        self != .menuBar
+        self == .both
+    }
+
+    static func migrated(from storedValue: String?) -> CaptureSurfaceMode {
+        switch storedValue {
+        case CaptureSurfaceMode.both.rawValue, "notch":
+            return .both
+        default:
+            return .menuBar
+        }
     }
 }

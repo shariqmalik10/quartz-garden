@@ -83,7 +83,7 @@ final class CaptureComposerModel: ObservableObject {
 
     var linkValidationMessage: String? {
         if linkText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            return "Add a link to capture it."
+            return nil
         }
         if !hasValidLink {
             return "Use a valid http:// or https:// link."

@@ -12,7 +12,9 @@ final class CaptureWindowController: NSWindowController {
         )
         window.title = "Garden Drop"
         window.isReleasedWhenClosed = false
-        window.contentView = NSHostingView(rootView: CaptureComposerView())
+        window.contentView = NSHostingView(
+            rootView: CaptureComposerView(model: CaptureComposerModel(source: .blank))
+        )
         super.init(window: window)
     }
 

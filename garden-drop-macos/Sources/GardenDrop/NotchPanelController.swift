@@ -4,14 +4,14 @@ import SwiftUI
 
 @MainActor
 final class NotchPanelController {
-    private let panel: NSPanel
+    private let panel: KeyableNotchPanel
+    private let presentation = NotchSurfacePresentation()
     private let onComposerRequested: () -> Void
     private let onSettingsRequested: () -> Void
 
+    private var hostingView: HoverHostingView?
     private var dwellWorkItem: DispatchWorkItem?
     private var collapseWorkItem: DispatchWorkItem?
-    private var notchComposerModel: CaptureComposerModel?
-    private var isComposerVisible = false
     private var isStarted = false
 
     init(
@@ -20,13 +20,8 @@ final class NotchPanelController {
     ) {
         self.onComposerRequested = onComposerRequested
         self.onSettingsRequested = onSettingsRequested
-        self.panel = NSPanel(
-            contentRect: NSRect(
-                x: 0,
-                y: 0,
-                width: 196,
-                height: 32
-            ),
+        self.panel = KeyableNotchPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 196, height: 32),
             styleMask: [.borderless],
             backing: .buffered,
             defer: false
@@ -39,16 +34,22 @@ final class NotchPanelController {
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.hidesOnDeactivate = false
         panel.isMovable = false
-        panel.becomesKeyOnlyIfNeeded = true
+        panel.isFloatingPanel = true
+        panel.becomesKeyOnlyIfNeeded = false
+        panel.animationBehavior = .none
     }
 
     func start() {
-        guard !isStarted else {
+        guard !isStarted, let screen = activeScreen else {
             return
         }
 
         isStarted = true
-        showIdle(animated: false)
+        installSurfaceIfNeeded()
+        presentation.safeTopInset = screen.safeAreaInsets.top
+        presentation.showIdle()
+        panel.setFrame(NotchGeometry.frame(for: NotchGeometry.idleSize(for: screen), on: screen), display: true)
+        panel.orderFrontRegardless()
     }
 
     func stop() {
@@ -57,113 +58,129 @@ final class NotchPanelController {
         }
 
         isStarted = false
-        dwellWorkItem?.cancel()
-        collapseWorkItem?.cancel()
+        cancelScheduledTransitions()
         panel.orderOut(nil)
-        notchComposerModel = nil
-        isComposerVisible = false
+        presentation.showIdle()
     }
 
     func showComposer() {
-        guard isStarted else {
+        guard isStarted, let screen = activeScreen else {
             return
         }
 
-        guard let screen = activeScreen else {
-            return
-        }
+        cancelScheduledTransitions()
+        presentation.safeTopInset = screen.safeAreaInsets.top
+        presentation.showComposer(CaptureComposerModel(source: .blank))
 
-        dwellWorkItem?.cancel()
-        collapseWorkItem?.cancel()
-        isComposerVisible = true
-
-        let model = CaptureComposerModel(source: .blank)
-        notchComposerModel = model
-        setContent(
-            AnyView(
-                NotchComposerView(
-                    model: model,
-                    safeTopInset: screen.safeAreaInsets.top,
-                    onSettings: { [weak self] in
-                        self?.onSettingsRequested()
-                    },
-                    onClose: { [weak self] in
-                        self?.showIdle(animated: true)
-                    }
-                )
-            ),
-            size: NotchComposerLayout.size,
-            onMouseEntered: {},
-            onMouseExited: {},
-            animationDuration: NotchMetrics.composerDuration
+        focusComposerPanel()
+        transitionPanel(
+            to: NotchComposerLayout.size,
+            on: screen,
+            duration: NotchMetrics.composerDuration
         )
-        panel.makeKeyAndOrderFront(nil)
+
+        DispatchQueue.main.async { [weak self] in
+            self?.focusComposerPanel()
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) { [weak self] in
+            guard self?.presentation.phase == .composer else {
+                return
+            }
+            self?.focusComposerPanel()
+        }
+    }
+
+    private func installSurfaceIfNeeded() {
+        guard hostingView == nil else {
+            return
+        }
+
+        let rootView = NotchSurfaceRootView(
+            presentation: presentation,
+            onOpen: { [weak self] in
+                self?.onComposerRequested()
+            },
+            onSettings: { [weak self] in
+                self?.onSettingsRequested()
+            },
+            onClose: { [weak self] in
+                self?.showIdle(animated: true)
+            }
+        )
+        let hostingView = HoverHostingView(rootView: AnyView(rootView))
+        hostingView.onMouseEntered = { [weak self] in
+            self?.pointerEntered()
+        }
+        hostingView.onMouseExited = { [weak self] in
+            self?.pointerExited()
+        }
+        panel.contentView = hostingView
+        self.hostingView = hostingView
+    }
+
+    private func pointerEntered() {
+        collapseWorkItem?.cancel()
+        collapseWorkItem = nil
+
+        guard presentation.phase == .idle else {
+            return
+        }
+        schedulePeek()
+    }
+
+    private func pointerExited() {
+        switch presentation.phase {
+        case .idle:
+            cancelDwell()
+        case .peek:
+            scheduleCollapse()
+        case .composer:
+            break
+        }
     }
 
     private func showIdle(animated: Bool) {
-        guard isStarted else {
+        guard isStarted, let screen = activeScreen else {
             return
         }
 
-        guard let screen = activeScreen else {
-            return
-        }
+        let previousPhase = presentation.phase
+        cancelScheduledTransitions()
+        presentation.safeTopInset = screen.safeAreaInsets.top
+        presentation.showIdle()
 
-        let size = NotchGeometry.idleSize(for: screen)
-        isComposerVisible = false
-        setContent(
-            AnyView(NotchIdleView(size: size)),
-            size: size,
-            onMouseEntered: { [weak self] in
-                self?.schedulePeek()
-            },
-            onMouseExited: { [weak self] in
-                self?.cancelDwell()
-            },
-            animationDuration: animated ? NotchMetrics.collapseDuration : nil,
-            onMouseDown: { [weak self] in
-                self?.showComposer()
-            }
+        let duration = previousPhase == .composer
+            ? NotchMetrics.composerCloseDuration
+            : NotchMetrics.collapseDuration
+        transitionPanel(
+            to: NotchGeometry.idleSize(for: screen),
+            on: screen,
+            duration: animated ? duration : nil
         )
         panel.orderFrontRegardless()
+        panel.resignKey()
     }
 
     private func showPeek() {
-        guard isStarted, !isComposerVisible else {
+        guard isStarted,
+              presentation.phase == .idle,
+              let screen = activeScreen else {
             return
         }
 
-        guard let screen = activeScreen else {
-            return
-        }
-
-        let size = NotchGeometry.peekSize(for: screen)
         collapseWorkItem?.cancel()
-        setContent(
-            AnyView(
-                NotchPeekView(size: size, safeTopInset: screen.safeAreaInsets.top) { [weak self] in
-                    self?.onComposerRequested()
-                } onSettings: { [weak self] in
-                    self?.onSettingsRequested()
-                }
-            ),
-            size: size,
-            onMouseEntered: { [weak self] in
-                self?.collapseWorkItem?.cancel()
-            },
-            onMouseExited: { [weak self] in
-                self?.scheduleCollapse()
-            },
-            animationDuration: NotchMetrics.expandDuration
+        collapseWorkItem = nil
+        presentation.safeTopInset = screen.safeAreaInsets.top
+        presentation.showPeek()
+        transitionPanel(
+            to: NotchGeometry.peekSize(for: screen),
+            on: screen,
+            duration: NotchMetrics.expandDuration
         )
         panel.orderFrontRegardless()
     }
 
     private func schedulePeek() {
-        guard !isComposerVisible else {
-            return
-        }
-
         dwellWorkItem?.cancel()
         let workItem = DispatchWorkItem { [weak self] in
             self?.showPeek()
@@ -182,7 +199,7 @@ final class NotchPanelController {
 
     private func scheduleCollapse() {
         cancelDwell()
-        guard !isComposerVisible else {
+        guard presentation.phase == .peek else {
             return
         }
 
@@ -198,59 +215,68 @@ final class NotchPanelController {
     }
 
     private func collapseIfPointerOutside() {
-        guard isStarted, !isComposerVisible else {
+        guard isStarted, presentation.phase == .peek else {
             return
         }
 
         guard !panel.frame.contains(NSEvent.mouseLocation) else {
             return
         }
-
         showIdle(animated: true)
     }
 
-    private func setContent(
-        _ content: AnyView,
-        size: NSSize,
-        onMouseEntered: @escaping () -> Void,
-        onMouseExited: @escaping () -> Void,
-        animationDuration: TimeInterval?,
-        onMouseDown: (() -> Void)? = nil
-    ) {
-        let hostingView = HoverHostingView(rootView: content)
-        hostingView.onMouseEntered = onMouseEntered
-        hostingView.onMouseExited = onMouseExited
-        hostingView.onMouseDown = onMouseDown
-        panel.contentView = hostingView
+    private func cancelScheduledTransitions() {
+        dwellWorkItem?.cancel()
+        collapseWorkItem?.cancel()
+        dwellWorkItem = nil
+        collapseWorkItem = nil
+    }
 
-        guard let screen = activeScreen else {
+    private func transitionPanel(
+        to size: NSSize,
+        on screen: NSScreen,
+        duration: TimeInterval?
+    ) {
+        let frame = NotchGeometry.frame(for: size, on: screen)
+        let shouldReduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        guard let duration, !shouldReduceMotion else {
+            panel.setFrame(frame, display: true)
             return
         }
 
-        let frame = NotchGeometry.frame(for: size, on: screen)
-
-        if let animationDuration {
-            NSAnimationContext.runAnimationGroup { context in
-                context.duration = animationDuration
-                context.timingFunction = CAMediaTimingFunction(name: .easeOut)
-                panel.animator().setFrame(frame, display: true)
-            }
-        } else {
-            panel.setFrame(frame, display: true)
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = duration
+            context.timingFunction = NotchMetrics.easeOut
+            panel.animator().setFrame(frame, display: true)
         }
     }
 
+    private func focusComposerPanel() {
+        NSRunningApplication.current.activate(options: [.activateAllWindows])
+        panel.orderFrontRegardless()
+        panel.makeKeyAndOrderFront(nil)
+    }
+
     private var activeScreen: NSScreen? {
-        NSScreen.main ?? NSScreen.screens.first
+        NSScreen.screens.first(where: {
+            $0.auxiliaryTopLeftArea != nil && $0.auxiliaryTopRightArea != nil
+        })
+            ?? NSScreen.main
+            ?? NSScreen.screens.first
     }
 }
 
 private enum NotchMetrics {
-    static let hoverDelay: TimeInterval = 0.12
-    static let collapseDelay: TimeInterval = 0.12
-    static let expandDuration: TimeInterval = 0.15
-    static let collapseDuration: TimeInterval = 0.22
-    static let composerDuration: TimeInterval = 0.24
+    static let hoverDelay: TimeInterval = 0.10
+    static let collapseDelay: TimeInterval = 0.10
+    static let expandDuration: TimeInterval = 0.22
+    static let collapseDuration: TimeInterval = 0.18
+    static let composerDuration: TimeInterval = 0.32
+    static let composerCloseDuration: TimeInterval = 0.22
+    @MainActor
+    static var easeOut: CAMediaTimingFunction {
+        CAMediaTimingFunction(controlPoints: 0.16, 1.0, 0.30, 1.0)
+    }
 }
 
 private enum NotchGeometry {
@@ -273,10 +299,7 @@ private enum NotchGeometry {
             return NSSize(width: 196, height: 32)
         }
 
-        return NSSize(
-            width: notchRect.width + 11,
-            height: notchRect.height
-        )
+        return NSSize(width: notchRect.width + 11, height: notchRect.height)
     }
 
     static func peekSize(for screen: NSScreen) -> NSSize {
@@ -284,29 +307,32 @@ private enum NotchGeometry {
             return NSSize(width: 224, height: 48)
         }
 
-        return NSSize(
-            width: notchRect.width + 39,
-            height: notchRect.height + 16
-        )
+        return NSSize(width: notchRect.width + 39, height: notchRect.height + 16)
     }
 
     static func frame(for size: NSSize, on screen: NSScreen) -> NSRect {
         let screenFrame = screen.frame
-        let topEdge = screenFrame.maxY
-
         return NSRect(
             x: screenFrame.midX - size.width / 2,
-            y: topEdge - size.height,
+            y: screenFrame.maxY - size.height,
             width: size.width,
             height: size.height
         )
     }
 }
 
+private final class KeyableNotchPanel: NSPanel {
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { false }
+
+    override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect {
+        frameRect
+    }
+}
+
 private final class HoverHostingView: NSHostingView<AnyView> {
     var onMouseEntered: (() -> Void)?
     var onMouseExited: (() -> Void)?
-    var onMouseDown: (() -> Void)?
 
     override func updateTrackingAreas() {
         trackingAreas.forEach(removeTrackingArea)
@@ -321,13 +347,18 @@ private final class HoverHostingView: NSHostingView<AnyView> {
         super.updateTrackingAreas()
     }
 
-    override func mouseEntered(with event: NSEvent) {
-        onMouseEntered?()
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+        true
     }
 
     override func mouseDown(with event: NSEvent) {
-        onMouseDown?()
+        NSRunningApplication.current.activate(options: [.activateAllWindows])
+        window?.makeKey()
         super.mouseDown(with: event)
+    }
+
+    override func mouseEntered(with event: NSEvent) {
+        onMouseEntered?()
     }
 
     override func mouseExited(with event: NSEvent) {

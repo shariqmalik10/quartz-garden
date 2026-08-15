@@ -16,10 +16,13 @@ final class GardenDropCoordinator: NSObject, ObservableObject {
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         let storedMode = defaults.string(forKey: Self.surfaceModeKey)
-            .flatMap(CaptureSurfaceMode.init(rawValue:))
-            ?? .both
-        self.surfaceMode = storedMode
+        let resolvedMode = CaptureSurfaceMode.migrated(from: storedMode)
+        self.surfaceMode = resolvedMode
         super.init()
+
+        if storedMode != resolvedMode.rawValue {
+            defaults.set(resolvedMode.rawValue, forKey: Self.surfaceModeKey)
+        }
     }
 
     func start() {
@@ -28,8 +31,26 @@ final class GardenDropCoordinator: NSObject, ObservableObject {
         }
 
         hasStarted = true
-        applySurfaceMode()
         updateMenuBarItem()
+        applySurfaceMode()
+    }
+
+    func stop() {
+        guard hasStarted else {
+            return
+        }
+
+        notchController?.stop()
+        captureWindowController?.close()
+        if let statusItem {
+            NSStatusBar.system.removeStatusItem(statusItem)
+            self.statusItem = nil
+        }
+        hasStarted = false
+    }
+
+    var isMenuBarItemInstalled: Bool {
+        statusItem != nil
     }
 
     func setSurfaceMode(_ mode: CaptureSurfaceMode) {
@@ -41,6 +62,10 @@ final class GardenDropCoordinator: NSObject, ObservableObject {
         defaults.set(mode.rawValue, forKey: Self.surfaceModeKey)
         applySurfaceMode()
         updateMenuBarItem()
+    }
+
+    func setNotchEnabled(_ isEnabled: Bool) {
+        setSurfaceMode(isEnabled ? .both : .menuBar)
     }
 
     func openMenuBarCapture() {
@@ -94,50 +119,47 @@ final class GardenDropCoordinator: NSObject, ObservableObject {
             return
         }
 
-        if surfaceMode.showsMenuBar {
-            if statusItem == nil {
-                let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-                item.button?.image = NSImage(
-                    systemSymbolName: "tray.and.arrow.down",
-                    accessibilityDescription: "Garden Drop"
-                )
+        if statusItem == nil {
+            let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+            if let image = NSImage(
+                systemSymbolName: "tray.and.arrow.down",
+                accessibilityDescription: "Garden Drop"
+            ) {
+                image.isTemplate = true
+                item.button?.image = image
                 item.button?.imagePosition = .imageOnly
-                item.button?.toolTip = "Garden Drop"
-                statusItem = item
+            } else {
+                item.length = NSStatusItem.variableLength
+                item.button?.title = "Drop"
             }
-            statusItem?.menu = makeStatusMenu()
-        } else if let statusItem {
-            NSStatusBar.system.removeStatusItem(statusItem)
-            self.statusItem = nil
+            item.button?.toolTip = "Garden Drop"
+            item.isVisible = true
+            statusItem = item
         }
+
+        statusItem?.menu = makeStatusMenu()
     }
 
     private func makeStatusMenu() -> NSMenu {
         let menu = NSMenu(title: "Garden Drop")
 
         let captureItem = NSMenuItem(
-            title: "Capture Now",
+            title: "New Capture…",
             action: #selector(menuCaptureNow),
-            keyEquivalent: ""
+            keyEquivalent: "n"
         )
         captureItem.target = self
+        captureItem.keyEquivalentModifierMask = [.command]
         menu.addItem(captureItem)
 
-        let surfaceItem = NSMenuItem(title: "Capture Surface", action: nil, keyEquivalent: "")
-        let surfaceMenu = NSMenu(title: "Capture Surface")
-        for mode in CaptureSurfaceMode.allCases {
-            let modeItem = NSMenuItem(
-                title: mode.title,
-                action: #selector(menuSelectSurface(_:)),
-                keyEquivalent: ""
-            )
-            modeItem.target = self
-            modeItem.representedObject = mode.rawValue
-            modeItem.state = mode == surfaceMode ? .on : .off
-            surfaceMenu.addItem(modeItem)
-        }
-        surfaceItem.submenu = surfaceMenu
-        menu.addItem(surfaceItem)
+        let notchItem = NSMenuItem(
+            title: "Enable Notch Surface",
+            action: #selector(menuToggleNotch),
+            keyEquivalent: ""
+        )
+        notchItem.target = self
+        notchItem.state = surfaceMode.showsNotch ? .on : .off
+        menu.addItem(notchItem)
 
         menu.addItem(.separator())
 
@@ -164,12 +186,8 @@ final class GardenDropCoordinator: NSObject, ObservableObject {
         openMenuBarCapture()
     }
 
-    @objc private func menuSelectSurface(_ sender: NSMenuItem) {
-        guard let rawValue = sender.representedObject as? String,
-              let mode = CaptureSurfaceMode(rawValue: rawValue) else {
-            return
-        }
-        setSurfaceMode(mode)
+    @objc private func menuToggleNotch() {
+        setNotchEnabled(!surfaceMode.showsNotch)
     }
 
     @objc private func menuOpenSettings() {
@@ -186,7 +204,12 @@ final class GardenDropAppDelegate: NSObject, NSApplicationDelegate {
     let coordinator = GardenDropCoordinator()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        NSApp.setActivationPolicy(.accessory)
         coordinator.start()
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        coordinator.stop()
     }
 }
 
@@ -199,20 +222,28 @@ struct GardenDropSettingsView: View {
 
     var body: some View {
         Form {
-            Section("Capture surface") {
-                Picker(
-                    "Show Garden Drop in",
-                    selection: Binding(
-                        get: { coordinator.surfaceMode },
-                        set: { coordinator.setSurfaceMode($0) }
-                    )
-                ) {
-                    ForEach(CaptureSurfaceMode.allCases) { mode in
-                        Label(mode.title, systemImage: mode.symbolName)
-                            .tag(mode)
-                    }
+            Section("Menu bar") {
+                LabeledContent {
+                    Text("Always on")
+                        .foregroundStyle(.secondary)
+                } label: {
+                    Label("Garden Drop", systemImage: "tray.and.arrow.down")
                 }
-                .pickerStyle(.radioGroup)
+
+                Text("Use the menu-bar icon to start a new capture, open settings, or quit the app.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Section("Notch shortcut") {
+                Toggle(
+                    "Enable notch surface",
+                    isOn: Binding(
+                        get: { coordinator.surfaceMode.showsNotch },
+                        set: { coordinator.setNotchEnabled($0) }
+                    )
+                )
 
                 Text(coordinator.surfaceMode.summary)
                     .font(.system(size: 11))
@@ -226,6 +257,6 @@ struct GardenDropSettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 420, height: 260)
+        .frame(width: 430, height: 310)
     }
 }

@@ -16,6 +16,7 @@ struct NotchComposerView: View {
     @FocusState private var isInputFocused: Bool
     @State private var isDropTargeted = false
     @State private var inputMode: NotchInputMode = .anything
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(
         model: CaptureComposerModel,
@@ -39,10 +40,8 @@ struct NotchComposerView: View {
             footer
         }
         .frame(width: NotchComposerLayout.size.width, height: NotchComposerLayout.size.height)
-        .background(NotchSurfaceBackground())
-        .clipShape(NotchSurfaceShape(bottomCornerRadius: 18))
         .onAppear {
-            DispatchQueue.main.async {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
                 isInputFocused = true
             }
         }
@@ -51,7 +50,7 @@ struct NotchComposerView: View {
     }
 
     private var header: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             areaMenu
 
             Button(action: onSettings) {
@@ -75,7 +74,7 @@ struct NotchComposerView: View {
             .accessibilityLabel("Close capture surface")
         }
         .padding(.horizontal, 16)
-        .frame(height: 52)
+        .frame(height: 54)
     }
 
     private var areaMenu: some View {
@@ -109,7 +108,7 @@ struct NotchComposerView: View {
                     .foregroundStyle(.white.opacity(0.38))
             }
             .padding(.horizontal, 13)
-            .frame(maxWidth: .infinity, minHeight: 38)
+            .frame(maxWidth: .infinity, minHeight: 40)
             .background(Color.white.opacity(0.08))
             .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
         }
@@ -132,7 +131,7 @@ struct NotchComposerView: View {
 
                 Text(dropPrompt)
                     .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.white.opacity(isDropTargeted ? 0.78 : 0.30))
+                    .foregroundStyle(.white.opacity(isDropTargeted ? 0.88 : 0.58))
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
 
@@ -141,6 +140,7 @@ struct NotchComposerView: View {
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(gardenLeaf)
                         .lineLimit(1)
+                        .transition(.opacity.combined(with: .scale(scale: 0.96)))
                 }
 
                 Spacer(minLength: 58)
@@ -175,6 +175,8 @@ struct NotchComposerView: View {
         )
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Drop files or add a note")
+        .animation(feedbackAnimation, value: isDropTargeted)
+        .animation(feedbackAnimation, value: model.droppedAttachment?.fileName)
     }
 
     private var inputBar: some View {
@@ -189,6 +191,9 @@ struct NotchComposerView: View {
                 .font(.system(size: 13))
                 .foregroundStyle(.white.opacity(0.9))
                 .focused($isInputFocused)
+                .onTapGesture {
+                    isInputFocused = true
+                }
                 .onSubmit {
                     model.commitDraftInput()
                 }
@@ -214,11 +219,23 @@ struct NotchComposerView: View {
         .frame(height: 44)
         .background(Color.white.opacity(0.08))
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(
+                    isInputFocused ? gardenRust.opacity(0.72) : Color.white.opacity(0.10),
+                    lineWidth: isInputFocused ? 1.25 : 1
+                )
+                .allowsHitTesting(false)
+        }
+        .animation(feedbackAnimation, value: isInputFocused)
     }
 
     private var footer: some View {
         HStack(spacing: 8) {
             statusView
+                .id(statusKey)
+                .transition(.opacity)
+                .animation(feedbackAnimation, value: statusKey)
 
             Spacer(minLength: 8)
 
@@ -238,7 +255,7 @@ struct NotchComposerView: View {
             .accessibilityLabel(model.visibility.actionTitle)
         }
         .padding(.horizontal, 16)
-        .frame(height: 58)
+        .frame(height: 60)
     }
 
     @ViewBuilder
@@ -267,24 +284,21 @@ struct NotchComposerView: View {
     private var moreMenu: some View {
         Menu {
             Button {
-                inputMode = .link
-                isInputFocused = true
+                selectInputMode(.link)
             } label: {
                 Label("Add a link", systemImage: "link")
             }
 
             Button {
-                inputMode = .note
-                isInputFocused = true
+                selectInputMode(.note)
             } label: {
                 Label("Add a note", systemImage: "text.quote")
             }
 
             Button {
-                inputMode = .anything
-                isInputFocused = true
+                selectInputMode(.anything)
             } label: {
-                Label("Accept anything", systemImage: "sparkles")
+                Label("Automatic input", systemImage: "sparkles")
             }
 
             Divider()
@@ -319,6 +333,30 @@ struct NotchComposerView: View {
             return "Ready to plant"
         }
         return "Drop files or add a note below"
+    }
+
+    private var statusKey: String {
+        switch model.status {
+        case .idle:
+            return "idle"
+        case .saving:
+            return "saving"
+        case .saved:
+            return "saved"
+        case .failed(let message):
+            return "failed:\(message)"
+        }
+    }
+
+    private var feedbackAnimation: Animation? {
+        reduceMotion ? nil : .easeOut(duration: 0.16)
+    }
+
+    private func selectInputMode(_ mode: NotchInputMode) {
+        inputMode = mode
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+            isInputFocused = true
+        }
     }
 
     private func handleDrop(_ providers: [NSItemProvider]) -> Bool {
