@@ -5,11 +5,13 @@ import SwiftUI
 @MainActor
 final class NotchPanelController {
     private let panel: KeyableNotchPanel
+    private let hoverTriggerPanel: NSPanel
     private let presentation = NotchSurfacePresentation()
     private let onComposerRequested: () -> Void
     private let onSettingsRequested: () -> Void
 
     private var hostingView: HoverHostingView?
+    private var hoverTriggerView: HoverTriggerView?
     private var dwellWorkItem: DispatchWorkItem?
     private var collapseWorkItem: DispatchWorkItem?
     private var isStarted = false
@@ -26,17 +28,37 @@ final class NotchPanelController {
             backing: .buffered,
             defer: false
         )
+        self.hoverTriggerPanel = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 224, height: 48),
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
 
         panel.isOpaque = false
         panel.backgroundColor = .clear
         panel.hasShadow = false
-        panel.level = .statusBar
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.hidesOnDeactivate = false
         panel.isMovable = false
-        panel.isFloatingPanel = true
         panel.becomesKeyOnlyIfNeeded = false
         panel.animationBehavior = .none
+        panel.acceptsMouseMovedEvents = true
+
+        hoverTriggerPanel.isOpaque = false
+        hoverTriggerPanel.backgroundColor = .clear
+        hoverTriggerPanel.hasShadow = false
+        hoverTriggerPanel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        hoverTriggerPanel.hidesOnDeactivate = false
+        hoverTriggerPanel.isMovable = false
+        hoverTriggerPanel.animationBehavior = .none
+        hoverTriggerPanel.acceptsMouseMovedEvents = true
+
+        // Apply the level last. NSPanel's floating-panel behavior can otherwise
+        // reset the window to the regular floating layer and put it behind the menu bar.
+        let notchLevel = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 1)
+        panel.level = notchLevel
+        hoverTriggerPanel.level = notchLevel
     }
 
     func start() {
@@ -46,10 +68,13 @@ final class NotchPanelController {
 
         isStarted = true
         installSurfaceIfNeeded()
+        installHoverTriggerIfNeeded()
         presentation.safeTopInset = screen.safeAreaInsets.top
         presentation.showIdle()
         panel.setFrame(NotchGeometry.frame(for: NotchGeometry.idleSize(for: screen), on: screen), display: true)
+        positionHoverTrigger(on: screen)
         panel.orderFrontRegardless()
+        hoverTriggerPanel.orderFrontRegardless()
     }
 
     func stop() {
@@ -59,6 +84,7 @@ final class NotchPanelController {
 
         isStarted = false
         cancelScheduledTransitions()
+        hoverTriggerPanel.orderOut(nil)
         panel.orderOut(nil)
         presentation.showIdle()
     }
@@ -69,6 +95,7 @@ final class NotchPanelController {
         }
 
         cancelScheduledTransitions()
+        hoverTriggerPanel.orderOut(nil)
         presentation.safeTopInset = screen.safeAreaInsets.top
         presentation.showComposer(CaptureComposerModel(source: .blank))
 
@@ -118,6 +145,24 @@ final class NotchPanelController {
         self.hostingView = hostingView
     }
 
+    private func installHoverTriggerIfNeeded() {
+        guard hoverTriggerView == nil else {
+            return
+        }
+
+        let triggerView = HoverTriggerView()
+        triggerView.onMouseEntered = { [weak self] in
+            self?.pointerEntered()
+        }
+        hoverTriggerPanel.contentView = triggerView
+        hoverTriggerView = triggerView
+    }
+
+    private func positionHoverTrigger(on screen: NSScreen) {
+        let frame = NotchGeometry.frame(for: NotchGeometry.peekSize(for: screen), on: screen)
+        hoverTriggerPanel.setFrame(frame, display: true)
+    }
+
     private func pointerEntered() {
         collapseWorkItem?.cancel()
         collapseWorkItem = nil
@@ -158,6 +203,8 @@ final class NotchPanelController {
             duration: animated ? duration : nil
         )
         panel.orderFrontRegardless()
+        positionHoverTrigger(on: screen)
+        hoverTriggerPanel.orderFrontRegardless()
         panel.resignKey()
     }
 
@@ -170,6 +217,7 @@ final class NotchPanelController {
 
         collapseWorkItem?.cancel()
         collapseWorkItem = nil
+        hoverTriggerPanel.orderOut(nil)
         presentation.safeTopInset = screen.safeAreaInsets.top
         presentation.showPeek()
         transitionPanel(
@@ -363,5 +411,26 @@ private final class HoverHostingView: NSHostingView<AnyView> {
 
     override func mouseExited(with event: NSEvent) {
         onMouseExited?()
+    }
+}
+
+private final class HoverTriggerView: NSView {
+    var onMouseEntered: (() -> Void)?
+
+    override func updateTrackingAreas() {
+        trackingAreas.forEach(removeTrackingArea)
+        addTrackingArea(
+            NSTrackingArea(
+                rect: bounds,
+                options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect],
+                owner: self,
+                userInfo: nil
+            )
+        )
+        super.updateTrackingAreas()
+    }
+
+    override func mouseEntered(with event: NSEvent) {
+        onMouseEntered?()
     }
 }
