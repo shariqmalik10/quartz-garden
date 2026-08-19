@@ -10,6 +10,7 @@ Configure this Actions variable:
 
 ```text
 PUBLIC_QUARTZ_REPOSITORY=shariqmalik10/quartz-garden
+PUBLIC_QUARTZ_BRANCH=feat/garden-drop-macos
 ```
 
 Configure this Actions secret with the private half of an SSH deploy key whose
@@ -25,6 +26,9 @@ and must not be stored in the vault, the public repository, or Garden Drop.
 The workflow runs after a private `main` push or manually. It exports the
 allowlisted garden, runs the public repository's checks/tests/build, and pushes
 only when every gate succeeds.
+
+Keep `PUBLIC_QUARTZ_BRANCH` on the feature branch during preview testing. Change
+it to `main` only after PR approval and merge.
 
 ## Local 23:00 backup
 

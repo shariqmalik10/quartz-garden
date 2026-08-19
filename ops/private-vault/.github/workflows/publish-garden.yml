@@ -29,7 +29,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: ${{ vars.PUBLIC_QUARTZ_REPOSITORY }}
-          ref: main
+          ref: ${{ vars.PUBLIC_QUARTZ_BRANCH }}
           path: site
           ssh-key: ${{ secrets.PUBLIC_REPO_DEPLOY_KEY }}
           fetch-depth: 0
@@ -71,6 +71,7 @@ jobs:
         working-directory: site
         env:
           SOURCE_SHA: ${{ github.sha }}
+          PUBLIC_QUARTZ_BRANCH: ${{ vars.PUBLIC_QUARTZ_BRANCH }}
         run: |
           git add -- content/garden-sync
           if git diff --cached --quiet; then
@@ -80,4 +81,4 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "content: publish garden from ${SOURCE_SHA::12}"
-          git push origin HEAD:main
+          git push origin "HEAD:${PUBLIC_QUARTZ_BRANCH}"
