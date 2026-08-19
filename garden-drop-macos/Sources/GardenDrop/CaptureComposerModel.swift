@@ -78,7 +78,7 @@ final class CaptureComposerModel: ObservableObject {
     @Published var thought = "" {
         didSet { draftDidChange() }
     }
-    @Published var selectedArea = AreaOption.defaults[0] {
+    @Published var selectedDestination: CaptureDestination {
         didSet { draftDidChange() }
     }
     @Published private(set) var droppedAttachment: CaptureAttachment? = nil {
@@ -90,6 +90,7 @@ final class CaptureComposerModel: ObservableObject {
 
     let source: CaptureSource
     let vaultConfiguration: VaultConfiguration
+    let destinationStore: DestinationStore
 
     private let writer: CaptureWriter
     private var savedSnapshot: DraftSnapshot
@@ -97,27 +98,29 @@ final class CaptureComposerModel: ObservableObject {
 
     init(
         source: CaptureSource = .sample,
-        vaultConfiguration: VaultConfiguration = .runtime
+        vaultConfiguration: VaultConfiguration = .runtime,
+        destinationStore: DestinationStore = DestinationStore()
     ) {
         let initialLinkText = source.url?.absoluteString ?? ""
         let initialDraftInput = ""
         let initialThought = ""
-        let initialSelectedArea = AreaOption.defaults[0]
+        let initialDestination = destinationStore.favorites.first ?? CaptureDestination.design
         let initialAttachment: CaptureAttachment? = nil
 
         self.source = source
         self.linkText = initialLinkText
         self.draftInput = initialDraftInput
         self.thought = initialThought
-        self.selectedArea = initialSelectedArea
+        self.selectedDestination = initialDestination
         self.droppedAttachment = initialAttachment
         self.vaultConfiguration = vaultConfiguration
+        self.destinationStore = destinationStore
         self.writer = CaptureWriter(vaultRoot: vaultConfiguration.rootURL)
         self.savedSnapshot = DraftSnapshot(
             linkText: initialLinkText,
             draftInput: initialDraftInput,
             thought: initialThought,
-            selectedArea: initialSelectedArea,
+            selectedDestination: initialDestination,
             droppedAttachment: initialAttachment
         )
 
@@ -211,14 +214,30 @@ final class CaptureComposerModel: ObservableObject {
     }
 
     var visibility: CaptureVisibility {
-        selectedArea.visibility
+        selectedDestination.visibility
+    }
+
+    var selectedArea: AreaOption {
+        get {
+            AreaOption(
+                name: selectedDestination.areaName,
+                visibility: selectedDestination.visibility
+            )
+        }
+        set {
+            selectedDestination = newValue.destination
+        }
     }
 
     var vaultLabel: String {
-        if ProcessInfo.processInfo.environment["GARDEN_DROP_VAULT"] != nil {
-            return "Configured vault"
-        }
-        return "Fixture vault · local only"
+        vaultConfiguration.isFixture
+            ? "Fixture vault · local only"
+            : "Vault · \(vaultConfiguration.displayName)"
+    }
+
+    func chooseDestination(_ destination: CaptureDestination) {
+        destinationStore.remember(destination)
+        selectedDestination = destination
     }
 
     func save() {
@@ -243,8 +262,7 @@ final class CaptureComposerModel: ObservableObject {
             title: title(for: captureSource),
             source: captureSource,
             thought: thought,
-            areaName: selectedArea.name,
-            visibility: selectedArea.visibility,
+            destination: selectedDestination,
             capturedAt: Date(),
             metadataStatus: .complete
         )
@@ -345,7 +363,7 @@ final class CaptureComposerModel: ObservableObject {
             linkText: linkText,
             draftInput: draftInput,
             thought: thought,
-            selectedArea: selectedArea,
+            selectedDestination: selectedDestination,
             droppedAttachment: droppedAttachment
         )
     }
@@ -419,7 +437,7 @@ final class CaptureComposerModel: ObservableObject {
         let linkText: String
         let draftInput: String
         let thought: String
-        let selectedArea: AreaOption
+        let selectedDestination: CaptureDestination
         let droppedAttachment: CaptureAttachment?
     }
 }

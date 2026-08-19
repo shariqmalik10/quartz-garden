@@ -6,6 +6,7 @@ final class NotchPanelController {
     private let panel: KeyableNotchPanel
     private let hoverTriggerPanel: NSPanel
     private let presentation = NotchSurfacePresentation()
+    private let destinationStore: DestinationStore
     private let onComposerRequested: () -> Void
     private let onSettingsRequested: () -> Void
 
@@ -17,9 +18,11 @@ final class NotchPanelController {
     private var isStarted = false
 
     init(
+        destinationStore: DestinationStore,
         onComposerRequested: @escaping () -> Void,
         onSettingsRequested: @escaping () -> Void
     ) {
+        self.destinationStore = destinationStore
         self.onComposerRequested = onComposerRequested
         self.onSettingsRequested = onSettingsRequested
         self.panel = KeyableNotchPanel(
@@ -104,7 +107,12 @@ final class NotchPanelController {
         lastHandledCaptureState = nil
         hoverTriggerPanel.orderOut(nil)
         presentation.safeTopInset = screen.safeAreaInsets.top
-        presentation.showComposer(CaptureComposerModel(source: source))
+        presentation.showComposer(
+            CaptureComposerModel(
+                source: source,
+                destinationStore: destinationStore
+            )
+        )
 
         focusComposerPanel()
         transitionPanel(

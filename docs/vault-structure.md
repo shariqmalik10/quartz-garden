@@ -112,9 +112,10 @@ The author makes a careful argument about designing for attention.
 [Open original](https://example.com/a-small-web)
 ```
 
-Garden Drop must use this vault through `GARDEN_DROP_VAULT` until its persistent
-security-scoped vault picker is implemented. Without that setting, the current
-app writes to a temporary fixture vault.
+Garden Drop can use this vault through its Settings vault picker, which stores a
+security-scoped bookmark for future launches. For headless/local testing,
+`GARDEN_DROP_VAULT` remains supported. Without either configuration, the app
+writes to a temporary fixture vault.
 
 ## Public export
 

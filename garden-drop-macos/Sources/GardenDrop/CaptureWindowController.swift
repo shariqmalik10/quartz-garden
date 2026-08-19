@@ -3,7 +3,7 @@ import SwiftUI
 
 @MainActor
 final class CaptureWindowController: NSWindowController {
-    init() {
+    init(destinationStore: DestinationStore) {
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 420, height: 440),
             styleMask: [.titled, .closable, .miniaturizable],
@@ -13,7 +13,12 @@ final class CaptureWindowController: NSWindowController {
         window.title = "Garden Drop"
         window.isReleasedWhenClosed = false
         window.contentView = NSHostingView(
-            rootView: CaptureComposerView(model: CaptureComposerModel(source: .blank))
+            rootView: CaptureComposerView(
+                model: CaptureComposerModel(
+                    source: .blank,
+                    destinationStore: destinationStore
+                )
+            )
         )
         super.init(window: window)
     }

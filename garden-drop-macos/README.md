@@ -11,11 +11,14 @@ Garden Drop is a private, local-first capture utility for a personal Obsidian va
 - AppKit notch surface that begins at the physical top edge, with a measured 196pt bridge, 224pt compact peek, and 340pt drop composer.
 - Click-to-expand capture zone accepting dropped links, files, and text alongside hand-entered notes and links.
 - URL field accepting full links or hostnames and normalizing hostnames to HTTPS.
-- Deterministic Markdown rendering for capture notes.
+- Deterministic Markdown rendering for capture notes and append-only link entries.
 - Atomic note and attachment writes into a fixture vault.
+- Persisted Obsidian vault access using a security-scoped bookmark.
+- Three persisted quick folder destinations (including `Areas/Blogs/Captures` by default).
+- Destination menu for saved folders and existing Markdown files; selecting a Markdown file appends a marked link entry instead of overwriting it.
 - Tests for YAML frontmatter, wikilinks, attachments, and invalid vault names.
 
-The app uses a fixture vault under the user's temporary directory by default. Set GARDEN_DROP_VAULT to point at a real Obsidian vault when manually exercising the writer.
+The app uses a fixture vault under the user's temporary directory until a vault is selected in Settings. For headless/local testing, set `GARDEN_DROP_VAULT` to point at a real Obsidian vault. The Settings picker stores only a security-scoped bookmark and never copies vault contents into app preferences.
 
 ## Run
 
@@ -33,7 +36,7 @@ Legacy Notch-only preferences migrate to Menu Bar + Notch so the status item is 
 
 The notch interaction uses a 100ms hover dwell, 220ms ease-out reveal, 320ms click-to-compose morph, and 180ms collapse. A single persistent SwiftUI host crossfades content while the AppKit panel changes size, eliminating the extra resize between states. Reduce Motion switches the geometry changes to immediate state updates with a short content fade.
 
-The composer opens with a dotted drop zone. Drop a URL or file, or choose **Add a link** / **Add a note** from the input field. Select an area, then choose **Plant** to write the capture locally. The menu-bar composer keeps the original full source → thought → area flow.
+The composer opens with a dotted drop zone. Drop a URL or file, or choose **Add a link** / **Add a note** from the input field. Choose one of the three quick folders, a saved destination, or **Choose folder…** / **Choose Markdown file…**. Folder destinations create a new capture note; Markdown-file destinations append a marked entry to the existing file. The menu-bar composer keeps the original full source → thought → destination flow.
 
 ## Build an installable DMG
 
@@ -56,7 +59,7 @@ The current build is still a local-first capture prototype; clipboard inspection
 
 ## Vault contract
 
-The writer creates only these paths for a capture:
+The writer creates only these paths for a folder capture:
 
 ```text
 Areas/<Area>/Captures/<capture-id>.md
@@ -64,3 +67,24 @@ Attachments/Captures/<capture-id>/<filename>
 ```
 
 The generated note keeps the original source URL, the user's thought, the area wikilink, and optional captured text. It does not generate a summary.
+
+For a Markdown-file destination, the existing file is updated atomically with an
+append-only entry containing a `<!-- garden-drop:<capture-id> -->` marker. The
+marker prevents a retry from duplicating the same link entry. Attachments still
+land under `Attachments/Captures/<capture-id>/` and are linked from the entry.
+
+## Destinations
+
+The canonical first three quick folders are:
+
+```text
+Areas/Design & Interaction/Captures   (Garden)
+Areas/Blogs/Captures                   (Garden)
+Areas/Product Engineering/Captures     (Garden)
+```
+
+The user can replace any quick slot in Settings. Choosing a folder or Markdown
+file from the capture menu remembers it as an additional destination. Paths are
+stored relative to the vault root, validated before writing, and classified as
+private by default outside the public `Areas/` tree. `Areas/Personal`,
+`Private`, and `Karage Work` remain private even if selected from the UI.

@@ -62,6 +62,40 @@ struct CaptureMarkdownRenderer: Sendable {
         return lines.joined(separator: "\n") + "\n"
     }
 
+    /// Renders the append-only entry used when a user chooses an existing
+    /// Markdown file (for example `Templates/Blog Link.md` or a personal
+    /// reading list). The marker makes retries idempotent without requiring a
+    /// second index file.
+    func renderLinkEntry(
+        _ draft: CaptureDraft,
+        captureID: String,
+        attachmentRelativePath: String?
+    ) -> String {
+        let thought = draft.thought.trimmingCharacters(in: .whitespacesAndNewlines)
+        var lines = [
+            "<!-- garden-drop:\(captureID) -->",
+            "### \(plainText(draft.title))",
+            "",
+            "- **Saved:** \(iso8601(draft.capturedAt))",
+        ]
+
+        if let sourceURL = draft.source.url {
+            lines.append("- **Link:** [Open original](<\(sourceURL.absoluteString)>)")
+        } else {
+            lines.append("- **Link:** _No web link captured._")
+        }
+
+        if !thought.isEmpty {
+            lines.append("- **Why:** \(thought.replacingOccurrences(of: "\n", with: " "))")
+        }
+
+        if let attachmentRelativePath {
+            lines.append("- **Attachment:** [[\(attachmentRelativePath)]]")
+        }
+
+        return lines.joined(separator: "\n") + "\n"
+    }
+
     private func iso8601(_ date: Date) -> String {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
@@ -76,5 +110,12 @@ struct CaptureMarkdownRenderer: Sendable {
             .replacingOccurrences(of: "\n", with: "\\n")
             .replacingOccurrences(of: "\r", with: "\\r")
         return "\"\(escaped)\""
+    }
+
+    private func plainText(_ value: String) -> String {
+        value
+            .replacingOccurrences(of: "\n", with: " ")
+            .replacingOccurrences(of: "\r", with: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }

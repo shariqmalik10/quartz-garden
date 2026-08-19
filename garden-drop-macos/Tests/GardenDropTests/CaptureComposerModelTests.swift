@@ -99,6 +99,45 @@ final class CaptureComposerModelTests: XCTestCase {
         XCTFail("The link capture did not finish within the test window.")
     }
 
+    func testBlogsDestinationWritesIntoTheCanonicalBlogsCaptureFolder() async throws {
+        let vaultURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GardenDropBlogsTest-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: vaultURL) }
+
+        let suiteName = "GardenDropBlogsDestinationTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let store = DestinationStore(defaults: defaults)
+        let model = CaptureComposerModel(
+            source: .blank,
+            vaultConfiguration: VaultConfiguration(rootURL: vaultURL),
+            destinationStore: store
+        )
+        model.chooseDestination(CaptureDestination.blogs)
+        model.linkText = "https://example.com/a-blog"
+        model.thought = "A long-form piece worth revisiting."
+        model.save()
+
+        for _ in 0..<40 {
+            switch model.status {
+            case .saved(let result):
+                XCTAssertTrue(result.noteURL.path.contains("Areas/Blogs/Captures"))
+                let markdown = try String(contentsOf: result.noteURL, encoding: .utf8)
+                XCTAssertTrue(markdown.contains("area: \"[[Blogs]]\""))
+                XCTAssertTrue(markdown.contains("visibility: garden"))
+                return
+            case .failed(let message):
+                XCTFail("The blog link capture failed: \(message)")
+                return
+            case .idle, .saving:
+                try await Task.sleep(for: .milliseconds(25))
+            }
+        }
+
+        XCTFail("The blog link capture did not finish within the test window.")
+    }
+
     func testSavesHandEnteredNoteWithoutALink() async throws {
         let vaultURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("GardenDropNoteTest-\(UUID().uuidString)", isDirectory: true)

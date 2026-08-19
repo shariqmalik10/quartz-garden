@@ -100,8 +100,54 @@ struct CaptureDraft: Equatable, Sendable {
     let thought: String
     let areaName: String
     let visibility: CaptureVisibility
+    let destination: CaptureDestination
     let capturedAt: Date
     let metadataStatus: MetadataStatus
+
+    init(
+        id: String,
+        title: String,
+        source: CaptureSource,
+        thought: String,
+        areaName: String,
+        visibility: CaptureVisibility,
+        capturedAt: Date,
+        metadataStatus: MetadataStatus
+    ) {
+        self.id = id
+        self.title = title
+        self.source = source
+        self.thought = thought
+        self.areaName = areaName
+        self.visibility = visibility
+        self.destination = .folder(
+            relativePath: "Areas/\(areaName)/Captures",
+            visibility: visibility,
+            title: areaName
+        )
+        self.capturedAt = capturedAt
+        self.metadataStatus = metadataStatus
+    }
+
+    init(
+        id: String,
+        title: String,
+        source: CaptureSource,
+        thought: String,
+        destination: CaptureDestination,
+        capturedAt: Date,
+        metadataStatus: MetadataStatus
+    ) {
+        self.id = id
+        self.title = title
+        self.source = source
+        self.thought = thought
+        self.areaName = destination.areaName
+        self.visibility = destination.visibility
+        self.destination = destination
+        self.capturedAt = capturedAt
+        self.metadataStatus = metadataStatus
+    }
 }
 
 struct CaptureResult: Equatable, Sendable {
@@ -113,12 +159,21 @@ struct AreaOption: Hashable, Identifiable, Sendable {
     let name: String
     let visibility: CaptureVisibility
 
+    var destination: CaptureDestination {
+        .folder(
+            relativePath: "Areas/\(name)/Captures",
+            visibility: visibility,
+            title: name
+        )
+    }
+
     var id: String {
         "\(visibility.rawValue):\(name)"
     }
 
     static let defaults = [
         AreaOption(name: "Design & Interaction", visibility: .garden),
+        AreaOption(name: "Blogs", visibility: .garden),
         AreaOption(name: "Product Engineering", visibility: .garden),
         AreaOption(name: "Personal", visibility: .privateArea),
     ]
@@ -141,14 +196,35 @@ struct VaultConfiguration: Equatable, Sendable {
     let rootURL: URL
 
     static var runtime: VaultConfiguration {
+        runtime(bookmarkStore: VaultBookmarkStore())
+    }
+
+    static func runtime(bookmarkStore: VaultBookmarkStore) -> VaultConfiguration {
         if let configuredPath = ProcessInfo.processInfo.environment["GARDEN_DROP_VAULT"],
            !configuredPath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return VaultConfiguration(rootURL: URL(fileURLWithPath: configuredPath, isDirectory: true))
         }
 
+        if let bookmarkedURL = bookmarkStore.resolve() {
+            return VaultConfiguration(rootURL: bookmarkedURL)
+        }
+
         let fixtureURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("GardenDropFixtureVault", isDirectory: true)
         return VaultConfiguration(rootURL: fixtureURL)
+    }
+
+    var isFixture: Bool {
+        rootURL.path == FileManager.default.temporaryDirectory
+            .appendingPathComponent("GardenDropFixtureVault", isDirectory: true)
+            .path
+    }
+
+    var displayName: String {
+        if isFixture {
+            return "No vault selected"
+        }
+        return rootURL.lastPathComponent.isEmpty ? rootURL.path : rootURL.lastPathComponent
     }
 }
 

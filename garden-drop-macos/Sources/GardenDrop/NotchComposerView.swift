@@ -340,32 +340,51 @@ struct NotchComposerView: View {
 
     private var destinationRow: some View {
         Menu {
-            ForEach(AreaOption.defaults) { area in
-                Button {
-                    model.selectedArea = area
-                } label: {
-                    Label {
-                        Text("\(area.name) · \(area.visibility.displayName)")
-                    } icon: {
-                        Image(systemName: area.visibility.symbolName)
+            Section("Quick destinations") {
+                ForEach(model.destinationStore.favorites) { destination in
+                    destinationButton(destination)
+                }
+            }
+
+            let extraDestinations = model.destinationStore.allDestinations.filter {
+                !model.destinationStore.favorites.contains($0)
+            }
+            if !extraDestinations.isEmpty {
+                Section("Saved destinations") {
+                    ForEach(extraDestinations) { destination in
+                        destinationButton(destination)
                     }
                 }
             }
+
+            Divider()
+
+            Button {
+                chooseDestination(.folder)
+            } label: {
+                Label("Choose folder…", systemImage: "folder.badge.plus")
+            }
+
+            Button {
+                chooseDestination(.markdownFile)
+            } label: {
+                Label("Choose Markdown file…", systemImage: "doc.badge.plus")
+            }
         } label: {
             HStack(spacing: 10) {
-                Image(systemName: model.visibility.symbolName)
+                Image(systemName: model.selectedDestination.kind.symbolName)
                     .font(NotchTypography.font(14, weight: .medium))
                     .foregroundStyle(model.visibility == .garden ? gardenRust : .white.opacity(0.62))
                     .frame(width: 22)
                     .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(model.selectedArea.name)
+                    Text(model.selectedDestination.title)
                         .font(NotchTypography.font(12, weight: .semibold))
                         .foregroundStyle(.white.opacity(0.88))
                         .lineLimit(1)
 
-                    Text(model.visibility.displayName)
+                    Text("\(model.visibility.displayName) · \(model.selectedDestination.kind.displayName)")
                         .font(NotchTypography.font(10, weight: .medium))
                         .foregroundStyle(.white.opacity(0.48))
                         .lineLimit(1)
@@ -391,10 +410,32 @@ struct NotchComposerView: View {
         .menuStyle(.borderlessButton)
         .padding(.horizontal, 14)
         .accessibilityLabel(
-            "Destination: \(model.selectedArea.name), \(model.visibility.displayName)"
+            "Destination: \(model.selectedDestination.title), \(model.visibility.displayName) \(model.selectedDestination.kind.displayName)"
         )
-        .accessibilityHint("Choose a Garden or Private area")
+        .accessibilityHint("Choose a quick destination, folder, or Markdown file")
         .disabled(model.isSaving)
+    }
+
+    private func destinationButton(_ destination: CaptureDestination) -> some View {
+        Button {
+            model.chooseDestination(destination)
+        } label: {
+            Label {
+                Text("\(destination.title) · \(destination.visibility.displayName)")
+            } icon: {
+                Image(systemName: destination.kind.symbolName)
+            }
+        }
+    }
+
+    private func chooseDestination(_ kind: CaptureDestinationKind) {
+        guard let destination = DestinationPicker.choose(
+            kind: kind,
+            vaultRoot: model.vaultConfiguration.rootURL
+        ) else {
+            return
+        }
+        model.chooseDestination(destination)
     }
 
     private var statusSection: some View {
