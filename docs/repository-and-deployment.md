@@ -17,17 +17,17 @@ projects have different histories, build commands, content models, and Vercel
 deployments. Keeping them in one repository would make a branch mistake capable
 of changing the current production deployment.
 
-Before changing the domain, create a non-moving archive pointer in the legacy
-repository without changing its `main` branch:
+The preservation pointers were created on 2026-08-20 without changing the
+legacy repository's `main` branch:
 
 ```bash
 git fetch origin main
-git branch legacy-production-2026-08-19 origin/main
-git tag -a legacy-production-2026-08-19 origin/main \
+git branch archive/legacy-production-2026-08-20 origin/main
+git tag -a legacy-production-2026-08-20 origin/main \
   -m "Archive the legacy production site before Quartz cutover"
 git push origin \
-  refs/heads/legacy-production-2026-08-19 \
-  refs/tags/legacy-production-2026-08-19
+  refs/heads/archive/legacy-production-2026-08-20 \
+  refs/tags/legacy-production-2026-08-20
 ```
 
 The existing Vercel project and `shariq.vercel.app` should remain attached to
@@ -37,9 +37,7 @@ rollback pointer.
 
 ## Recommended repository topology
 
-Use an actual GitHub fork of `jackyzha0/quartz`, then rename the fork to the
-personal site repository name if desired. The proposed names below are
-placeholders until the repositories are created:
+The live repository topology is:
 
 | Purpose                   | Repository                             | Visibility | Local remote   |
 | ------------------------- | -------------------------------------- | ---------- | -------------- |
@@ -51,8 +49,9 @@ placeholders until the repositories are created:
 The Quartz worktree should eventually report remotes equivalent to:
 
 ```text
-origin    git@github.com:shariqmalik10/quartz-garden.git
+origin    https://github.com/shariqmalik10/quartz-garden.git
 upstream  https://github.com/jackyzha0/quartz.git
+legacy    https://github.com/shariqmalik10/portfolio-website.git
 ```
 
 The private vault should have only its private repository as `origin`. The
@@ -63,7 +62,8 @@ unpublished captures, or a private repository token.
 
 Use these branches consistently:
 
-- `v5` tracks the upstream Quartz branch and contains no personal site work.
+- `upstream/v5` is the read-only upstream Quartz reference; no personal work is
+  committed to it.
 - `main` is the personal Quartz site branch. It is the only branch that should
   become the new Vercel production branch.
 - `feat/**`, `feature/**`, `fix/**`, `chore/**`, `docs/**`, and `site/**` are
@@ -77,10 +77,8 @@ The current `feat/garden-drop-macos` branch is covered by the CI workflow in
 
 ## Quartz history and upstream updates
 
-The current local worktree began as a local snapshot, not as an ancestry-
-preserving clone of the upstream repository. Adding `upstream` to that history
-and immediately pulling `v5` would require an unrelated-history merge and may
-surface conflicts in many files. Normalize the history once while creating the
+The original local worktree began as a local snapshot rather than an ancestry-
+preserving clone. Its history was normalized on 2026-08-20 while creating the
 personal fork:
 
 1. Start from the fork's real `v5` history.
@@ -138,11 +136,11 @@ and failure modes without helping the personal site.
 ## Obsidian-to-Quartz publication boundary
 
 The private vault remains the source of truth. Garden Drop saves locally first;
-the nightly backup is a separate operation. At 23:00 Asia/Riyadh, the macOS
-launch agent should:
+the nightly backup is a separate operation. At 23:00 Asia/Riyadh, the installed
+macOS launch agent `com.shariqmalik.garden-drop-nightly`:
 
 1. Acquire a lock so only one backup runs.
-2. Pull/rebase the private repository with autostash and no force push.
+2. Pull/rebase the private repository and never force push.
 3. Commit eligible vault changes.
 4. Push the private vault repository over SSH.
 
@@ -176,7 +174,7 @@ before creating a public commit. A failed validation must produce no public
 commit. This prevents an incomplete or accidentally private capture from
 reaching Vercel.
 
-The private workflow should use a dedicated SSH deploy key stored only as the
+The private workflow uses a dedicated SSH deploy key stored only as the
 private-repository secret `PUBLIC_REPO_DEPLOY_KEY`. Its public half must be a
 write-enabled deploy key on the single public Quartz repository. It must not be
 copied into the public repository, the vault, or the macOS app.
@@ -190,12 +188,13 @@ The checked-in [`vercel.json`](../vercel.json) defines the build contract:
 
 ```text
 install: npm ci
-build:   npm run install-plugins && npx quartz build
+build:   reset cached plugin links, install plugins, then build Quartz
 output:  public
 ```
 
-Vercel should use `main` as the new project's production branch. Pushes and
-pull requests from feature branches receive generated Vercel preview URLs.
+The separate `shariq-quartz-garden` Vercel project uses `main` as its production
+branch. Pushes and pull requests from feature branches receive generated Vercel
+preview URLs.
 The preview URL is the correct link for acceptance testing; it does not change
 `shariq.vercel.app`.
 
