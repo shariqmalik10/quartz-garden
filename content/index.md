@@ -26,6 +26,7 @@ I care about dependable systems, expressive software, and understanding a tool a
 <ul class="garden-paths">
   <li class="path-workbench"><a href="/projects"><span>The workbench</span><small>products, data systems, and machine-learning experiments</small></a></li>
   <li class="path-notebook"><a href="/notes"><span>The notebook</span><small>ideas about reliability, local-first software, and learning in public</small></a></li>
+  <li class="path-reading"><a href="/inspiration/blogs"><span>The reading shelf</span><small>blogs and long-form ideas worth returning to</small></a></li>
   <li class="path-now"><a href="/now"><span>What is growing now</span><small>current work, questions, and side projects</small></a></li>
   <li class="path-about"><a href="/about"><span>A note about me</span><small>background, values, and ways to say hello</small></a></li>
 </ul>

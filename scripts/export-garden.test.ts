@@ -73,6 +73,58 @@ test("exports garden areas, redacts private links, and excludes private captures
   }
 })
 
+test("exports a dedicated blogs area and preserves blog-link metadata", async () => {
+  const { root, vault, output } = await fixture()
+  try {
+    await note(
+      path.join(vault, "Areas", "Blogs", "Blogs.md"),
+      {
+        kind: "area",
+        area_id: "blogs",
+        visibility: "garden",
+        site_slug: "inspiration/blogs",
+        media_policy: "reference",
+      },
+      "Long-form writing worth returning to.",
+    )
+    await note(
+      path.join(vault, "Areas", "Blogs", "Captures", "gd-blog-one.md"),
+      {
+        id: "gd-blog-one",
+        kind: "capture",
+        title: "A small web worth returning to",
+        source: "https://example.com/a-small-web",
+        source_type: "web",
+        area: "[[Blogs]]",
+        tags: ["capture", "blog"],
+        reading_status: "unread",
+        attachments: [],
+      },
+      "## Why I saved it\n\nA careful argument about designing for attention.\n\n## Source\n\n[Open original](https://example.com/a-small-web)",
+    )
+
+    const result = await exportGarden({ vaultRoot: vault, outputRoot: output })
+    assert.equal(result.areas, 1)
+    assert.deepEqual(result.generated, [
+      "inspiration/blogs/gd-blog-one.md",
+      "inspiration/blogs/index.md",
+    ])
+
+    const map = await readFile(path.join(output, "inspiration", "blogs", "index.md"), "utf8")
+    const capture = await readFile(
+      path.join(output, "inspiration", "blogs", "gd-blog-one.md"),
+      "utf8",
+    )
+    assert.match(map, /permalink: \/inspiration\/blogs/)
+    assert.match(capture, /reading_status: unread/)
+    assert.match(capture, /source: https:\/\/example\.com\/a-small-web/)
+    assert.match(capture, /permalink: \/inspiration\/blogs\/gd-blog-one/)
+    assert.match(capture, /publish: true/)
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
 test("fails before mutating output when public content contains sensitive data", async () => {
   const { root, vault, output } = await fixture()
   try {

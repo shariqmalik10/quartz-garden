@@ -1,7 +1,8 @@
 {
   "version": 1,
-  "generatedAt": "2026-08-19T21:43:36.856Z",
+  "generatedAt": "2026-08-19T23:25:17.617Z",
   "generated": [
+    "inspiration/blogs/index.md",
     "inspiration/data-systems/index.md",
     "inspiration/design-interaction/gd-20260820-publishing-flow.md",
     "inspiration/design-interaction/index.md",
@@ -11,6 +12,10 @@
     "inspiration/writing-ideas/index.md"
   ],
   "sources": [
+    {
+      "path": "Areas/Blogs/Blogs.md",
+      "sha256": "d76385cccc654f97643ab9fc45c1675239572e55608a31120512e5d72c22552d"
+    },
     {
       "path": "Areas/Data Systems/Data Systems.md",
       "sha256": "df42ad6fd674a993db7b79bc39df0c2310739504fa4e61720728f8f5cca4886b"

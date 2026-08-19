@@ -20,6 +20,9 @@ Obsidian Vault/
 │   ├── Design & Interaction/
 │   │   ├── Design & Interaction.md
 │   │   └── Captures/
+│   ├── Blogs/
+│   │   ├── Blogs.md
+│   │   └── Captures/              # one saved blog or post per capture
 │   ├── Data Systems/
 │   ├── Machine Learning/
 │   ├── Product Engineering/
@@ -61,6 +64,52 @@ Garden Drop writes captures to:
 ```text
 Areas/<Area>/Captures/<capture-id>.md
 Attachments/Captures/<capture-id>/<filename>
+```
+
+## Blog links
+
+Blog reading has its own garden area so it stays easy to find without mixing
+long-form links into design or engineering captures:
+
+```text
+Areas/Blogs/Blogs.md
+Areas/Blogs/Captures/<capture-id>.md
+```
+
+The area map is public (`visibility: garden`, `site_slug: inspiration/blogs`)
+and each saved link is a normal `kind: capture` note. In Obsidian, create the
+note from `Templates/Blog Link.md`, then put it in `Areas/Blogs/Captures/`.
+Keep the canonical URL in the `source` field and repeat it as a Markdown link
+under `## Source`; the exporter preserves both while adding the public
+permalink and publication flags. `reading_status` can be `unread`, `reading`,
+or `read` and is intentionally just lightweight personal metadata.
+
+Example:
+
+```yaml
+---
+id: gd-20260820-small-web
+kind: capture
+title: A small web worth returning to
+source: https://example.com/a-small-web
+source_type: web
+captured_at: 2026-08-20T23:00:00+03:00
+area: "[[Blogs]]"
+tags:
+  - capture
+  - blog
+metadata_status: complete
+reading_status: unread
+attachments: []
+---
+
+## Why I saved it
+
+The author makes a careful argument about designing for attention.
+
+## Source
+
+[Open original](https://example.com/a-small-web)
 ```
 
 Garden Drop must use this vault through `GARDEN_DROP_VAULT` until its persistent
