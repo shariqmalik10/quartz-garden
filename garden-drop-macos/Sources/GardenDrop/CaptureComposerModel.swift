@@ -89,10 +89,10 @@ final class CaptureComposerModel: ObservableObject {
     @Published private(set) var status: CaptureComposerStatus = .idle
 
     let source: CaptureSource
-    let vaultConfiguration: VaultConfiguration
+    @Published private(set) var vaultConfiguration: VaultConfiguration
     let destinationStore: DestinationStore
 
-    private let writer: CaptureWriter
+    private var writer: CaptureWriter
     private var savedSnapshot: DraftSnapshot
     private var isApplyingDraftChanges = false
 
@@ -104,7 +104,8 @@ final class CaptureComposerModel: ObservableObject {
         let initialLinkText = source.url?.absoluteString ?? ""
         let initialDraftInput = ""
         let initialThought = ""
-        let initialDestination = destinationStore.favorites.first ?? CaptureDestination.design
+        let initialDestination = (destinationStore.favorites.first ?? CaptureDestination.design)
+            .resolved(in: vaultConfiguration.rootURL)
         let initialAttachment: CaptureAttachment? = nil
 
         self.source = source
@@ -237,7 +238,17 @@ final class CaptureComposerModel: ObservableObject {
 
     func chooseDestination(_ destination: CaptureDestination) {
         destinationStore.remember(destination)
-        selectedDestination = destination
+        selectedDestination = destination.resolved(in: vaultConfiguration.rootURL)
+    }
+
+    func updateVaultConfiguration(_ configuration: VaultConfiguration) {
+        guard configuration != vaultConfiguration else {
+            return
+        }
+
+        vaultConfiguration = configuration
+        writer = CaptureWriter(vaultRoot: configuration.rootURL)
+        selectedDestination = selectedDestination.resolved(in: configuration.rootURL)
     }
 
     func save() {

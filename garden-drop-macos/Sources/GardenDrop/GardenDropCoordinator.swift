@@ -28,6 +28,8 @@ final class GardenDropCoordinator: NSObject, ObservableObject {
         self.surfaceMode = resolvedMode
         super.init()
 
+        destinationStore.refreshVisibility(for: vaultConfiguration.rootURL)
+
         if storedMode != resolvedMode.rawValue {
             defaults.set(resolvedMode.rawValue, forKey: Self.surfaceModeKey)
         }
@@ -95,6 +97,8 @@ final class GardenDropCoordinator: NSObject, ObservableObject {
         do {
             try bookmarkStore.save(url: url)
             vaultConfiguration = VaultConfiguration(rootURL: url)
+            destinationStore.refreshVisibility(for: url)
+            updateCaptureSurfaces()
             return true
         } catch {
             return false
@@ -104,6 +108,8 @@ final class GardenDropCoordinator: NSObject, ObservableObject {
     func clearVault() {
         bookmarkStore.remove()
         vaultConfiguration = VaultConfiguration.runtime(bookmarkStore: bookmarkStore)
+        destinationStore.refreshVisibility(for: vaultConfiguration.rootURL)
+        updateCaptureSurfaces()
     }
 
     func openMenuBarCapture() {
@@ -126,6 +132,7 @@ final class GardenDropCoordinator: NSObject, ObservableObject {
         if notchController == nil {
             notchController = NotchPanelController(
                 destinationStore: destinationStore,
+                vaultConfiguration: vaultConfiguration,
                 onComposerRequested: { [weak self] in
                     self?.showNotchComposer()
                 },
@@ -148,9 +155,17 @@ final class GardenDropCoordinator: NSObject, ObservableObject {
 
     private func showMenuBarComposer() {
         if captureWindowController == nil {
-            captureWindowController = CaptureWindowController(destinationStore: destinationStore)
+            captureWindowController = CaptureWindowController(
+                destinationStore: destinationStore,
+                vaultConfiguration: vaultConfiguration
+            )
         }
         captureWindowController?.show()
+    }
+
+    private func updateCaptureSurfaces() {
+        notchController?.updateVaultConfiguration(vaultConfiguration)
+        captureWindowController?.updateVaultConfiguration(vaultConfiguration)
     }
 
     private func updateMenuBarItem() {

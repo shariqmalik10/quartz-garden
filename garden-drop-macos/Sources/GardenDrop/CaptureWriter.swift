@@ -47,22 +47,43 @@ actor CaptureWriter {
             }
         }
 
-        try ensureDirectory(vaultRoot)
+        let resolvedVaultRoot = VaultPathContainment.resolved(vaultRoot)
+        try ensureDirectory(resolvedVaultRoot)
 
-        let destinationPath = try VaultPathValidator.validate(draft.destination.relativePath)
-        let destinationURL = vaultRoot.appendingPathComponent(destinationPath, isDirectory: draft.destination.isFolder)
+        let effectiveDraft = CaptureDraft(
+            id: draft.id,
+            title: draft.title,
+            source: draft.source,
+            thought: draft.thought,
+            destination: draft.destination.resolved(in: resolvedVaultRoot),
+            capturedAt: draft.capturedAt,
+            metadataStatus: draft.metadataStatus
+        )
 
-        if draft.destination.kind == .markdownFile {
+        let destinationPath = try VaultPathValidator.validate(effectiveDraft.destination.relativePath)
+        let destinationURL = resolvedVaultRoot.appendingPathComponent(
+            destinationPath,
+            isDirectory: effectiveDraft.destination.isFolder
+        )
+        guard VaultPathContainment.contains(destinationURL, inside: resolvedVaultRoot) else {
+            throw CaptureWriteError.invalidPathComponent(destinationPath)
+        }
+
+        if effectiveDraft.destination.kind == .markdownFile {
             return try writeToMarkdownFile(
-                draft,
+                effectiveDraft,
                 captureID: captureID,
                 attachmentName: attachmentName,
-                destinationURL: destinationURL
+                destinationURL: destinationURL,
+                vaultRoot: resolvedVaultRoot
             )
         }
 
         let captureDirectory = destinationURL
         let noteURL = captureDirectory.appendingPathComponent("\(captureID).md")
+        guard VaultPathContainment.contains(noteURL, inside: resolvedVaultRoot) else {
+            throw CaptureWriteError.invalidPathComponent(noteURL.path)
+        }
 
         guard !fileManager.fileExists(atPath: noteURL.path) else {
             throw CaptureWriteError.noteAlreadyExists(noteURL)
@@ -72,11 +93,15 @@ actor CaptureWriter {
         var attachmentRelativePath: String?
 
         if let attachmentName, let attachment = draft.source.attachment {
-            let attachmentDirectory = vaultRoot
+            let attachmentDirectory = resolvedVaultRoot
                 .appendingPathComponent("Attachments", isDirectory: true)
                 .appendingPathComponent("Captures", isDirectory: true)
                 .appendingPathComponent(captureID, isDirectory: true)
             let destination = attachmentDirectory.appendingPathComponent(attachmentName)
+
+            guard VaultPathContainment.contains(destination, inside: resolvedVaultRoot) else {
+                throw CaptureWriteError.invalidPathComponent(attachmentName)
+            }
 
             guard !fileManager.fileExists(atPath: destination.path) else {
                 throw CaptureWriteError.attachmentAlreadyExists(destination)
@@ -89,7 +114,7 @@ actor CaptureWriter {
         }
 
         try ensureDirectory(captureDirectory)
-        let markdown = renderer.render(draft, attachmentRelativePath: attachmentRelativePath)
+        let markdown = renderer.render(effectiveDraft, attachmentRelativePath: attachmentRelativePath)
         try writeAtomically(Data(markdown.utf8), to: noteURL)
 
         return CaptureResult(noteURL: noteURL, attachmentURL: attachmentURL)
@@ -99,31 +124,12 @@ actor CaptureWriter {
         _ draft: CaptureDraft,
         captureID: String,
         attachmentName: String?,
-        destinationURL: URL
+        destinationURL: URL,
+        vaultRoot: URL
     ) throws -> CaptureResult {
         guard destinationURL.pathExtension.lowercased() == "md",
               fileManager.fileExists(atPath: destinationURL.path) else {
             throw CaptureWriteError.vaultUnavailable(destinationURL)
-        }
-
-        var attachmentURL: URL?
-        var attachmentRelativePath: String?
-
-        if let attachmentName, let attachment = draft.source.attachment {
-            let attachmentDirectory = vaultRoot
-                .appendingPathComponent("Attachments", isDirectory: true)
-                .appendingPathComponent("Captures", isDirectory: true)
-                .appendingPathComponent(captureID, isDirectory: true)
-            let destination = attachmentDirectory.appendingPathComponent(attachmentName)
-
-            guard !fileManager.fileExists(atPath: destination.path) else {
-                throw CaptureWriteError.attachmentAlreadyExists(destination)
-            }
-
-            try ensureDirectory(attachmentDirectory)
-            try writeAtomically(attachment.data, to: destination)
-            attachmentURL = destination
-            attachmentRelativePath = "Attachments/Captures/\(captureID)/\(attachmentName)"
         }
 
         let existingData: Data
@@ -136,6 +142,29 @@ actor CaptureWriter {
         let existingText = String(decoding: existingData, as: UTF8.self)
         guard !existingText.contains("<!-- garden-drop:\(captureID) -->") else {
             throw CaptureWriteError.noteAlreadyExists(destinationURL)
+        }
+
+        var attachmentURL: URL?
+        var attachmentRelativePath: String?
+
+        if let attachmentName, let attachment = draft.source.attachment {
+            let attachmentDirectory = vaultRoot
+                .appendingPathComponent("Attachments", isDirectory: true)
+                .appendingPathComponent("Captures", isDirectory: true)
+                .appendingPathComponent(captureID, isDirectory: true)
+            let destination = attachmentDirectory.appendingPathComponent(attachmentName)
+
+            guard VaultPathContainment.contains(destination, inside: vaultRoot) else {
+                throw CaptureWriteError.invalidPathComponent(attachmentName)
+            }
+            guard !fileManager.fileExists(atPath: destination.path) else {
+                throw CaptureWriteError.attachmentAlreadyExists(destination)
+            }
+
+            try ensureDirectory(attachmentDirectory)
+            try writeAtomically(attachment.data, to: destination)
+            attachmentURL = destination
+            attachmentRelativePath = "Attachments/Captures/\(captureID)/\(attachmentName)"
         }
 
         let entry = renderer.renderLinkEntry(

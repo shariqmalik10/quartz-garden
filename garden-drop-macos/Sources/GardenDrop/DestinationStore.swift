@@ -63,6 +63,15 @@ struct CaptureDestination: Codable, Equatable, Hashable, Identifiable, Sendable 
 
     var isFolder: Bool { kind == .folder }
 
+    func resolved(in vaultRoot: URL) -> CaptureDestination {
+        CaptureDestination(
+            relativePath: relativePath,
+            kind: kind,
+            visibility: Self.inferVisibility(for: relativePath, vaultRoot: vaultRoot),
+            title: title
+        )
+    }
+
     static func folder(
         relativePath: String,
         visibility: CaptureVisibility,
@@ -118,22 +127,14 @@ struct CaptureDestination: Codable, Equatable, Hashable, Identifiable, Sendable 
     static let defaultFavorites = [design, blogs, productEngineering]
 
     static func inferVisibility(for relativePath: String) -> CaptureVisibility {
-        let components = relativePath
-            .split(separator: "/")
-            .map { $0.lowercased() }
+        // Without the vault contents available, default to private. A Garden
+        // label is only safe when the selected area's map explicitly opts in.
+        _ = relativePath
+        return .privateArea
+    }
 
-        if components.contains("private")
-            || components.contains("personal")
-            || components.contains("karage work")
-            || components.contains("crm") {
-            return .privateArea
-        }
-
-        // The public exporter only considers `Areas/<area>` maps explicitly
-        // marked `visibility: garden`. A user-selected destination outside
-        // that tree remains private by default until they deliberately choose
-        // a public area in Obsidian.
-        return components.first == "areas" ? .garden : .privateArea
+    static func inferVisibility(for relativePath: String, vaultRoot: URL) -> CaptureVisibility {
+        AreaVisibilityResolver.visibility(for: relativePath, vaultRoot: vaultRoot)
     }
 
     static func from(
@@ -145,8 +146,8 @@ struct CaptureDestination: Codable, Equatable, Hashable, Identifiable, Sendable 
             return nil
         }
 
-        let standardizedRoot = vaultRoot.standardizedFileURL
-        let standardizedURL = url.standardizedFileURL
+        let standardizedRoot = VaultPathContainment.resolved(vaultRoot)
+        let standardizedURL = VaultPathContainment.resolved(url)
         let rootPath = standardizedRoot.path.hasSuffix("/")
             ? standardizedRoot.path
             : standardizedRoot.path + "/"
@@ -167,14 +168,107 @@ struct CaptureDestination: Codable, Equatable, Hashable, Identifiable, Sendable 
             }
             return .markdownFile(
                 relativePath: validatedPath,
-                visibility: inferVisibility(for: validatedPath)
+                visibility: inferVisibility(for: validatedPath, vaultRoot: standardizedRoot)
             )
         }
 
         return .folder(
             relativePath: validatedPath,
-            visibility: inferVisibility(for: validatedPath)
+            visibility: inferVisibility(for: validatedPath, vaultRoot: standardizedRoot)
         )
+    }
+}
+
+enum AreaVisibilityResolver {
+    static func visibility(for relativePath: String, vaultRoot: URL) -> CaptureVisibility {
+        let components = relativePath.split(separator: "/").map(String.init)
+        guard components.count >= 2,
+              components[0].caseInsensitiveCompare("Areas") == .orderedSame else {
+            return .privateArea
+        }
+
+        let areaName = components[1]
+        let resolvedRoot = VaultPathContainment.resolved(vaultRoot)
+        let mapURL = resolvedRoot
+            .appendingPathComponent("Areas", isDirectory: true)
+            .appendingPathComponent(areaName, isDirectory: true)
+            .appendingPathComponent("\(areaName).md")
+
+        guard VaultPathContainment.contains(mapURL, inside: resolvedRoot),
+              let text = try? String(contentsOf: mapURL, encoding: .utf8),
+              let frontmatter = frontmatter(in: text),
+              let visibility = frontmatterValue(named: "visibility", in: frontmatter),
+              visibility.caseInsensitiveCompare("garden") == .orderedSame else {
+            return .privateArea
+        }
+
+        return .garden
+    }
+
+    private static func frontmatter(in text: String) -> String? {
+        let normalized = text.replacingOccurrences(of: "\r\n", with: "\n")
+        let lines = normalized.split(separator: "\n", omittingEmptySubsequences: false)
+        guard lines.first?.trimmingCharacters(in: .whitespaces) == "---" else {
+            return nil
+        }
+
+        guard let closingIndex = lines.dropFirst().firstIndex(where: {
+            $0.trimmingCharacters(in: .whitespaces) == "---"
+        }) else {
+            return nil
+        }
+
+        return lines[1..<closingIndex].map(String.init).joined(separator: "\n")
+    }
+
+    private static func frontmatterValue(named name: String, in frontmatter: String) -> String? {
+        for rawLine in frontmatter.split(separator: "\n", omittingEmptySubsequences: false) {
+            let line = rawLine.trimmingCharacters(in: .whitespaces)
+            guard let separator = line.firstIndex(of: ":") else {
+                continue
+            }
+
+            let key = line[..<separator].trimmingCharacters(in: .whitespaces)
+            guard key.caseInsensitiveCompare(name) == .orderedSame else {
+                continue
+            }
+
+            let valueStart = line.index(after: separator)
+            let value = line[valueStart...]
+                .trimmingCharacters(in: .whitespaces)
+                .trimmingCharacters(in: CharacterSet(charactersIn: "\"'"))
+            return value.isEmpty ? nil : value
+        }
+        return nil
+    }
+}
+
+enum VaultPathContainment {
+    static func resolved(_ url: URL) -> URL {
+        let standardizedURL = url.standardizedFileURL
+        var resolvedURL = URL(fileURLWithPath: "/", isDirectory: true)
+
+        for component in standardizedURL.pathComponents where component != "/" {
+            resolvedURL.appendPathComponent(component)
+            if FileManager.default.fileExists(atPath: resolvedURL.path) {
+                resolvedURL = resolvedURL.resolvingSymlinksInPath().standardizedFileURL
+            }
+        }
+
+        return resolvedURL.standardizedFileURL
+    }
+
+    static func contains(_ child: URL, inside root: URL, allowingRoot: Bool = false) -> Bool {
+        let resolvedRoot = resolved(root)
+        let resolvedChild = resolved(child)
+        if allowingRoot && resolvedChild == resolvedRoot {
+            return true
+        }
+
+        let rootPath = resolvedRoot.path.hasSuffix("/")
+            ? resolvedRoot.path
+            : resolvedRoot.path + "/"
+        return resolvedChild.path.hasPrefix(rootPath)
     }
 }
 
@@ -247,6 +341,12 @@ final class DestinationStore: ObservableObject {
             return
         }
 
+        // A quick slot is a stable position. Ignore duplicate selections so a
+        // user cannot accidentally collapse the remaining configured slots.
+        if let existingIndex = favorites.firstIndex(of: destination), existingIndex != index {
+            return
+        }
+
         var next = favorites
         while next.count <= index {
             next.append(CaptureDestination.defaultFavorites[min(next.count, CaptureDestination.defaultFavorites.count - 1)])
@@ -280,6 +380,15 @@ final class DestinationStore: ObservableObject {
             return
         }
         savedDestinations.removeAll { $0 == destination }
+        persistSavedDestinations()
+    }
+
+    func refreshVisibility(for vaultRoot: URL) {
+        let refreshedFavorites = favorites.map { $0.resolved(in: vaultRoot) }
+        let refreshedSaved = savedDestinations.map { $0.resolved(in: vaultRoot) }
+        favorites = Self.unique(refreshedFavorites).filter(\.isFolder).prefix(3).map { $0 }
+        savedDestinations = Self.unique(refreshedSaved.filter { !favorites.contains($0) })
+        persistFavorites()
         persistSavedDestinations()
     }
 

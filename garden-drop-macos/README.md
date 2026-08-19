@@ -86,5 +86,6 @@ Areas/Product Engineering/Captures     (Garden)
 The user can replace any quick slot in Settings. Choosing a folder or Markdown
 file from the capture menu remembers it as an additional destination. Paths are
 stored relative to the vault root, validated before writing, and classified as
-private by default outside the public `Areas/` tree. `Areas/Personal`,
+private unless the selected `Areas/<Area>/<Area>.md` map has explicit
+`visibility: garden` frontmatter. Missing or malformed maps, `Areas/Personal`,
 `Private`, and `Karage Work` remain private even if selected from the UI.

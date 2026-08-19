@@ -103,6 +103,13 @@ final class CaptureComposerModelTests: XCTestCase {
         let vaultURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("GardenDropBlogsTest-\(UUID().uuidString)", isDirectory: true)
         defer { try? FileManager.default.removeItem(at: vaultURL) }
+        let blogsMapURL = vaultURL.appendingPathComponent("Areas/Blogs/Blogs.md")
+        try FileManager.default.createDirectory(
+            at: blogsMapURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        try Data("---\nkind: area\nvisibility: garden\n---\n\n# Blogs\n".utf8)
+            .write(to: blogsMapURL)
 
         let suiteName = "GardenDropBlogsDestinationTests-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!
@@ -136,6 +143,58 @@ final class CaptureComposerModelTests: XCTestCase {
         }
 
         XCTFail("The blog link capture did not finish within the test window.")
+    }
+
+    func testUpdatingVaultConfigurationRefreshesTheExistingComposerWriter() async throws {
+        let firstVault = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GardenDropOldVault-\(UUID().uuidString)", isDirectory: true)
+        let secondVault = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GardenDropNewVault-\(UUID().uuidString)", isDirectory: true)
+        defer {
+            try? FileManager.default.removeItem(at: firstVault)
+            try? FileManager.default.removeItem(at: secondVault)
+        }
+
+        let blogsMapURL = secondVault.appendingPathComponent("Areas/Blogs/Blogs.md")
+        try FileManager.default.createDirectory(
+            at: blogsMapURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        try Data("---\nkind: area\nvisibility: garden\n---\n".utf8).write(to: blogsMapURL)
+
+        let suiteName = "GardenDropComposerVaultRefreshTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let store = DestinationStore(defaults: defaults)
+        let model = CaptureComposerModel(
+            source: .blank,
+            vaultConfiguration: VaultConfiguration(rootURL: firstVault),
+            destinationStore: store
+        )
+        model.chooseDestination(CaptureDestination.blogs)
+        model.updateVaultConfiguration(VaultConfiguration(rootURL: secondVault))
+        model.linkText = "https://example.com/refreshed"
+        model.thought = "This must use the newly selected vault."
+        model.save()
+
+        for _ in 0..<40 {
+            switch model.status {
+            case .saved(let result):
+                XCTAssertTrue(result.noteURL.path.hasPrefix(secondVault.path))
+                XCTAssertFalse(FileManager.default.fileExists(atPath: firstVault.appendingPathComponent("Areas").path))
+                let markdown = try String(contentsOf: result.noteURL, encoding: .utf8)
+                XCTAssertTrue(markdown.contains("visibility: garden"))
+                return
+            case .failed(let message):
+                XCTFail("The refreshed-vault capture failed: \(message)")
+                return
+            case .idle, .saving:
+                try await Task.sleep(for: .milliseconds(25))
+            }
+        }
+
+        XCTFail("The refreshed-vault capture did not finish within the test window.")
     }
 
     func testSavesHandEnteredNoteWithoutALink() async throws {

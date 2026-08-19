@@ -181,6 +181,63 @@ final class CaptureWriterTests: XCTestCase {
         }
     }
 
+    func testMarkdownDuplicateDoesNotCreateAnOrphanAttachment() async throws {
+        let vaultURL = temporaryVaultURL()
+        defer { try? FileManager.default.removeItem(at: vaultURL) }
+
+        let readingListURL = vaultURL.appendingPathComponent("Areas/Blogs/Blogs.md")
+        try FileManager.default.createDirectory(
+            at: readingListURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        try Data("# Blogs\n\n<!-- garden-drop:gd-20260814-duplicate-file -->\n".utf8)
+            .write(to: readingListURL)
+
+        let attachment = CaptureAttachment(
+            fileName: "preview.png",
+            data: Data([0x01, 0x02]),
+            mimeType: "image/png"
+        )
+        let draft = CaptureDraft(
+            id: "gd-20260814-duplicate-file",
+            title: "Duplicate link",
+            source: CaptureSource(
+                type: .image,
+                title: "Duplicate link",
+                url: URL(string: "https://example.com/duplicate"),
+                domain: "example.com",
+                excerpt: nil,
+                capturedText: nil,
+                attachment: attachment
+            ),
+            thought: "This must not write twice.",
+            destination: .markdownFile(
+                relativePath: "Areas/Blogs/Blogs.md",
+                visibility: .garden,
+                title: "Blogs"
+            ),
+            capturedAt: Date(),
+            metadataStatus: .complete
+        )
+
+        do {
+            _ = try await CaptureWriter(vaultRoot: vaultURL).write(draft)
+            XCTFail("Expected duplicate Markdown marker to be rejected")
+        } catch let error as CaptureWriteError {
+            guard case .noteAlreadyExists = error else {
+                return XCTFail("Unexpected error: \(error)")
+            }
+        }
+
+        let orphanDirectory = vaultURL
+            .appendingPathComponent("Attachments/Captures/gd-20260814-duplicate-file", isDirectory: true)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: orphanDirectory.path))
+        XCTAssertEqual(
+            try String(contentsOf: readingListURL, encoding: .utf8),
+            "# Blogs\n\n<!-- garden-drop:gd-20260814-duplicate-file -->\n"
+        )
+    }
+
     func testRejectsDestinationPathTraversal() async throws {
         let vaultURL = temporaryVaultURL()
         defer { try? FileManager.default.removeItem(at: vaultURL) }
@@ -209,6 +266,49 @@ final class CaptureWriterTests: XCTestCase {
                 return XCTFail("Unexpected error: \(error)")
             }
         }
+    }
+
+    func testWriterRejectsPersistedDestinationThatResolvesOutsideVault() async throws {
+        let vaultURL = temporaryVaultURL()
+        let outsideURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GardenDropWriterOutside-\(UUID().uuidString)", isDirectory: true)
+        defer {
+            try? FileManager.default.removeItem(at: vaultURL)
+            try? FileManager.default.removeItem(at: outsideURL)
+        }
+        try FileManager.default.createDirectory(at: vaultURL, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: outsideURL, withIntermediateDirectories: true)
+
+        let areasURL = vaultURL.appendingPathComponent("Areas", isDirectory: true)
+        try FileManager.default.createSymbolicLink(at: areasURL, withDestinationURL: outsideURL)
+
+        let draft = CaptureDraft(
+            id: "gd-20260814-symlink",
+            title: "Escaping destination",
+            source: .sample,
+            thought: "",
+            destination: .folder(
+                relativePath: "Areas/Blogs/Captures",
+                visibility: .privateArea,
+                title: "Blogs"
+            ),
+            capturedAt: Date(),
+            metadataStatus: .complete
+        )
+
+        do {
+            _ = try await CaptureWriter(vaultRoot: vaultURL).write(draft)
+            XCTFail("Expected a symlink escape to be rejected")
+        } catch let error as CaptureWriteError {
+            guard case .invalidPathComponent = error else {
+                return XCTFail("Unexpected error: \(error)")
+            }
+        }
+
+        XCTAssertEqual(
+            try FileManager.default.contentsOfDirectory(atPath: outsideURL.path),
+            []
+        )
     }
 
     private func temporaryVaultURL() -> URL {

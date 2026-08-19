@@ -7,6 +7,7 @@ final class NotchPanelController {
     private let hoverTriggerPanel: NSPanel
     private let presentation = NotchSurfacePresentation()
     private let destinationStore: DestinationStore
+    private var vaultConfiguration: VaultConfiguration
     private let onComposerRequested: () -> Void
     private let onSettingsRequested: () -> Void
 
@@ -19,10 +20,12 @@ final class NotchPanelController {
 
     init(
         destinationStore: DestinationStore,
+        vaultConfiguration: VaultConfiguration,
         onComposerRequested: @escaping () -> Void,
         onSettingsRequested: @escaping () -> Void
     ) {
         self.destinationStore = destinationStore
+        self.vaultConfiguration = vaultConfiguration
         self.onComposerRequested = onComposerRequested
         self.onSettingsRequested = onSettingsRequested
         self.panel = KeyableNotchPanel(
@@ -110,6 +113,7 @@ final class NotchPanelController {
         presentation.showComposer(
             CaptureComposerModel(
                 source: source,
+                vaultConfiguration: vaultConfiguration,
                 destinationStore: destinationStore
             )
         )
@@ -130,6 +134,11 @@ final class NotchPanelController {
             }
             self?.focusComposerPanel()
         }
+    }
+
+    func updateVaultConfiguration(_ configuration: VaultConfiguration) {
+        vaultConfiguration = configuration
+        presentation.composerModel?.updateVaultConfiguration(configuration)
     }
 
     private func installSurfaceIfNeeded() {
