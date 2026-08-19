@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-08-19T21:41:52.314Z",
+  "generatedAt": "2026-08-19T21:43:36.856Z",
   "generated": [
     "inspiration/data-systems/index.md",
     "inspiration/design-interaction/gd-20260820-publishing-flow.md",
@@ -21,7 +21,7 @@
     },
     {
       "path": "Areas/Design & Interaction/Captures/gd-20260820-publishing-flow.md",
-      "sha256": "c954d9c85e0251b484e8cbcbeaefbefa784fd0aeb51357d6a2b0254bdfcff923"
+      "sha256": "cf205bc8cc921cc5cbbf62fb70182f0a96d4f896ce86f016b65e6585ae002c91"
     },
     {
       "path": "Areas/Machine Learning/Machine Learning.md",

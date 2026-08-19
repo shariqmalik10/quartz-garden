@@ -21,6 +21,8 @@ draft: false
 
 This sample capture verifies the path from a private Obsidian vault into the public Quartz garden. It can be replaced after the live flow is confirmed.
 
+The nightly-style private-to-public workflow completed its first guarded run on August 20, 2026.
+
 ## Source
 
 [Open original](https://example.com/garden-flow)
