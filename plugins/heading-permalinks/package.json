@@ -1,0 +1,20 @@
+{
+  "name": "@shariq/heading-permalinks",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "quartz": {
+    "name": "heading-permalinks",
+    "displayName": "Accessible heading permalinks",
+    "description": "Gives generated heading permalinks accessible names and keyboard focus visibility.",
+    "category": "transformer",
+    "version": "1.0.0",
+    "quartzVersion": ">=5.0.0",
+    "defaultEnabled": true,
+    "defaultOrder": 45
+  }
+}

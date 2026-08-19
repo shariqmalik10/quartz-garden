@@ -6,13 +6,41 @@ enum NotchSurfacePhase: Equatable {
     case composer
 }
 
+enum NotchCaptureState: Equatable {
+    case idle
+    case saving
+    case done
+
+    var accessibilityDescription: String {
+        switch self {
+        case .idle:
+            return "Ready to capture"
+        case .saving:
+            return "Saving capture"
+        case .done:
+            return "Capture saved"
+        }
+    }
+}
+
+enum NotchTypography {
+    static func font(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
+        .system(size: size, weight: weight, design: .rounded)
+    }
+}
+
 @MainActor
 final class NotchSurfacePresentation: ObservableObject {
     @Published private(set) var phase: NotchSurfacePhase = .idle
     @Published private(set) var composerModel: CaptureComposerModel?
+    @Published private(set) var captureState: NotchCaptureState = .idle
+    @Published private(set) var recentCapturePath: String?
     @Published var safeTopInset: CGFloat = 0
 
     func showIdle() {
+        if captureState == .saving {
+            captureState = .idle
+        }
         phase = .idle
         composerModel = nil
     }
@@ -23,8 +51,18 @@ final class NotchSurfacePresentation: ObservableObject {
     }
 
     func showComposer(_ model: CaptureComposerModel) {
+        if captureState == .saving {
+            captureState = .idle
+        }
         composerModel = model
         phase = .composer
+    }
+
+    func setCaptureState(_ state: NotchCaptureState, path: String? = nil) {
+        captureState = state
+        if let path {
+            recentCapturePath = path
+        }
     }
 }
 
@@ -34,6 +72,8 @@ struct NotchSurfaceRootView: View {
     let onOpen: () -> Void
     let onSettings: () -> Void
     let onClose: () -> Void
+    let onCaptureStatusChanged: (CaptureComposerStatus) -> Void
+    let onCaptureStateChanged: (CaptureComposerState) -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -60,6 +100,8 @@ struct NotchSurfaceRootView: View {
         case .peek:
             NotchPeekView(
                 safeTopInset: presentation.safeTopInset,
+                captureState: presentation.captureState,
+                recentCapturePath: presentation.recentCapturePath,
                 onOpen: onOpen,
                 onSettings: onSettings
             )
@@ -71,8 +113,12 @@ struct NotchSurfaceRootView: View {
                     model: model,
                     safeTopInset: presentation.safeTopInset,
                     onSettings: onSettings,
-                    onClose: onClose
+                    onClose: onClose,
+                    onCaptureStatusChanged: onCaptureStatusChanged
                 )
+                .onChange(of: model.state) { _, newState in
+                    onCaptureStateChanged(newState)
+                }
                 .transition(composerTransition)
             }
         }
@@ -89,29 +135,22 @@ struct NotchSurfaceRootView: View {
     }
 
     private var surfaceAnimation: Animation? {
-        reduceMotion
-            ? .easeOut(duration: 0.10)
-            : .timingCurve(0.16, 1.0, 0.30, 1.0, duration: 0.24)
+        if reduceMotion {
+            return .easeInOut(duration: 0.10)
+        }
+
+        let duration = presentation.phase == .composer
+            ? NotchComposerPanelLayout.resizeDuration
+            : 0.22
+        return .timingCurve(0.16, 1.0, 0.30, 1.0, duration: duration)
     }
 
     private var compactTransition: AnyTransition {
-        if reduceMotion {
-            return .opacity
-        }
-        return .asymmetric(
-            insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: .top)),
-            removal: .opacity
-        )
+        .opacity
     }
 
     private var composerTransition: AnyTransition {
-        if reduceMotion {
-            return .opacity
-        }
-        return .asymmetric(
-            insertion: .opacity.combined(with: .scale(scale: 0.975, anchor: .top)),
-            removal: .opacity.combined(with: .scale(scale: 0.99, anchor: .top))
-        )
+        .opacity
     }
 }
 
@@ -126,6 +165,8 @@ struct NotchIdleView: View {
 
 struct NotchPeekView: View {
     let safeTopInset: CGFloat
+    let captureState: NotchCaptureState
+    let recentCapturePath: String?
     let onOpen: () -> Void
     let onSettings: () -> Void
 
@@ -137,25 +178,26 @@ struct NotchPeekView: View {
             HStack(spacing: 8) {
                 Button(action: onOpen) {
                     HStack(spacing: 8) {
-                        Circle()
-                            .fill(gardenRust)
-                            .frame(width: 6, height: 6)
+                        NotchCaptureStatusView(state: captureState)
 
-                        Text("Garden Drop")
-                            .font(.system(size: 11, weight: .semibold))
+                        Text(recentCapturePath ?? "Ready to plant")
+                            .font(NotchTypography.font(11, weight: .semibold))
                             .foregroundStyle(.white.opacity(0.90))
                             .lineLimit(1)
+                            .truncationMode(.middle)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .help("Open the Garden Drop capture surface")
-                .accessibilityLabel("Open Garden Drop capture surface")
+                .accessibilityLabel(
+                    "\(recentCapturePath ?? "Ready to plant"), \(captureState.accessibilityDescription)"
+                )
 
                 Button(action: onSettings) {
                     Image(systemName: "gearshape")
-                        .font(.system(size: 11, weight: .medium))
+                        .font(NotchTypography.font(11, weight: .medium))
                         .foregroundStyle(.white.opacity(0.62))
                         .frame(width: 20, height: 16)
                 }
@@ -164,14 +206,92 @@ struct NotchPeekView: View {
                 .accessibilityLabel("Open Garden Drop settings")
             }
             .padding(.horizontal, 10)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(maxWidth: .infinity, minHeight: 16, maxHeight: 16)
+            .padding(.bottom, 2)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityElement(children: .contain)
     }
 
+}
+
+private struct NotchCaptureStatusView: View {
+    let state: NotchCaptureState
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var isSavingAnimationActive = false
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(state == .done ? gardenLeaf : Color.white.opacity(0.10))
+                .frame(width: 16, height: 16)
+
+            stateMark
+                .id(state)
+                .transition(.opacity)
+        }
+        .frame(width: 16, height: 16)
+        .animation(
+            reduceMotion ? .easeOut(duration: 0.10) : .easeOut(duration: 0.22),
+            value: state
+        )
+        .accessibilityHidden(true)
+        .onAppear {
+            synchronizeSavingAnimation(for: state)
+        }
+        .onChange(of: state) { _, newState in
+            synchronizeSavingAnimation(for: newState)
+        }
+    }
+
+    @ViewBuilder
+    private var stateMark: some View {
+        switch state {
+        case .idle:
+            Circle()
+                .strokeBorder(Color.white.opacity(0.62), lineWidth: 1.4)
+                .frame(width: 6, height: 6)
+        case .saving:
+            Circle()
+                .trim(from: 0.10, to: 0.82)
+                .stroke(
+                    gardenRust.opacity(0.90),
+                    style: StrokeStyle(lineWidth: 1.6, lineCap: .round)
+                )
+                .frame(width: 10, height: 10)
+                .rotationEffect(.degrees(isSavingAnimationActive ? 360 : 0))
+                .animation(
+                    reduceMotion
+                        ? nil
+                        : .linear(duration: 0.90).repeatForever(autoreverses: false),
+                    value: isSavingAnimationActive
+                )
+        case .done:
+            Image(systemName: "checkmark")
+                .font(NotchTypography.font(8, weight: .bold))
+                .foregroundStyle(.white)
+        }
+    }
+
+    private func synchronizeSavingAnimation(for state: NotchCaptureState) {
+        guard state == .saving, !reduceMotion else {
+            isSavingAnimationActive = false
+            return
+        }
+
+        isSavingAnimationActive = false
+        DispatchQueue.main.async {
+            isSavingAnimationActive = true
+        }
+    }
+
     private var gardenRust: Color {
-        Color(red: 0.82, green: 0.38, blue: 0.25)
+        Color(red: 0.741, green: 0.329, blue: 0.220)
+    }
+
+    private var gardenLeaf: Color {
+        Color(red: 0.325, green: 0.427, blue: 0.349)
     }
 }
 

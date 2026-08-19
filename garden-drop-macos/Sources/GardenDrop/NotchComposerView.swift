@@ -2,32 +2,40 @@ import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 
-enum NotchComposerLayout {
-    static let size = CGSize(width: 340, height: 500)
-}
-
 struct NotchComposerView: View {
     @ObservedObject private var model: CaptureComposerModel
 
     let safeTopInset: CGFloat
     let onSettings: () -> Void
     let onClose: () -> Void
+    let onCaptureStatusChanged: (CaptureComposerStatus) -> Void
 
-    @FocusState private var isInputFocused: Bool
-    @State private var isDropTargeted = false
-    @State private var inputMode: NotchInputMode = .anything
+    private enum FocusTarget: Hashable {
+        case source
+        case thought
+    }
+
+    @FocusState private var focusedField: FocusTarget?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    @State private var isDropTargeted = false
+    @State private var isShowingDiscardConfirmation = false
+    @State private var doneDismissWorkItem: DispatchWorkItem?
+    @State private var savingIndicatorWorkItem: DispatchWorkItem?
+    @State private var isSavingIndicatorActive = false
 
     init(
         model: CaptureComposerModel,
         safeTopInset: CGFloat,
         onSettings: @escaping () -> Void,
-        onClose: @escaping () -> Void
+        onClose: @escaping () -> Void,
+        onCaptureStatusChanged: @escaping (CaptureComposerStatus) -> Void
     ) {
         _model = ObservedObject(wrappedValue: model)
         self.safeTopInset = safeTopInset
         self.onSettings = onSettings
         self.onClose = onClose
+        self.onCaptureStatusChanged = onCaptureStatusChanged
     }
 
     var body: some View {
@@ -35,49 +43,302 @@ struct NotchComposerView: View {
             Color.clear
                 .frame(height: safeTopInset)
 
-            header
-            dropZone
-            footer
+            composerContent
         }
-        .frame(width: NotchComposerLayout.size.width, height: NotchComposerLayout.size.height)
+        .frame(
+            width: NotchComposerPanelLayout.composerSize.width,
+            height: panelSize.height,
+            alignment: .top
+        )
         .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
-                isInputFocused = true
-            }
+            scheduleInitialFocus()
         }
-        .onExitCommand(perform: onClose)
+        .onDisappear {
+            doneDismissWorkItem?.cancel()
+        }
+        .onExitCommand(perform: requestClose)
+        .onChange(of: model.state) { _, newState in
+            onCaptureStatusChanged(newState.compatibilityStatus)
+            handleStateChange(newState)
+        }
+        .confirmationDialog(
+            "Discard this capture?",
+            isPresented: $isShowingDiscardConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Keep Editing", role: .cancel) {}
+            Button("Discard Draft", role: .destructive) {
+                guard !model.isSaving else {
+                    return
+                }
+                onClose()
+            }
+        } message: {
+            Text("Your changes have not been planted yet.")
+        }
         .accessibilityElement(children: .contain)
+    }
+
+    private var composerContent: some View {
+        VStack(spacing: 0) {
+            header
+
+            sourceDropRow
+                .padding(.horizontal, 14)
+                .padding(.top, 8)
+
+            thoughtSection
+                .padding(.top, 8)
+
+            destinationRow
+                .padding(.top, 8)
+
+            statusSection
+                .padding(.top, 8)
+
+            saveButton
+                .padding(.top, 8)
+                .padding(.bottom, 10)
+        }
+        .frame(
+            width: NotchComposerPanelLayout.composerSize.width,
+            height: panelSize.height - safeTopInset,
+            alignment: .top
+        )
+        .clipped()
     }
 
     private var header: some View {
         HStack(spacing: 8) {
-            areaMenu
+            stateIndicator
 
-            Button(action: onSettings) {
-                Image(systemName: "gearshape")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.62))
-                    .frame(width: 30, height: 34)
-            }
-            .buttonStyle(.plain)
-            .help("Open Garden Drop settings")
-            .accessibilityLabel("Open Garden Drop settings")
+            Text("New capture")
+                .font(NotchTypography.font(14, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.90))
+                .lineLimit(1)
 
-            Button(action: onClose) {
+            Spacer(minLength: 8)
+
+            moreMenu
+
+            Button(action: requestClose) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.52))
-                    .frame(width: 30, height: 34)
+                    .font(NotchTypography.font(11, weight: .bold))
+                    .foregroundStyle(.white.opacity(model.isSaving ? 0.22 : 0.58))
+                    .frame(width: 30, height: 30)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .help("Close capture surface")
+            .disabled(model.isSaving)
+            .help(model.isSaving ? "Capture is saving" : "Close capture surface")
             .accessibilityLabel("Close capture surface")
+            .accessibilityHint(
+                model.hasUnsavedChanges
+                    ? "Asks for confirmation before discarding changes"
+                    : "Closes the capture surface"
+            )
         }
-        .padding(.horizontal, 16)
-        .frame(height: 54)
+        .padding(.horizontal, 14)
+        .frame(height: 40)
     }
 
-    private var areaMenu: some View {
+    private var stateIndicator: some View {
+        ZStack {
+            Circle()
+                .fill(stateIndicatorFill)
+
+            stateMark
+                .id(stateKey)
+                .transition(.opacity)
+        }
+        .frame(width: 18, height: 18)
+        .animation(feedbackAnimation, value: stateKey)
+        .accessibilityLabel("Capture state: \(stateTitle)")
+        .onAppear {
+            synchronizeSavingIndicator(for: model.state)
+        }
+        .onChange(of: model.state) { _, newState in
+            synchronizeSavingIndicator(for: newState)
+        }
+        .onChange(of: reduceMotion) { _, _ in
+            synchronizeSavingIndicator(for: model.state)
+        }
+        .onDisappear {
+            stopSavingIndicator()
+        }
+    }
+
+    @ViewBuilder
+    private var stateMark: some View {
+        switch model.state {
+        case .empty, .prepared:
+            Circle()
+                .strokeBorder(Color.white.opacity(0.70), lineWidth: 1.4)
+                .frame(width: 6, height: 6)
+        case .saving:
+            Circle()
+                .trim(from: 0.08, to: 0.82)
+                .stroke(
+                    gardenRust.opacity(0.92),
+                    style: StrokeStyle(lineWidth: 1.6, lineCap: .round)
+                )
+                .frame(width: 11, height: 11)
+                .rotationEffect(.degrees(isSavingIndicatorActive && !reduceMotion ? 360 : 0))
+                .animation(
+                    reduceMotion
+                        ? nil
+                        : .linear(duration: 0.90).repeatForever(autoreverses: false),
+                    value: isSavingIndicatorActive
+                )
+        case .done:
+            Image(systemName: "checkmark")
+                .font(NotchTypography.font(9, weight: .bold))
+                .foregroundStyle(.white)
+        case .error:
+            Image(systemName: "exclamationmark")
+                .font(NotchTypography.font(9, weight: .bold))
+                .foregroundStyle(.white)
+        }
+    }
+
+    private var sourceDropRow: some View {
+        HStack(spacing: 10) {
+            Image(systemName: isDropTargeted ? "arrow.down.circle" : sourceSymbol)
+                .font(NotchTypography.font(17, weight: .medium))
+                .foregroundStyle(isDropTargeted ? gardenRust : .white.opacity(0.62))
+                .frame(width: 24)
+                .accessibilityHidden(true)
+
+            if isDropTargeted {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Release to add")
+                        .font(NotchTypography.font(13, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.92))
+                        .lineLimit(1)
+
+                    Text("File, link, or text")
+                        .font(NotchTypography.font(10, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.54))
+                        .lineLimit(1)
+                }
+            } else if model.hasSource {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(model.activeSource.title)
+                        .font(NotchTypography.font(13, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.90))
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+
+                    Text(sourceDetail)
+                        .font(NotchTypography.font(10, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.48))
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+            } else {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Source")
+                        .font(NotchTypography.font(11, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.54))
+
+                    TextField("Paste a link or add text", text: $model.draftInput)
+                        .textFieldStyle(.plain)
+                        .font(NotchTypography.font(13))
+                        .foregroundStyle(.white.opacity(0.92))
+                        .focused($focusedField, equals: .source)
+                        .onSubmit(commitSourceInput)
+                        .accessibilityLabel("Source link or text")
+                        .accessibilityHint("Paste a URL or type text to add to this capture")
+                }
+            }
+
+            Spacer(minLength: 8)
+
+            if model.hasSource && !isDropTargeted {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(NotchTypography.font(13, weight: .medium))
+                    .foregroundStyle(gardenLeaf)
+                    .accessibilityHidden(true)
+            } else if !isDropTargeted {
+                Image(systemName: "arrow.down.to.line")
+                    .font(NotchTypography.font(13, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.34))
+                    .accessibilityHidden(true)
+            }
+        }
+        .padding(.horizontal, 12)
+        .frame(maxWidth: .infinity, minHeight: 64, maxHeight: 64)
+        .background(isDropTargeted ? gardenRust.opacity(0.12) : Color.white.opacity(0.055))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(
+                    isDropTargeted ? gardenRust.opacity(0.82) : Color.white.opacity(0.11),
+                    lineWidth: isDropTargeted ? 1.25 : 1
+                )
+                .allowsHitTesting(false)
+        }
+        .contentShape(Rectangle())
+        .onDrop(
+            of: [
+                UTType.fileURL.identifier,
+                UTType.url.identifier,
+                UTType.text.identifier,
+            ],
+            isTargeted: $isDropTargeted,
+            perform: handleDrop
+        )
+        .animation(feedbackAnimation, value: isDropTargeted)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(sourceAccessibilityLabel)
+        .disabled(model.isSaving)
+    }
+
+    private var thoughtSection: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text("Thought")
+                .font(NotchTypography.font(11, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.58))
+
+            ZStack(alignment: .topLeading) {
+                TextEditor(text: $model.thought)
+                    .font(NotchTypography.font(13))
+                    .foregroundStyle(.white.opacity(0.92))
+                    .scrollContentBackground(.hidden)
+                    .padding(7)
+                    .focused($focusedField, equals: .thought)
+                    .disabled(model.isSaving)
+
+                if model.thought.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Text("Why did this catch your eye?")
+                        .font(NotchTypography.font(13))
+                        .foregroundStyle(.white.opacity(0.30))
+                        .padding(.leading, 11)
+                        .padding(.top, 11)
+                        .allowsHitTesting(false)
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: 82, maxHeight: 82)
+            .background(Color.white.opacity(0.045))
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(
+                        focusedField == .thought
+                            ? gardenRust.opacity(0.72)
+                            : Color.white.opacity(0.10),
+                        lineWidth: focusedField == .thought ? 1.25 : 1
+                    )
+                    .allowsHitTesting(false)
+            }
+            .animation(feedbackAnimation, value: focusedField == .thought)
+            .accessibilityLabel("Thought")
+            .accessibilityHint("Optional context for this capture")
+        }
+        .padding(.horizontal, 14)
+    }
+
+    private var destinationRow: some View {
         Menu {
             ForEach(AreaOption.defaults) { area in
                 Button {
@@ -91,214 +352,131 @@ struct NotchComposerView: View {
                 }
             }
         } label: {
-            HStack(spacing: 8) {
-                Circle()
-                    .fill(model.visibility == .garden ? gardenRust : Color.white.opacity(0.52))
-                    .frame(width: 7, height: 7)
+            HStack(spacing: 10) {
+                Image(systemName: model.visibility.symbolName)
+                    .font(NotchTypography.font(14, weight: .medium))
+                    .foregroundStyle(model.visibility == .garden ? gardenRust : .white.opacity(0.62))
+                    .frame(width: 22)
+                    .accessibilityHidden(true)
 
-                Text(model.selectedArea.name)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.86))
-                    .lineLimit(1)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(model.selectedArea.name)
+                        .font(NotchTypography.font(12, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.88))
+                        .lineLimit(1)
+
+                    Text(model.visibility.displayName)
+                        .font(NotchTypography.font(10, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.48))
+                        .lineLimit(1)
+                }
 
                 Spacer(minLength: 8)
 
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.38))
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(NotchTypography.font(10, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.36))
+                    .accessibilityHidden(true)
             }
-            .padding(.horizontal, 13)
-            .frame(maxWidth: .infinity, minHeight: 40)
-            .background(Color.white.opacity(0.08))
-            .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+            .padding(.horizontal, 12)
+            .frame(maxWidth: .infinity, minHeight: 42, maxHeight: 42)
+            .background(Color.white.opacity(0.04))
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
+                    .allowsHitTesting(false)
+            }
         }
         .menuStyle(.borderlessButton)
-        .frame(maxWidth: .infinity)
-        .accessibilityLabel("Capture area: \(model.selectedArea.name)")
-    }
-
-    private var dropZone: some View {
-        ZStack(alignment: .bottom) {
-            NotchDotGrid(isHighlighted: isDropTargeted)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-
-            VStack(spacing: 8) {
-                Spacer(minLength: 34)
-
-                Image(systemName: model.droppedAttachment == nil ? "plus" : "paperclip")
-                    .font(.system(size: 24, weight: .thin))
-                    .foregroundStyle(.white.opacity(isDropTargeted ? 0.78 : 0.28))
-
-                Text(dropPrompt)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.white.opacity(isDropTargeted ? 0.88 : 0.58))
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-
-                if let attachment = model.droppedAttachment {
-                    Label(attachment.fileName, systemImage: "checkmark.circle.fill")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(gardenLeaf)
-                        .lineLimit(1)
-                        .transition(.opacity.combined(with: .scale(scale: 0.96)))
-                }
-
-                Spacer(minLength: 58)
-            }
-            .padding(.horizontal, 20)
-
-            inputBar
-                .padding(14)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(.horizontal, 16)
-        .padding(.bottom, 10)
-        .background(Color.clear)
-        .overlay {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(
-                    isDropTargeted ? gardenRust.opacity(0.9) : Color.white.opacity(0.16),
-                    lineWidth: isDropTargeted ? 1.5 : 1
-                )
-                .padding(.horizontal, 16)
-                .padding(.bottom, 10)
-                .allowsHitTesting(false)
-        }
-        .onDrop(
-            of: [
-                UTType.fileURL.identifier,
-                UTType.url.identifier,
-                UTType.text.identifier,
-            ],
-            isTargeted: $isDropTargeted,
-            perform: handleDrop
+        .padding(.horizontal, 14)
+        .accessibilityLabel(
+            "Destination: \(model.selectedArea.name), \(model.visibility.displayName)"
         )
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("Drop files or add a note")
-        .animation(feedbackAnimation, value: isDropTargeted)
-        .animation(feedbackAnimation, value: model.droppedAttachment?.fileName)
+        .accessibilityHint("Choose a Garden or Private area")
+        .disabled(model.isSaving)
     }
 
-    private var inputBar: some View {
-        HStack(spacing: 8) {
-            Image(systemName: inputMode.symbolName)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.36))
-                .frame(width: 18)
-
-            TextField(inputMode.placeholder, text: $model.draftInput)
-                .textFieldStyle(.plain)
-                .font(.system(size: 13))
-                .foregroundStyle(.white.opacity(0.9))
-                .focused($isInputFocused)
-                .onTapGesture {
-                    isInputFocused = true
-                }
-                .onSubmit {
-                    model.commitDraftInput()
-                }
-                .accessibilityLabel(inputMode.accessibilityLabel)
-
-            Button {
-                model.commitDraftInput()
-                isInputFocused = true
-            } label: {
-                Image(systemName: "arrow.up")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(model.hasPendingInput ? .white : .white.opacity(0.28))
-                    .frame(width: 24, height: 24)
-                    .background(model.hasPendingInput ? gardenRust : Color.white.opacity(0.08))
-                    .clipShape(Circle())
-            }
-            .buttonStyle(.plain)
-            .disabled(!model.hasPendingInput)
-            .help("Add this item to the capture")
-            .accessibilityLabel("Add item to capture")
-        }
-        .padding(.horizontal, 10)
-        .frame(height: 44)
-        .background(Color.white.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(
-                    isInputFocused ? gardenRust.opacity(0.72) : Color.white.opacity(0.10),
-                    lineWidth: isInputFocused ? 1.25 : 1
-                )
-                .allowsHitTesting(false)
-        }
-        .animation(feedbackAnimation, value: isInputFocused)
-    }
-
-    private var footer: some View {
-        HStack(spacing: 8) {
-            statusView
-                .id(statusKey)
-                .transition(.opacity)
-                .animation(feedbackAnimation, value: statusKey)
-
-            Spacer(minLength: 8)
-
-            moreMenu
-
-            Button {
-                model.commitDraftInput()
-                model.save()
-            } label: {
-                Label("Plant", systemImage: model.visibility.symbolName)
-                    .font(.system(size: 12, weight: .semibold))
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(gardenRust)
-            .keyboardShortcut(.return, modifiers: [.command])
-            .disabled(model.isSaving || !model.canPlant)
-            .accessibilityLabel(model.visibility.actionTitle)
-        }
-        .padding(.horizontal, 16)
-        .frame(height: 60)
+    private var statusSection: some View {
+        statusView
+            .frame(maxWidth: .infinity, minHeight: statusHeight, maxHeight: statusHeight, alignment: .topLeading)
+            .padding(.horizontal, 14)
     }
 
     @ViewBuilder
     private var statusView: some View {
-        switch model.status {
-        case .idle:
-            Label("Local only", systemImage: "lock.fill")
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(.white.opacity(0.38))
+        switch model.state {
+        case .empty:
+            statusLabel("Add a source or thought to plant", systemImage: "arrow.down.circle")
+        case .prepared:
+            statusLabel("Ready to plant locally", systemImage: "externaldrive")
         case .saving:
-            Label("Planting…", systemImage: "arrow.down.circle")
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(.white.opacity(0.55))
-        case .saved:
-            Label("Planted locally", systemImage: "checkmark.circle.fill")
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(gardenLeaf)
-        case .failed(let message):
-            Label(message, systemImage: "exclamationmark.triangle")
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(.red.opacity(0.88))
-                .lineLimit(2)
+            statusLabel("Saving locally…", systemImage: "arrow.down.circle")
+        case .done:
+            statusLabel("Saved to \(model.visibility.displayName)", systemImage: "checkmark.circle.fill", color: gardenLeaf)
+        case .error(let message):
+            HStack(alignment: .top, spacing: 7) {
+                Image(systemName: "exclamationmark.triangle")
+                    .font(NotchTypography.font(11, weight: .semibold))
+                    .foregroundStyle(.red.opacity(0.92))
+                    .frame(width: 15)
+
+                Text(message)
+                    .font(NotchTypography.font(11, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.80))
+                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Capture error: \(message)")
         }
+    }
+
+    private func statusLabel(
+        _ title: String,
+        systemImage: String,
+        color: Color? = nil
+    ) -> some View {
+        Label(title, systemImage: systemImage)
+            .font(NotchTypography.font(11, weight: .medium))
+            .foregroundStyle(color ?? .white.opacity(0.48))
+            .lineLimit(1)
+            .accessibilityElement(children: .combine)
+    }
+
+    private var saveButton: some View {
+        Button(action: saveCapture) {
+            HStack(spacing: 8) {
+                Image(systemName: saveSymbol)
+                    .font(NotchTypography.font(12, weight: .semibold))
+
+                Text(saveTitle)
+                    .font(NotchTypography.font(13, weight: .semibold))
+                    .lineLimit(1)
+            }
+            .foregroundStyle(.white.opacity(saveButtonIsEnabled ? 0.96 : 0.42))
+            .frame(maxWidth: .infinity, minHeight: 42, maxHeight: 42)
+            .background(saveButtonFill)
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(Color.white.opacity(saveButtonIsEnabled ? 0.08 : 0.05), lineWidth: 1)
+                    .allowsHitTesting(false)
+            }
+        }
+        .buttonStyle(.plain)
+        .keyboardShortcut(.return, modifiers: [.command])
+        .disabled(!saveButtonIsEnabled)
+        .padding(.horizontal, 14)
+        .accessibilityLabel(saveTitle)
+        .accessibilityHint("Press Command-Return to save")
+        .help("\(saveTitle) (⌘Return)")
     }
 
     private var moreMenu: some View {
         Menu {
-            Button {
-                selectInputMode(.link)
-            } label: {
-                Label("Add a link", systemImage: "link")
-            }
-
-            Button {
-                selectInputMode(.note)
-            } label: {
-                Label("Add a note", systemImage: "text.quote")
-            }
-
-            Button {
-                selectInputMode(.anything)
-            } label: {
-                Label("Automatic input", systemImage: "sparkles")
+            Button(action: onSettings) {
+                Label("Settings", systemImage: "gearshape")
             }
 
             Divider()
@@ -308,6 +486,7 @@ struct NotchComposerView: View {
             } label: {
                 Label("Clear draft", systemImage: "trash")
             }
+            .disabled(model.isSaving)
 
             Button {
                 NSWorkspace.shared.open(model.vaultConfiguration.rootURL)
@@ -316,47 +495,243 @@ struct NotchComposerView: View {
             }
         } label: {
             Image(systemName: "ellipsis")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.48))
+                .font(NotchTypography.font(14, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.50))
                 .frame(width: 30, height: 30)
+                .contentShape(Rectangle())
         }
         .menuStyle(.borderlessButton)
         .help("More capture options")
         .accessibilityLabel("More capture options")
     }
 
-    private var dropPrompt: String {
-        if isDropTargeted {
-            return "Release to add it"
-        }
-        if model.droppedAttachment != nil {
-            return "Ready to plant"
-        }
-        return "Drop files or add a note below"
+    private var panelSize: CGSize {
+        model.state.errorMessage == nil
+            ? NotchComposerPanelLayout.composerSize
+            : NotchComposerPanelLayout.errorSize
     }
 
-    private var statusKey: String {
-        switch model.status {
-        case .idle:
-            return "idle"
+    private var statusHeight: CGFloat {
+        model.state.errorMessage == nil ? 28 : 64
+    }
+
+    private var stateIndicatorFill: Color {
+        switch model.state {
+        case .done:
+            return gardenLeaf
+        case .error:
+            return Color.red.opacity(0.72)
+        case .saving:
+            return gardenRust.opacity(0.18)
+        case .empty, .prepared:
+            return Color.white.opacity(0.10)
+        }
+    }
+
+    private var stateTitle: String {
+        switch model.state {
+        case .empty:
+            return "Empty"
+        case .prepared:
+            return "Ready to plant"
+        case .saving:
+            return "Saving"
+        case .done:
+            return "Saved"
+        case .error:
+            return "Error"
+        }
+    }
+
+    private var stateKey: String {
+        switch model.state {
+        case .empty:
+            return "empty"
+        case .prepared:
+            return "prepared"
         case .saving:
             return "saving"
-        case .saved:
-            return "saved"
-        case .failed(let message):
-            return "failed:\(message)"
+        case .done:
+            return "done"
+        case .error(let message):
+            return "error:\(message)"
         }
+    }
+
+    private var saveButtonIsEnabled: Bool {
+        !model.isSaving && model.canPlant && !isDone
+    }
+
+    private var isDone: Bool {
+        if case .done = model.state {
+            return true
+        }
+        return false
+    }
+
+    private var saveTitle: String {
+        switch model.state {
+        case .saving:
+            return "Saving…"
+        case .done:
+            return "Saved to \(model.visibility.displayName)"
+        default:
+            return model.visibility.actionTitle
+        }
+    }
+
+    private var saveSymbol: String {
+        switch model.state {
+        case .saving:
+            return "arrow.down.circle"
+        case .done:
+            return "checkmark"
+        default:
+            return model.visibility.symbolName
+        }
+    }
+
+    private var saveButtonFill: Color {
+        if isDone {
+            return gardenLeaf
+        }
+        if model.isSaving {
+            return gardenRust.opacity(0.64)
+        }
+        return saveButtonIsEnabled ? gardenRust : Color.white.opacity(0.10)
+    }
+
+    private var sourceSymbol: String {
+        switch model.activeSource.type {
+        case .web:
+            return "link"
+        case .image:
+            return "photo"
+        case .text:
+            return "text.quote"
+        }
+    }
+
+    private var sourceDetail: String {
+        if let domain = model.activeSource.domain, !domain.isEmpty {
+            return "\(domain) · \(model.activeSource.type.displayName)"
+        }
+        if let attachment = model.droppedAttachment {
+            return "File · \(attachment.fileName)"
+        }
+        if let capturedText = model.activeSource.capturedText,
+           !capturedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return capturedText
+        }
+        return model.activeSource.type.displayName
+    }
+
+    private var sourceAccessibilityLabel: String {
+        if isDropTargeted {
+            return "Drop target. Release a file, link, or text to add it."
+        }
+        if model.hasSource {
+            return "Source: \(model.activeSource.title), \(sourceDetail)"
+        }
+        return "Source input. Paste a link or add text."
     }
 
     private var feedbackAnimation: Animation? {
         reduceMotion ? nil : .easeOut(duration: 0.16)
     }
 
-    private func selectInputMode(_ mode: NotchInputMode) {
-        inputMode = mode
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
-            isInputFocused = true
+    private func synchronizeSavingIndicator(for state: CaptureComposerState) {
+        savingIndicatorWorkItem?.cancel()
+        savingIndicatorWorkItem = nil
+        isSavingIndicatorActive = false
+
+        guard state == .saving, !reduceMotion else {
+            return
         }
+
+        let shouldReduceMotion = reduceMotion
+        let workItem = DispatchWorkItem { [model] in
+            guard model.isSaving, !shouldReduceMotion else {
+                return
+            }
+            isSavingIndicatorActive = true
+        }
+        savingIndicatorWorkItem = workItem
+        DispatchQueue.main.async(execute: workItem)
+    }
+
+    private func stopSavingIndicator() {
+        savingIndicatorWorkItem?.cancel()
+        savingIndicatorWorkItem = nil
+        isSavingIndicatorActive = false
+    }
+
+    private func scheduleInitialFocus() {
+        let target: FocusTarget = model.initialFocusTarget == .source ? .source : .thought
+        let delay: TimeInterval = reduceMotion ? 0.14 : 0.30
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+            guard focusedField == nil else {
+                return
+            }
+            focusedField = target
+        }
+    }
+
+    private func handleStateChange(_ newState: CaptureComposerState) {
+        switch newState {
+        case .done:
+            scheduleDoneDismissal()
+        default:
+            doneDismissWorkItem?.cancel()
+            doneDismissWorkItem = nil
+        }
+    }
+
+    private func scheduleDoneDismissal() {
+        doneDismissWorkItem?.cancel()
+
+        let workItem = DispatchWorkItem { [model, onClose] in
+            guard case .done = model.state else {
+                return
+            }
+            onClose()
+        }
+        doneDismissWorkItem = workItem
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + 1.25,
+            execute: workItem
+        )
+    }
+
+    private func requestClose() {
+        guard !model.isSaving else {
+            return
+        }
+
+        if model.hasUnsavedChanges {
+            isShowingDiscardConfirmation = true
+        } else {
+            onClose()
+        }
+    }
+
+    private func commitSourceInput() {
+        guard model.hasPendingInput else {
+            return
+        }
+
+        model.commitDraftInput()
+        focusedField = .thought
+    }
+
+    private func saveCapture() {
+        guard !model.isSaving else {
+            return
+        }
+
+        model.commitDraftInput()
+        model.save()
     }
 
     private func handleDrop(_ providers: [NSItemProvider]) -> Bool {
@@ -369,6 +744,7 @@ struct NotchComposerView: View {
                     }
                     DispatchQueue.main.async {
                         captureModel.acceptDroppedFile(url)
+                        focusedField = .thought
                     }
                 }
                 return true
@@ -382,6 +758,7 @@ struct NotchComposerView: View {
                     }
                     DispatchQueue.main.async {
                         captureModel.acceptDroppedText(text)
+                        focusedField = .thought
                     }
                 }
                 return true
@@ -395,6 +772,7 @@ struct NotchComposerView: View {
                     }
                     DispatchQueue.main.async {
                         captureModel.acceptDroppedText(text)
+                        focusedField = .thought
                     }
                 }
                 return true
@@ -442,64 +820,5 @@ struct NotchComposerView: View {
 
     private var gardenLeaf: Color {
         Color(red: 0.325, green: 0.427, blue: 0.349)
-    }
-}
-
-private enum NotchInputMode {
-    case anything
-    case link
-    case note
-
-    var placeholder: String {
-        switch self {
-        case .anything:
-            return "Add a note or link"
-        case .link:
-            return "Paste a link"
-        case .note:
-            return "Write a note"
-        }
-    }
-
-    var accessibilityLabel: String {
-        switch self {
-        case .anything:
-            return "Add a note or link"
-        case .link:
-            return "Paste a link"
-        case .note:
-            return "Write a note"
-        }
-    }
-
-    var symbolName: String {
-        switch self {
-        case .anything:
-            return "plus"
-        case .link:
-            return "link"
-        case .note:
-            return "text.quote"
-        }
-    }
-}
-
-private struct NotchDotGrid: View {
-    let isHighlighted: Bool
-
-    var body: some View {
-        Canvas { context, size in
-            let dotColor = isHighlighted
-                ? Color(red: 0.82, green: 0.38, blue: 0.25).opacity(0.45)
-                : Color.white.opacity(0.075)
-
-            for y in stride(from: 14.0, through: max(14.0, size.height - 14.0), by: 24.0) {
-                for x in stride(from: 14.0, through: max(14.0, size.width - 14.0), by: 24.0) {
-                    let dot = Path(ellipseIn: CGRect(x: x - 1.25, y: y - 1.25, width: 2.5, height: 2.5))
-                    context.fill(dot, with: .color(dotColor))
-                }
-            }
-        }
-        .background(Color.white.opacity(0.035))
     }
 }

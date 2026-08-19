@@ -10,22 +10,22 @@ colors:
   system-red: "#FF453A"
 typography:
   source-title:
-    fontFamily: "SF Pro Display, system-ui, sans-serif"
+    fontFamily: "SF Pro Rounded, system-ui, sans-serif"
     fontSize: "14pt"
     fontWeight: 600
     lineHeight: 1.2
   body:
-    fontFamily: "SF Pro Text, system-ui, sans-serif"
+    fontFamily: "SF Pro Rounded, system-ui, sans-serif"
     fontSize: "13pt"
     fontWeight: 400
     lineHeight: 1.35
   metadata:
-    fontFamily: "SF Pro Text, system-ui, sans-serif"
+    fontFamily: "SF Pro Rounded, system-ui, sans-serif"
     fontSize: "11pt"
     fontWeight: 400
     lineHeight: 1.25
   label:
-    fontFamily: "SF Pro Text, system-ui, sans-serif"
+    fontFamily: "SF Pro Rounded, system-ui, sans-serif"
     fontSize: "13pt"
     fontWeight: 500
     lineHeight: 1.25
@@ -52,9 +52,9 @@ components:
 
 <!--
 THESIS: Garden Drop is a small native sheet attached to an existing macOS scene, not a dashboard or a permanent window.
-OWN-WORLD: SF Pro, system materials, night navy structure, rust action, leaf confirmation, one quiet surface, and compact SF Symbols.
+OWN-WORLD: SF Pro Rounded, system materials, night navy structure, rust action, leaf confirmation, one quiet surface, and compact SF Symbols.
 STORY: A copied source becomes a thought in the right area; the user can see where it will land before saving.
-FIRST VIEWPORT: A 420-point composer begins with the source preview, keeps the thought field central, and ends with one visibility-aware Save action.
+FIRST VIEWPORT: A compact 312-point composer begins with a source/drop row, keeps the thought field central, and ends with one visibility-aware Save action.
 FORM: The notch is the origin: a black bridge begins at the physical screen edge, then grows into a drop zone where a link, file, or note can be planted.
 -->
 
@@ -64,7 +64,7 @@ FORM: The notch is the origin: a black bridge begins at the physical screen edge
 
 Garden Drop is an opening in the vault, not another place to manage work. The interface borrows the physical relationship of a native macOS sheet: quiet while idle, attached to the top edge when active, and clear about the destination before the user commits a thought.
 
-The capture surface is native and quiet while idle: the menu-bar status item is always present, while the top-center notch is an optional shortcut. The durable surface language is one system-material surface, SF Pro hierarchy, monochrome SF Symbols, and Garden colors reserved for action, status, and confirmation. The notch preference persists across launches without ever removing the primary menu-bar route.
+The capture surface is native and quiet while idle: the menu-bar status item is always present, while the top-center notch is an optional shortcut. The durable surface language is one system-material surface, SF Pro Rounded hierarchy, monochrome SF Symbols, and Garden colors reserved for action, status, and confirmation. The notch preference persists across launches without ever removing the primary menu-bar route.
 
 **Key Characteristics:**
 
@@ -96,8 +96,8 @@ Night navy gives the structural surface a stable anchor; paper, rust, leaf, and 
 
 ## Typography
 
-**Display Font:** SF Pro Display (system fallback)
-**Body Font:** SF Pro Text (system fallback)
+**Display Font:** SF Pro Rounded through SwiftUI's `.rounded` system design
+**Body Font:** SF Pro Rounded through SwiftUI's `.rounded` system design
 **Label/Mono Font:** None; use the system UI family throughout.
 
 **Character:** Compact, highly legible, and native to macOS. The utility does not use the website's Fraunces or Caveat treatments in controls because scanability matters more than editorial expression here.
@@ -111,9 +111,11 @@ Night navy gives the structural surface a stable anchor; paper, rust, leaf, and 
 
 ## Layout
 
-The composer is a single 420pt-wide surface with 14pt outer padding and 10pt grouping rhythm. The source preview reserves its media bounds before metadata arrives. The thought field grows from 44pt to a maximum of 96pt. The footer keeps status at left and the one primary action at right.
+The notch composer is a single 312pt-wide surface with a 412pt normal frame and 14pt horizontal content padding. It is a vertical capture path rather than a dashboard: header/status, source/drop, thought, destination/privacy, inline status, then one full-width save action. The source/drop row is approximately 64pt tall. The thought editor is multiline and remains visually central; it uses a compact fixed editing region so the save action stays in the first viewport.
 
-The notch state borrows the measured rhythm of the reference app: a 196pt × 32pt black bridge at the physical top edge, a 224pt × 48pt compact peek with its controls below the 32pt hardware band, and a 340pt × 500pt capture surface that grows from the same Y=0 origin. One persistent hosting surface owns all three states so frame motion remains monotonic while content fades and scales in place. The idle-to-peek reveal uses a 100ms dwell and a 220ms ease-out expansion; collapse takes 180ms, the expanded composer arrives over 320ms, and close takes 220ms. Its dotted drop zone accepts links, files, and text, while the bottom field accepts a note or link by hand. The menu-bar route is always present and contains New Capture, Enable Notch Surface, Settings, and Quit.
+The notch state borrows the measured rhythm of the reference app: a 196pt × 32pt black bridge at the physical top edge, a 224pt × 46pt compact peek with its controls below the hardware band, and a 312pt × 412pt composer that grows from the same Y=0 origin. Error copy expands the panel to the shared 312pt × 448pt frame without moving the hierarchy. One persistent hosting surface owns all states so frame motion remains monotonic while content changes in place. The idle-to-peek reveal uses a 100ms dwell and a 220ms single-frame resize; composer resize uses the shared 300ms duration; collapse takes 180ms and close takes 220ms. The source row accepts files, URLs, and text by drag and drop; when no source exists it also exposes a source TextField for pasted links or text.
+
+The safe top inset remains visually empty so readable controls begin below the physical notch band. The source, thought, destination, status, and save regions use restrained dark fields and one-pixel outlines; there are no dotted canvases, nested cards, decorative gradients, or scale-based transitions.
 
 ## Elevation & Depth
 
@@ -127,7 +129,7 @@ The capture sheet has 16pt lower corners. Compact fields and action controls use
 
 ### Source preview
 
-The source is the first reading unit: representative image or source icon, editable link, domain/type metadata, and quiet replace/open actions. It never becomes a decorative card.
+The source/drop row is the first reading unit: a representative SF Symbol, current source title, domain/type or file metadata, and a quiet ready marker. A blank composer shows a compact source TextField. Files, URLs, and text can be dropped on the whole row; dropped text becomes a link when valid or is appended to the thought.
 
 ### Thought field
 
@@ -135,19 +137,29 @@ The field is a multiline native editor with the prompt “Why did this catch you
 
 ### Area selector
 
-The row combines an SF Symbol, area name, visibility word, and chevron. The eventual picker is a native anchored popover with search, recent areas, Garden/private sections, and Create new area.
+The destination row combines an SF Symbol, area name, explicit Garden/Private visibility word, and chevron. The picker is a native anchored menu using the available areas; privacy is communicated in text and iconography as well as color.
 
 ### Capture surface selector
 
 Settings and the menu-bar menu expose one explicit toggle: Enable Notch Surface. Menu-bar capture remains available in either state, and legacy Notch-only preferences migrate to Menu Bar + Notch.
 
+### Overflow menu
+
+The composer keeps less-common actions behind the ellipsis: Settings, Clear draft, and Open vault. Source input is automatic—links and text share one field—so a separate input-mode control is not needed in the compact surface.
+
 ### Primary action
 
-The action reads “Save to Garden” or “Save Privately,” shows a native saving state, and keeps the visibility meaning in copy and iconography as well as color.
+The full-width action reads “Save to Garden” or “Save Privately,” shows “Saving…” while the writer is active, and keeps the visibility meaning in copy and iconography as well as color. Cmd-Return invokes the same action.
 
 ### Success and error states
 
-Success contracts into a short planted marker and a destination-aware confirmation. Errors remain inline, name the recovery, and never shake or discard the form.
+The composer state model is explicit: empty, prepared, saving, done, and error. Empty and prepared states keep the status line legible; saving disables destructive navigation and shows a local-write indicator; done shows a leaf confirmation and destination-aware copy, then closes after a readable 1.25-second hold. Errors remain inline, expand the panel to 448pt, name the failure, preserve all entered content, and leave the save action available for retry.
+
+## Focus, motion, and dismissal
+
+Focus is local to the composer through an enum-backed `@FocusState` with `source` and `thought` cases. A blank composer focuses the source field after the opening resize settles; a composer opened with an initial source focuses the thought editor. Focus is not repeatedly changed during the opening animation. Reduce Motion removes decorative feedback animation and uses the controller's short non-animated resize path; normal feedback uses opacity, border, trim, and a subtle saving-indicator rotation, with no scale effects or staggered reveals.
+
+Cmd-Return saves. Escape and the close button close immediately only when the draft is clean. A dirty draft presents a discard confirmation, while close and discard remain unavailable during saving so a write cannot be interrupted by an accidental dismissal.
 
 ## Do's and Don'ts
 

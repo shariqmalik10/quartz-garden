@@ -1,5 +1,4 @@
 import AppKit
-import QuartzCore
 import SwiftUI
 
 @MainActor
@@ -14,6 +13,7 @@ final class NotchPanelController {
     private var hoverTriggerView: HoverTriggerView?
     private var dwellWorkItem: DispatchWorkItem?
     private var collapseWorkItem: DispatchWorkItem?
+    private var lastHandledCaptureState: CaptureComposerState?
     private var isStarted = false
 
     init(
@@ -29,7 +29,12 @@ final class NotchPanelController {
             defer: false
         )
         self.hoverTriggerPanel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 224, height: 48),
+            contentRect: NSRect(
+                x: 0,
+                y: 0,
+                width: NotchComposerPanelLayout.compactSize.width,
+                height: NotchComposerPanelLayout.compactSize.height
+            ),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -84,24 +89,26 @@ final class NotchPanelController {
 
         isStarted = false
         cancelScheduledTransitions()
+        lastHandledCaptureState = nil
         hoverTriggerPanel.orderOut(nil)
         panel.orderOut(nil)
         presentation.showIdle()
     }
 
-    func showComposer() {
+    func showComposer(source: CaptureSource = .blank) {
         guard isStarted, let screen = activeScreen else {
             return
         }
 
         cancelScheduledTransitions()
+        lastHandledCaptureState = nil
         hoverTriggerPanel.orderOut(nil)
         presentation.safeTopInset = screen.safeAreaInsets.top
-        presentation.showComposer(CaptureComposerModel(source: .blank))
+        presentation.showComposer(CaptureComposerModel(source: source))
 
         focusComposerPanel()
         transitionPanel(
-            to: NotchComposerLayout.size,
+            to: NotchComposerPanelLayout.composerSize,
             on: screen,
             duration: NotchMetrics.composerDuration
         )
@@ -132,6 +139,12 @@ final class NotchPanelController {
             },
             onClose: { [weak self] in
                 self?.showIdle(animated: true)
+            },
+            onCaptureStatusChanged: { [weak self] status in
+                self?.captureStatusChanged(status)
+            },
+            onCaptureStateChanged: { [weak self] state in
+                self?.captureStateChanged(state)
             }
         )
         let hostingView = HoverHostingView(rootView: AnyView(rootView))
@@ -288,15 +301,72 @@ final class NotchPanelController {
         let frame = NotchGeometry.frame(for: size, on: screen)
         let shouldReduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         guard let duration, !shouldReduceMotion else {
+            panel.resizeAnimationDuration = nil
             panel.setFrame(frame, display: true)
             return
         }
 
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = duration
-            context.timingFunction = NotchMetrics.easeOut
-            panel.animator().setFrame(frame, display: true)
+        // NSWindow animates the origin and size together when using its frame
+        // animation API. Keeping this as one operation avoids a visible
+        // vertical expansion followed by a delayed horizontal resize.
+        panel.resizeAnimationDuration = duration
+        panel.setFrame(frame, display: true, animate: true)
+        panel.resizeAnimationDuration = nil
+    }
+
+    private func captureStatusChanged(_ status: CaptureComposerStatus) {
+        let state = presentation.composerModel?.state ?? status.composerState
+        captureStateChanged(state)
+    }
+
+    private func captureStateChanged(_ state: CaptureComposerState) {
+        guard lastHandledCaptureState != state else {
+            return
         }
+        lastHandledCaptureState = state
+
+        switch state {
+        case .empty, .prepared:
+            presentation.setCaptureState(.idle)
+        case .saving:
+            presentation.setCaptureState(.saving)
+        case .done(let result):
+            let rootURL = presentation.composerModel?.vaultConfiguration.rootURL
+            let displayPath = rootURL.map {
+                Self.displayPath(for: result.noteURL, relativeTo: $0)
+            }
+            presentation.setCaptureState(.done, path: displayPath)
+        case .error:
+            presentation.setCaptureState(.idle)
+        }
+
+        guard presentation.phase == .composer,
+              let screen = activeScreen else {
+            return
+        }
+
+        let size = state.errorMessage == nil
+            ? NotchComposerPanelLayout.composerSize
+            : NotchComposerPanelLayout.errorSize
+        transitionPanel(
+            to: size,
+            on: screen,
+            duration: NotchMetrics.composerDuration
+        )
+    }
+
+    private static func displayPath(for fileURL: URL, relativeTo rootURL: URL) -> String {
+        let rootComponents = rootURL.standardizedFileURL.pathComponents
+        let fileComponents = fileURL.standardizedFileURL.pathComponents
+        let relativeComponents: [String]
+
+        if fileComponents.starts(with: rootComponents) {
+            relativeComponents = Array(fileComponents.dropFirst(rootComponents.count))
+        } else {
+            relativeComponents = Array(fileComponents.suffix(2))
+        }
+
+        return relativeComponents.suffix(2).joined(separator: "/")
     }
 
     private func focusComposerPanel() {
@@ -314,17 +384,20 @@ final class NotchPanelController {
     }
 }
 
+enum NotchComposerPanelLayout {
+    static let compactSize = CGSize(width: 224, height: 46)
+    static let composerSize = CGSize(width: 312, height: 412)
+    static let errorSize = CGSize(width: 312, height: 448)
+    static let resizeDuration: TimeInterval = 0.30
+}
+
 private enum NotchMetrics {
     static let hoverDelay: TimeInterval = 0.10
     static let collapseDelay: TimeInterval = 0.10
     static let expandDuration: TimeInterval = 0.22
     static let collapseDuration: TimeInterval = 0.18
-    static let composerDuration: TimeInterval = 0.32
+    static let composerDuration: TimeInterval = NotchComposerPanelLayout.resizeDuration
     static let composerCloseDuration: TimeInterval = 0.22
-    @MainActor
-    static var easeOut: CAMediaTimingFunction {
-        CAMediaTimingFunction(controlPoints: 0.16, 1.0, 0.30, 1.0)
-    }
 }
 
 private enum NotchGeometry {
@@ -352,14 +425,18 @@ private enum NotchGeometry {
 
     static func peekSize(for screen: NSScreen) -> NSSize {
         guard let notchRect = notchRect(for: screen) else {
-            return NSSize(width: 224, height: 48)
+            return NotchComposerPanelLayout.compactSize
         }
 
-        return NSSize(width: notchRect.width + 39, height: notchRect.height + 16)
+        return NSSize(width: notchRect.width + 39, height: notchRect.height + 14)
     }
 
     static func frame(for size: NSSize, on screen: NSScreen) -> NSRect {
         let screenFrame = screen.frame
+
+        // Every surface size shares the display's top edge. Resizing this
+        // frame therefore grows downward from the notch instead of shifting
+        // the cap while the composer opens.
         return NSRect(
             x: screenFrame.midX - size.width / 2,
             y: screenFrame.maxY - size.height,
@@ -370,8 +447,14 @@ private enum NotchGeometry {
 }
 
 private final class KeyableNotchPanel: NSPanel {
+    var resizeAnimationDuration: TimeInterval?
+
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
+
+    override func animationResizeTime(_ newFrame: NSRect) -> TimeInterval {
+        resizeAnimationDuration ?? super.animationResizeTime(newFrame)
+    }
 
     override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect {
         frameRect

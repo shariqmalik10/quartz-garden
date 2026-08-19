@@ -620,6 +620,19 @@ footer {
     width: 100%;
   }
 
+  // Grid items inherit a `min-width: 100%` from Quartz's base frame. Reset it
+  // at the same selector depth so narrow viewports can size the center column
+  // to the available track instead of creating horizontal overflow.
+  .page > #quartz-body .center,
+  .page > #quartz-body footer,
+  .page > #quartz-body .center > *,
+  .page > #quartz-body .center > article > .markdown-preview-view {
+    box-sizing: border-box;
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+
   .page > #quartz-body .sidebar.left,
   .page > #quartz-body .sidebar.right {
     min-width: 0;
@@ -634,6 +647,8 @@ footer {
   }
 
   .center > article {
+    min-width: 0;
+    width: 100%;
     max-width: 100%;
   }
 
