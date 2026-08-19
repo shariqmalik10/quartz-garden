@@ -31,7 +31,7 @@ jobs:
           repository: ${{ vars.PUBLIC_QUARTZ_REPOSITORY }}
           ref: main
           path: site
-          token: ${{ secrets.PUBLIC_REPO_PUSH_TOKEN }}
+          ssh-key: ${{ secrets.PUBLIC_REPO_DEPLOY_KEY }}
           fetch-depth: 0
 
       - name: Set up Node.js

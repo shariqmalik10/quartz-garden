@@ -12,15 +12,15 @@ Configure this Actions variable:
 PUBLIC_QUARTZ_REPOSITORY=shariqmalik10/quartz-garden
 ```
 
-Configure this Actions secret:
+Configure this Actions secret with the private half of an SSH deploy key whose
+public half has write access only to `quartz-garden`:
 
 ```text
-PUBLIC_REPO_PUSH_TOKEN
+PUBLIC_REPO_DEPLOY_KEY
 ```
 
-Use a fine-grained token restricted to that single public repository with only
-Contents read/write. Do not store it in the vault, the public repository, or
-Garden Drop.
+Do not reuse a personal SSH key. The dedicated deploy key is repository-scoped
+and must not be stored in the vault, the public repository, or Garden Drop.
 
 The workflow runs after a private `main` push or manually. It exports the
 allowlisted garden, runs the public repository's checks/tests/build, and pushes

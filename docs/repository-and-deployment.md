@@ -176,10 +176,10 @@ before creating a public commit. A failed validation must produce no public
 commit. This prevents an incomplete or accidentally private capture from
 reaching Vercel.
 
-The private workflow should use a fine-grained GitHub token stored only as a
-private-repository secret, for example `PUBLIC_REPO_PUSH_TOKEN`. Scope it to
-the single public Quartz repository with the minimum contents write permission.
-It must not be copied into the public repository, the vault, or the macOS app.
+The private workflow should use a dedicated SSH deploy key stored only as the
+private-repository secret `PUBLIC_REPO_DEPLOY_KEY`. Its public half must be a
+write-enabled deploy key on the single public Quartz repository. It must not be
+copied into the public repository, the vault, or the macOS app.
 
 ## Vercel preview and production behavior
 
