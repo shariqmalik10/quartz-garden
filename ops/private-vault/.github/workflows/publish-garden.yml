@@ -1,0 +1,83 @@
+name: Publish garden to Quartz
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Areas/**"
+      - "Attachments/Captures/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-public-garden
+  cancel-in-progress: false
+
+jobs:
+  export-and-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out the private vault
+        uses: actions/checkout@v6
+        with:
+          path: vault
+
+      - name: Check out the public Quartz repository
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ vars.PUBLIC_QUARTZ_REPOSITORY }}
+          ref: main
+          path: site
+          token: ${{ secrets.PUBLIC_REPO_PUSH_TOKEN }}
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: site/.node-version
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - name: Install the public site
+        working-directory: site
+        run: npm ci
+
+      - name: Install Quartz plugins
+        working-directory: site
+        run: npm run install-plugins
+
+      - name: Export the allowlisted garden
+        run: >-
+          node site/scripts/export-garden.mjs
+          --vault "$GITHUB_WORKSPACE/vault"
+          --output "$GITHUB_WORKSPACE/site/content/garden-sync"
+
+      - name: Validate types and formatting
+        working-directory: site
+        run: npm run check
+
+      - name: Run tests
+        working-directory: site
+        run: npm test
+
+      - name: Build the complete Quartz site
+        working-directory: site
+        run: npx quartz build -d content
+
+      - name: Commit and push generated content
+        working-directory: site
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          git add -- content/garden-sync
+          if git diff --cached --quiet; then
+            echo "No public garden changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "content: publish garden from ${SOURCE_SHA::12}"
+          git push origin HEAD:main

@@ -1,0 +1,178 @@
+import XCTest
+@testable import GardenDrop
+
+@MainActor
+final class CaptureComposerModelTests: XCTestCase {
+    func testBlankComposerStartsEmptyAndFocusesSource() {
+        let model = CaptureComposerModel(source: .blank)
+
+        XCTAssertEqual(model.state, .empty)
+        XCTAssertEqual(model.initialFocusTarget, .source)
+        XCTAssertFalse(model.hasSource)
+        XCTAssertFalse(model.isDirty)
+    }
+
+    func testExistingSourceStartsPreparedAndFocusesThought() {
+        let model = CaptureComposerModel(source: .sample)
+
+        XCTAssertEqual(model.state, .prepared)
+        XCTAssertEqual(model.initialFocusTarget, .thought)
+        XCTAssertTrue(model.hasSource)
+        XCTAssertFalse(model.isDirty)
+    }
+
+    func testDirtyStateTracksDraftAndClearRestoresTheInitialState() {
+        let model = CaptureComposerModel(source: .blank)
+
+        model.thought = "A thought worth keeping."
+
+        XCTAssertEqual(model.state, .prepared)
+        XCTAssertTrue(model.isDirty)
+        XCTAssertTrue(model.hasUnsavedChanges)
+
+        model.clearCapture()
+
+        XCTAssertEqual(model.state, .empty)
+        XCTAssertFalse(model.isDirty)
+        XCTAssertFalse(model.hasUnsavedChanges)
+    }
+
+    func testWriteFailurePreservesDraftContentAndEntersErrorState() async throws {
+        let invalidVaultURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GardenDropInvalidVault-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: invalidVaultURL) }
+        try Data("not a directory".utf8).write(to: invalidVaultURL)
+
+        let model = CaptureComposerModel(
+            source: .blank,
+            vaultConfiguration: VaultConfiguration(rootURL: invalidVaultURL)
+        )
+        model.thought = "Keep this thought if the write fails."
+        model.save()
+
+        for _ in 0..<40 {
+            if case .error(let message) = model.state {
+                XCTAssertFalse(message.isEmpty)
+                XCTAssertEqual(model.thought, "Keep this thought if the write fails.")
+                XCTAssertTrue(model.isDirty)
+                return
+            }
+            try await Task.sleep(for: .milliseconds(25))
+        }
+
+        XCTFail("The failed capture did not reach the error state within the test window.")
+    }
+
+    func testSavesUserEnteredLinkToTheConfiguredVault() async throws {
+        let vaultURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GardenDropComposerTest-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: vaultURL) }
+
+        let model = CaptureComposerModel(
+            vaultConfiguration: VaultConfiguration(rootURL: vaultURL)
+        )
+        model.linkText = "https://openai.com/research"
+        model.thought = "A link worth revisiting."
+
+        XCTAssertTrue(model.hasValidLink)
+        XCTAssertEqual(model.activeSource.url?.absoluteString, "https://openai.com/research")
+
+        model.save()
+
+        for _ in 0..<40 {
+            switch model.status {
+            case .saved(let result):
+                XCTAssertEqual(model.state, .done(result))
+                XCTAssertFalse(model.isDirty)
+                let markdown = try String(contentsOf: result.noteURL, encoding: .utf8)
+                XCTAssertTrue(markdown.contains("source: \"https://openai.com/research\""))
+                XCTAssertTrue(markdown.contains("A link worth revisiting."))
+                return
+            case .failed(let message):
+                XCTFail("The link capture failed: \(message)")
+                return
+            case .idle, .saving:
+                try await Task.sleep(for: .milliseconds(25))
+            }
+        }
+
+        XCTFail("The link capture did not finish within the test window.")
+    }
+
+    func testSavesHandEnteredNoteWithoutALink() async throws {
+        let vaultURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GardenDropNoteTest-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: vaultURL) }
+
+        let model = CaptureComposerModel(
+            source: .blank,
+            vaultConfiguration: VaultConfiguration(rootURL: vaultURL)
+        )
+        model.draftInput = "A note dropped straight into the garden."
+        model.commitDraftInput()
+
+        XCTAssertFalse(model.hasValidLink)
+        XCTAssertTrue(model.hasCaptureContent)
+
+        model.save()
+
+        for _ in 0..<40 {
+            switch model.status {
+            case .saved(let result):
+                let markdown = try String(contentsOf: result.noteURL, encoding: .utf8)
+                XCTAssertTrue(markdown.contains("title: \"A note dropped straight into the garden.\""))
+                XCTAssertTrue(markdown.contains("Captured from the clipboard."))
+                return
+            case .failed(let message):
+                XCTFail("The note capture failed: \(message)")
+                return
+            case .idle, .saving:
+                try await Task.sleep(for: .milliseconds(25))
+            }
+        }
+
+        XCTFail("The note capture did not finish within the test window.")
+    }
+
+    func testSavesDroppedFileAsAnAttachment() async throws {
+        let vaultURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GardenDropFileTest-\(UUID().uuidString)", isDirectory: true)
+        let sourceURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GardenDropAttachment-\(UUID().uuidString).txt")
+        defer {
+            try? FileManager.default.removeItem(at: vaultURL)
+            try? FileManager.default.removeItem(at: sourceURL)
+        }
+        try Data("Dropped text".utf8).write(to: sourceURL)
+
+        let model = CaptureComposerModel(
+            source: .blank,
+            vaultConfiguration: VaultConfiguration(rootURL: vaultURL)
+        )
+        model.acceptDroppedFile(sourceURL)
+
+        XCTAssertEqual(model.activeSource.attachment?.fileName, sourceURL.lastPathComponent)
+        XCTAssertTrue(model.canPlant)
+
+        model.save()
+
+        for _ in 0..<40 {
+            switch model.status {
+            case .saved(let result):
+                let attachmentURL = try XCTUnwrap(result.attachmentURL)
+                XCTAssertEqual(
+                    try Data(contentsOf: attachmentURL),
+                    Data("Dropped text".utf8)
+                )
+                return
+            case .failed(let message):
+                XCTFail("The file capture failed: \(message)")
+                return
+            case .idle, .saving:
+                try await Task.sleep(for: .milliseconds(25))
+            }
+        }
+
+        XCTFail("The file capture did not finish within the test window.")
+    }
+}

@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "generatedAt": "2026-08-19T21:14:11.440Z",
+  "generated": [
+    "inspiration/data-systems/index.md",
+    "inspiration/design-interaction/gd-20260820-publishing-flow.md",
+    "inspiration/design-interaction/index.md",
+    "inspiration/machine-learning/index.md",
+    "inspiration/product-engineering/index.md",
+    "inspiration/tools-references/index.md",
+    "inspiration/writing-ideas/index.md"
+  ],
+  "sources": [
+    {
+      "path": "Areas/Data Systems/Data Systems.md",
+      "sha256": "df42ad6fd674a993db7b79bc39df0c2310739504fa4e61720728f8f5cca4886b"
+    },
+    {
+      "path": "Areas/Design & Interaction/Design & Interaction.md",
+      "sha256": "328926e249b2d17b65b7675172153073865ba1c56b196517066ba2412ab21e01"
+    },
+    {
+      "path": "Areas/Design & Interaction/Captures/gd-20260820-publishing-flow.md",
+      "sha256": "c954d9c85e0251b484e8cbcbeaefbefa784fd0aeb51357d6a2b0254bdfcff923"
+    },
+    {
+      "path": "Areas/Machine Learning/Machine Learning.md",
+      "sha256": "50bcd915d9e8c9f63801380e8d6cbcd002f62f35976b62b29cb10ec2912e599d"
+    },
+    {
+      "path": "Areas/Product Engineering/Product Engineering.md",
+      "sha256": "4aa4d66a69e5e46d9f27a3e3e9a395514f1af466a9968933ecddc018cbb71502"
+    },
+    {
+      "path": "Areas/Tools & References/Tools & References.md",
+      "sha256": "73a50b606297af438146bba84c280cfcbf0c7bd5f48c5c138024f75f42c53d83"
+    },
+    {
+      "path": "Areas/Writing & Ideas/Writing & Ideas.md",
+      "sha256": "1f74de527e75b8984db22f794ad2969bdcae4941a4a698848616ac5e7ece5b42"
+    }
+  ]
+}
