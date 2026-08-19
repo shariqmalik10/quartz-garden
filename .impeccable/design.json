@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-10T01:30:00+03:00",
+  "title": "Design System: Working Garden",
+  "extensions": {
+    "colorMeta": {
+      "paper": { "role": "neutral", "displayName": "Warm Paper", "canonical": "#f5efe1" },
+      "ink": { "role": "primary", "displayName": "Garden Ink", "canonical": "#172b4d" },
+      "rust": { "role": "secondary", "displayName": "Rust Underline", "canonical": "#bd5438" },
+      "leaf": { "role": "accent", "displayName": "Leaf", "canonical": "#536d59" }
+    },
+    "typographyMeta": {
+      "landmark": { "displayName": "Serif Landmark", "purpose": "Page and section landmarks." },
+      "body": { "displayName": "Garden Prose", "purpose": "Conversational and technical reading." },
+      "welcome": {
+        "displayName": "Handwritten Note",
+        "purpose": "Rare welcomes, dates, and signoffs."
+      },
+      "note": {
+        "displayName": "Supporting Note",
+        "purpose": "Descriptions and garden maturity labels."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "link-color", "value": "150ms ease", "purpose": "Quiet feedback on garden paths." }
+    ],
+    "breakpoints": [
+      { "name": "compact", "value": "560px" },
+      { "name": "single-column", "value": "800px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Garden Path",
+      "kind": "nav",
+      "description": "A calm ruled route to another part of the garden.",
+      "html": "<a class=\"garden-path\" href=\"#\"><span>The notebook</span><small>working notes and connections</small></a>",
+      "css": ".garden-path{display:grid;grid-template-columns:minmax(9.5rem,.65fr) 1fr;gap:1rem;padding:1rem 0;border-bottom:1px solid #ded4bf;text-decoration:none}"
+    },
+    {
+      "name": "Garden Window",
+      "kind": "hero",
+      "description": "One abstract, code-native scene of leaves and light that establishes place without behaving like a portfolio banner.",
+      "html": "<div class=\"garden-window\" aria-hidden=\"true\"></div>",
+      "css": ".garden-window{height:13rem;background:#90a9c5;border:2px solid #172b4d;overflow:hidden}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Working Garden",
+    "overview": "A warm personal hypertext space where notes, projects, and technical interests are allowed to overlap.",
+    "keyCharacteristics": [
+      "Warm paper and navy ink",
+      "Sparse navigation chrome",
+      "Conversational internal links",
+      "Serif landmarks",
+      "Rare handwritten marginalia"
+    ],
+    "rules": [],
+    "dos": [
+      "Keep paths conversational and easy to follow.",
+      "Let unfinished notes remain visibly provisional."
+    ],
+    "donts": [
+      "Do not turn the homepage back into a résumé summary.",
+      "Do not copy the reference garden's unique shader or content."
+    ]
+  }
+}

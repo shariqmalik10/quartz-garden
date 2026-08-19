@@ -1,0 +1,39 @@
+{
+  "$schema": "./obsidian-sync.schema.json",
+  "version": 1,
+  "mappings": [
+    {
+      "from": "Notes",
+      "to": "notes",
+      "extensions": [".md"]
+    },
+    {
+      "from": "Writings",
+      "to": "writing",
+      "extensions": [".md"]
+    },
+    {
+      "from": "Quotes",
+      "to": "quotes",
+      "extensions": [".md"]
+    },
+    {
+      "from": "Attachments",
+      "to": "assets/obsidian",
+      "extensions": [
+        ".avif",
+        ".gif",
+        ".jpeg",
+        ".jpg",
+        ".mp3",
+        ".mp4",
+        ".pdf",
+        ".png",
+        ".svg",
+        ".webm",
+        ".webp"
+      ]
+    }
+  ],
+  "ignore": [".git", ".obsidian", ".trash", ".DS_Store", "Private", "Templates"]
+}

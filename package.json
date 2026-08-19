@@ -1,19 +1,23 @@
 {
-  "name": "@jackyzha0/quartz",
-  "description": "🌱 publish your digital garden and notes as a website",
+  "name": "shariq-malik-personal-site",
+  "description": "Shariq Malik's personal fieldbook for data, systems, and useful software",
   "private": true,
   "version": "5.0.0",
   "type": "module",
-  "author": "jackyzha0 <j.zhao2k19@gmail.com>",
+  "author": "Shariq Nadeem Malik",
   "license": "MIT",
-  "homepage": "https://quartz.jzhao.xyz",
+  "homepage": "https://shariq.vercel.app",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jackyzha0/quartz.git"
+    "url": "https://github.com/shariqmalik10/portfolio-website.git"
   },
   "scripts": {
     "quartz": "./quartz/bootstrap-cli.mjs",
+    "dev": "node quartz/bootstrap-cli.mjs build --serve",
     "docs": "npx quartz build --serve -d docs",
+    "vault:check": "node scripts/sync-obsidian.mjs --check",
+    "vault:sync": "node scripts/sync-obsidian.mjs",
+    "vault:watch": "node scripts/sync-obsidian.mjs --watch",
     "check": "tsc --noEmit && npx prettier . --check",
     "format": "npx prettier . --write",
     "test": "tsx --test",
@@ -106,7 +110,7 @@
     "remark-rehype": "^11.1.2",
     "rfdc": "^1.4.1",
     "serve-handler": "^6.1.6",
-    "sharp": "^0.34.5",
+    "sharp": "^0.35.3",
     "source-map-support": "^0.5.21",
     "to-vfile": "^8.0.0",
     "unified": "^11.0.5",

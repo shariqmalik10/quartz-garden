@@ -1,0 +1,40 @@
+{
+  "name": "@shariq/quotes-rail",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./dist/index.js",
+    "./components": "./dist/components/index.js"
+  },
+  "main": "./dist/index.js",
+  "quartz": {
+    "name": "quotes",
+    "displayName": "Quotes I Collected",
+    "description": "A small, Markdown-driven quote rail for the home page.",
+    "category": "component",
+    "version": "1.0.0",
+    "quartzVersion": ">=5.0.0",
+    "dependencies": [],
+    "defaultEnabled": true,
+    "defaultOptions": {
+      "limit": 4,
+      "linkToMore": "/quotes"
+    },
+    "components": {
+      "Quotes": {
+        "displayName": "Quotes I Collected",
+        "defaultPosition": "right",
+        "defaultPriority": 5
+      }
+    },
+    "optionSchema": {
+      "limit": {
+        "type": "number"
+      },
+      "linkToMore": {
+        "type": "string"
+      }
+    }
+  }
+}

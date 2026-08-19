@@ -1,7 +1,10 @@
 .DS_Store
+.env
 .gitignore
 node_modules
 public
+tmp/
+.playwright-cli/
 prof
 tsconfig.tsbuildinfo
 .obsidian
@@ -12,3 +15,7 @@ replit.nix
 .quartz/
 quartz/cli/tui/dist/
 .turbo/
+.build/
+.swiftpm/
+DerivedData/
+garden-drop-macos/dist/
