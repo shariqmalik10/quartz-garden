@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-08-21T01:29:26.569Z",
+  "generatedAt": "2026-08-21T02:12:34.803Z",
   "generated": [
     "inspiration/blogs/gd-20260821-088c85.md",
     "inspiration/blogs/gd-20260821-5fb1ac.md",
@@ -25,31 +25,31 @@
   "sources": [
     {
       "path": "Areas/Blogs/Blogs.md",
-      "sha256": "d76385cccc654f97643ab9fc45c1675239572e55608a31120512e5d72c22552d"
+      "sha256": "0ae8db19ae015268d217571339807d38b92195c2435fcf8a2190fb10dba4b051"
     },
     {
       "path": "Areas/Blogs/Captures/gd-20260821-088c85.md",
-      "sha256": "92df4a675016e44585eb28985d136311901ae9a073305dcc85eb9a09d313002f"
+      "sha256": "9f492f14227892811f87a441890e220f034ad5eda2579db27217e51202402f17"
     },
     {
       "path": "Areas/Blogs/Captures/gd-20260821-5fb1ac.md",
-      "sha256": "24c4f02e4e97c35500b991324f9ee002d95120b74b02be7ed0be1c517c5d7a26"
+      "sha256": "68809eeb90c88095176a198a983d1b74cf37cedba6436181cbc11a6629e2a5e2"
     },
     {
       "path": "Areas/Blogs/Captures/gd-20260821-67a941.md",
-      "sha256": "5ab7b0fb31f6043094d65b21424605d51c9965854a2c5bf6417fcfef16999d2e"
+      "sha256": "c224cde19f3e696524ee6228665e9ed9efbeaf2ff418c795948da5ac0c9b0b5d"
     },
     {
       "path": "Areas/Blogs/Captures/gd-20260821-67ca8d.md",
-      "sha256": "da9904946e2d7a1b62e4b9c858f390bbad91a8b078d5a46ffbcef5cc78990edb"
+      "sha256": "c2392c90685cd87fe1fc3a5bf09e103e55fbc33cead2aba6f13fd60c561b9b0e"
     },
     {
       "path": "Areas/Blogs/Captures/gd-20260821-99b129.md",
-      "sha256": "a4fff4dc0bff4fc18258c56655eff8eb3480a883b30e36496f5f51ba7bd2ed6d"
+      "sha256": "03f64d35e0d6e4def736755fe49cf6d94aca1013b0a875355a685c8b48cd213e"
     },
     {
       "path": "Areas/Blogs/Captures/gd-20260821-b0fa95.md",
-      "sha256": "f09cf2f0116c9eac6d8a34b1ccb1dcb5da3e0bb866e882bcdf86bbbed17ac101"
+      "sha256": "ab7e613607f3eb451470366df0e25dc53abbfe16b56b74ae391b092461cf61d3"
     },
     {
       "path": "Areas/Data Systems/Data Systems.md",
@@ -57,11 +57,11 @@
     },
     {
       "path": "Areas/Design & Interaction/Design & Interaction.md",
-      "sha256": "328926e249b2d17b65b7675172153073865ba1c56b196517066ba2412ab21e01"
+      "sha256": "5d965eff2f04e3f9b3b71fe2ab59dfbb9349612db252525d2dbb54a8292c9a26"
     },
     {
       "path": "Areas/Design & Interaction/Captures/gd-20260818-b7f26f.md",
-      "sha256": "72f784da88dea3aa6b407ec1242dc3e34c94961b08b0663e60baf4dd3d551222"
+      "sha256": "26e05a997ed7b77fd8102e515283da535cabfd303fa467d7f233b0d618b79b7a"
     },
     {
       "path": "Areas/Design & Interaction/Captures/gd-20260820-publishing-flow.md",
@@ -69,19 +69,19 @@
     },
     {
       "path": "Areas/Design & Interaction/Captures/gd-20260821-1347d3.md",
-      "sha256": "3ddb23d3d17a136cacc14bb4b852a0c6bfb39d6baff9db03120323293af90c7d"
+      "sha256": "1746f3d72a902e3e1f2ffe249783b95eb70053c447885d5ca997c8cfd5513a03"
     },
     {
       "path": "Areas/Design & Interaction/Captures/gd-20260821-5b1f19.md",
-      "sha256": "998e190de34d5668aeab214b62a77e452af5421d0ae2bb154e88c0c88648803c"
+      "sha256": "a4911d1a95c69c02f4a7d0c57814811b7923ea7cd083eb4d78e388012746b44b"
     },
     {
       "path": "Areas/Design & Interaction/Captures/gd-20260821-a90b0e.md",
-      "sha256": "92058fffc4f21581238d84bd35ce954c0cecba1394d083978aeffd2d26d0af4c"
+      "sha256": "560e86c9567144758546ce6df97a1dba6c61cd8e39e9b7c9ea726adb71adc651"
     },
     {
       "path": "Areas/Design & Interaction/Captures/gd-20260821-e42fb9.md",
-      "sha256": "d77fe8a73637911dcd35ee913deaef2c2010b9f58c8a33f8ef5c63cb514e9783"
+      "sha256": "34f27edd979dafbfd751317dfb05cce9986a76d130514c8a07cbb23d9c500457"
     },
     {
       "path": "Areas/Machine Learning/Machine Learning.md",

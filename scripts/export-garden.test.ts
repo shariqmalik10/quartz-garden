@@ -84,6 +84,7 @@ test("exports a dedicated blogs area and preserves blog-link metadata", async ()
         visibility: "garden",
         site_slug: "inspiration/blogs",
         media_policy: "reference",
+        listing_style: "external-links",
       },
       "Long-form writing worth returning to.",
     )
@@ -116,10 +117,64 @@ test("exports a dedicated blogs area and preserves blog-link metadata", async ()
       "utf8",
     )
     assert.match(map, /permalink: \/inspiration\/blogs/)
+    assert.match(map, /cssclasses:\n\s+- external-link-index/)
+    assert.match(
+      map,
+      /<li><a href="https:\/\/example\.com\/a-small-web">A small web worth returning to<\/a><\/li>/,
+    )
+    assert.doesNotMatch(map, /captured_at/)
+    assert.doesNotMatch(map, /#capture/)
     assert.match(capture, /reading_status: unread/)
     assert.match(capture, /source: https:\/\/example\.com\/a-small-web/)
     assert.match(capture, /permalink: \/inspiration\/blogs\/gd-blog-one/)
     assert.match(capture, /publish: true/)
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+test("external link lists omit system-test captures and sort newest first", async () => {
+  const { root, vault, output } = await fixture()
+  try {
+    await note(
+      path.join(vault, "Areas", "Design", "Design.md"),
+      {
+        kind: "area",
+        visibility: "garden",
+        site_slug: "design",
+        media_policy: "reference",
+        listing_style: "external-links",
+      },
+      "Worth studying.",
+    )
+    await note(path.join(vault, "Areas", "Design", "Captures", "older.md"), {
+      id: "older",
+      kind: "capture",
+      title: "Older page",
+      source: "https://example.com/older",
+      captured_at: "2026-08-20T10:00:00Z",
+    })
+    await note(path.join(vault, "Areas", "Design", "Captures", "newer.md"), {
+      id: "newer",
+      kind: "capture",
+      title: "Newer & sharper",
+      source: "https://example.com/newer?view=1&mode=2",
+      captured_at: "2026-08-21T10:00:00Z",
+    })
+    await note(path.join(vault, "Areas", "Design", "Captures", "sample.md"), {
+      id: "sample",
+      kind: "capture",
+      title: "Publishing fixture",
+      source: "https://example.com/fixture",
+      captured_at: "2026-08-22T10:00:00Z",
+      tags: ["capture", "system-test"],
+    })
+
+    await exportGarden({ vaultRoot: vault, outputRoot: output })
+    const map = await readFile(path.join(output, "design", "index.md"), "utf8")
+    assert.ok(map.indexOf("Newer &amp; sharper") < map.indexOf("Older page"))
+    assert.match(map, /newer\?view=1&amp;mode=2/)
+    assert.doesNotMatch(map, /Publishing fixture/)
   } finally {
     await rm(root, { recursive: true, force: true })
   }

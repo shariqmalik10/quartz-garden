@@ -45,6 +45,41 @@ function renderMarkdown(data, body) {
   return `---\n${YAML.stringify(data).trimEnd()}\n---\n\n${body.replace(/^\s+/, "")}`
 }
 
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+}
+
+function externalLinkList(captures) {
+  const items = captures
+    .filter(({ data }) => {
+      const tags = Array.isArray(data.tags) ? data.tags : []
+      return (
+        data.publish !== false &&
+        !tags.includes("system-test") &&
+        typeof data.source === "string" &&
+        /^https?:\/\//i.test(data.source) &&
+        typeof data.title === "string" &&
+        data.title.trim() !== ""
+      )
+    })
+    .sort((a, b) => {
+      const aTime = Date.parse(a.data.captured_at ?? "") || 0
+      const bTime = Date.parse(b.data.captured_at ?? "") || 0
+      return bTime - aTime
+    })
+    .map(
+      ({ data }) =>
+        `  <li><a href="${escapeHtml(data.source)}">${escapeHtml(data.title.trim())}</a></li>`,
+    )
+
+  if (items.length === 0) return ""
+  return `<ul class="garden-link-list">\n${items.join("\n")}\n</ul>`
+}
+
 function sensitiveFinding(text) {
   const checks = [
     ["email address", /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i],
@@ -223,14 +258,30 @@ export async function exportGarden({ vaultRoot, outputRoot, dryRun = false }) {
         throw new Error(`${area.mapPath} media_policy must be reference or owned`)
       }
 
+      const captures = []
+      for (const capturePath of await markdownFiles(path.join(area.root, "Captures"))) {
+        const capture = parseMarkdown(await readFile(capturePath, "utf8"), capturePath)
+        if (capture.data.kind !== "capture")
+          throw new Error(`${capturePath} must set kind: capture`)
+        captures.push({ path: capturePath, ...capture })
+      }
+
+      const externalListing = area.data.listing_style === "external-links"
       const publicMapData = {
         ...area.data,
         title: area.data.title ?? area.name,
         permalink: `/${outputArea}`,
         publish: true,
         draft: false,
+        ...(externalListing
+          ? { cssclasses: [...new Set([...(area.data.cssclasses ?? []), "external-link-index"])] }
+          : {}),
       }
       let publicMapBody = redactPrivateWikilinks(area.body, privateAreas)
+      if (externalListing) {
+        const listing = externalLinkList(captures)
+        if (listing) publicMapBody = `${publicMapBody.trimEnd()}\n\n${listing}\n`
+      }
       const mapText = await prettierFormat(renderMarkdown(publicMapData, publicMapBody), {
         parser: "markdown",
       })
@@ -246,10 +297,8 @@ export async function exportGarden({ vaultRoot, outputRoot, dryRun = false }) {
         sha256: createHash("sha256").update(mapText).digest("hex"),
       })
 
-      for (const capturePath of await markdownFiles(path.join(area.root, "Captures"))) {
-        const capture = parseMarkdown(await readFile(capturePath, "utf8"), capturePath)
-        if (capture.data.kind !== "capture")
-          throw new Error(`${capturePath} must set kind: capture`)
+      for (const capture of captures) {
+        const capturePath = capture.path
         const captureId = safeRelative(
           String(capture.data.id ?? path.basename(capturePath, path.extname(capturePath))),
           `${capturePath} id`,

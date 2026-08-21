@@ -394,6 +394,49 @@ article .garden-list a.internal:not(.tag-link) {
   white-space: nowrap;
 }
 
+// Vault-backed link collections render as a compact reading list. The capture
+// notes still exist for search and backlinks; the folder renderer is redundant
+// on these deliberately curated index pages.
+article.external-link-index + .page-listing {
+  display: none;
+}
+
+.garden-link-list {
+  padding: 0;
+  margin: 1.15rem 0 0;
+  list-style: none;
+}
+
+.garden-link-list > li {
+  position: relative;
+  padding: 0.27rem 0 0.27rem 1.35rem;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.garden-link-list > li::before {
+  position: absolute;
+  top: 0.3rem;
+  left: 0.05rem;
+  color: var(--garden-leaf);
+  content: "➢";
+}
+
+.garden-link-list a {
+  color: var(--garden-body);
+  font-family: var(--bodyFont);
+  font-size: 0.94rem;
+  font-weight: 500;
+  text-decoration-color: color-mix(in srgb, currentColor 38%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.16em;
+}
+
+.garden-link-list a:hover {
+  color: var(--garden-rust);
+  text-decoration-color: currentColor;
+}
+
 .garden-prose {
   margin-bottom: 0.7rem;
 }
