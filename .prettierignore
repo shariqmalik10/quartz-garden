@@ -1,3 +1,7 @@
 public
 node_modules
 .quartz-cache
+.build
+.swiftpm
+DerivedData
+garden-drop-macos/dist

@@ -1,17 +1,154 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-10T01:30:00+03:00",
+  "generatedAt": "2026-08-14T23:59:00+03:00",
   "title": "Design System: Working Garden",
   "extensions": {
     "colorMeta": {
-      "paper": { "role": "neutral", "displayName": "Warm Paper", "canonical": "#f5efe1" },
-      "ink": { "role": "primary", "displayName": "Garden Ink", "canonical": "#172b4d" },
-      "rust": { "role": "secondary", "displayName": "Rust Underline", "canonical": "#bd5438" },
-      "leaf": { "role": "accent", "displayName": "Leaf", "canonical": "#536d59" }
+      "paper": {
+        "role": "neutral",
+        "displayName": "Warm Paper",
+        "canonical": "#f5efe1",
+        "tonalRamp": [
+          "#28251f",
+          "#514b40",
+          "#7a7160",
+          "#a39884",
+          "#c8bda9",
+          "#e0d7c7",
+          "#eee8dc",
+          "#f8f4ec"
+        ]
+      },
+      "paper-deep": {
+        "role": "neutral",
+        "displayName": "Paper Deep",
+        "canonical": "#e8deca",
+        "tonalRamp": [
+          "#2d2922",
+          "#5b5243",
+          "#887b64",
+          "#b4a78d",
+          "#d1c4a9",
+          "#e2d7c1",
+          "#f0e8d8",
+          "#faf6ec"
+        ]
+      },
+      "ink": {
+        "role": "primary",
+        "displayName": "Garden Ink",
+        "canonical": "#172b4d",
+        "tonalRamp": [
+          "#0b1424",
+          "#162a4a",
+          "#234370",
+          "#3c6191",
+          "#6684ac",
+          "#91a7c4",
+          "#c0cedf",
+          "#edf2f8"
+        ]
+      },
+      "body": {
+        "role": "neutral",
+        "displayName": "Readable Blue",
+        "canonical": "#40506b",
+        "tonalRamp": [
+          "#17202c",
+          "#2c394d",
+          "#40506b",
+          "#5e6e87",
+          "#8090a6",
+          "#a9b5c5",
+          "#d2d9e2",
+          "#f1f4f7"
+        ]
+      },
+      "faded": {
+        "role": "neutral",
+        "displayName": "Faded Clay",
+        "canonical": "#8b806d",
+        "tonalRamp": [
+          "#302b25",
+          "#514a40",
+          "#716657",
+          "#928777",
+          "#b4a998",
+          "#cec7ba",
+          "#e8e4dc",
+          "#faf9f6"
+        ]
+      },
+      "rust": {
+        "role": "secondary",
+        "displayName": "Rust Underline",
+        "canonical": "#bd5438",
+        "tonalRamp": [
+          "#35160e",
+          "#6a2b1c",
+          "#9b412d",
+          "#bd5438",
+          "#d47760",
+          "#e5a18f",
+          "#f1c6ba",
+          "#fbece8"
+        ]
+      },
+      "sky": {
+        "role": "tertiary",
+        "displayName": "Window Sky",
+        "canonical": "#90a9c5",
+        "tonalRamp": [
+          "#1f2b3b",
+          "#3b526d",
+          "#5c7695",
+          "#7d98b6",
+          "#9fb5ce",
+          "#bacadd",
+          "#d5e0eb",
+          "#f2f6fa"
+        ]
+      },
+      "leaf": {
+        "role": "accent",
+        "displayName": "Leaf",
+        "canonical": "#536d59",
+        "tonalRamp": [
+          "#172119",
+          "#2c3b2f",
+          "#415544",
+          "#536d59",
+          "#78907d",
+          "#a0b3a3",
+          "#c9d4ca",
+          "#f0f5f0"
+        ]
+      },
+      "night": {
+        "role": "neutral",
+        "displayName": "Night Garden",
+        "canonical": "#08172c",
+        "tonalRamp": [
+          "#050b16",
+          "#0a1b35",
+          "#102b53",
+          "#1b4173",
+          "#49688e",
+          "#819bb9",
+          "#b9c8da",
+          "#edf2f8"
+        ]
+      }
     },
     "typographyMeta": {
-      "landmark": { "displayName": "Serif Landmark", "purpose": "Page and section landmarks." },
-      "body": { "displayName": "Garden Prose", "purpose": "Conversational and technical reading." },
+      "landmark": {
+        "displayName": "Serif Landmark",
+        "purpose": "Page and section landmarks."
+      },
+      "body": {
+        "displayName": "Garden Prose",
+        "purpose": "Conversational and technical reading."
+      },
       "welcome": {
         "displayName": "Handwritten Note",
         "purpose": "Rare welcomes, dates, and signoffs."
@@ -19,36 +156,92 @@
       "note": {
         "displayName": "Supporting Note",
         "purpose": "Descriptions and garden maturity labels."
+      },
+      "path": {
+        "displayName": "Path Label",
+        "purpose": "Conversational route names in the garden."
+      },
+      "metadata": {
+        "displayName": "Handwritten Metadata",
+        "purpose": "Dates and quiet supporting metadata."
+      },
+      "marginalia": {
+        "displayName": "Marginalia",
+        "purpose": "Small handwritten side notes."
+      },
+      "quote": {
+        "displayName": "Quote Text",
+        "purpose": "Collected lines in the homepage quote rail."
       }
     },
-    "shadows": [],
+    "shadows": [
+      {
+        "name": "window-inset-frame",
+        "value": "inset 0 0 0 4px #f5efe1",
+        "purpose": "A structural inner frame around the garden window, not a floating card shadow."
+      }
+    ],
     "motion": [
-      { "name": "link-color", "value": "150ms ease", "purpose": "Quiet feedback on garden paths." }
+      {
+        "name": "link-color",
+        "value": "150ms ease",
+        "purpose": "Quiet feedback on garden paths and quote entries."
+      },
+      {
+        "name": "cursor-trail",
+        "value": "32ms frame cadence with a five-cell decay",
+        "purpose": "A small code-native field that becomes still when reduced motion is requested."
+      },
+      {
+        "name": "flower-wind",
+        "value": "requestAnimationFrame with reduced-motion freeze",
+        "purpose": "A restrained pixel flower movement inside the garden window."
+      }
     ],
     "breakpoints": [
-      { "name": "compact", "value": "560px" },
-      { "name": "single-column", "value": "800px" }
+      {
+        "name": "compact",
+        "value": "560px"
+      },
+      {
+        "name": "single-column",
+        "value": "800px"
+      },
+      {
+        "name": "wide-rail",
+        "value": "1200px"
+      }
     ]
   },
   "components": [
     {
       "name": "Garden Path",
       "kind": "nav",
+      "refersTo": "garden-path",
       "description": "A calm ruled route to another part of the garden.",
-      "html": "<a class=\"garden-path\" href=\"#\"><span>The notebook</span><small>working notes and connections</small></a>",
-      "css": ".garden-path{display:grid;grid-template-columns:minmax(9.5rem,.65fr) 1fr;gap:1rem;padding:1rem 0;border-bottom:1px solid #ded4bf;text-decoration:none}"
+      "html": "<a class=\"ds-garden-path\" href=\"#\"><span>The notebook</span><small>working notes and connections</small></a>",
+      "css": ".ds-garden-path{display:grid;grid-template-columns:minmax(9.5rem,.65fr) 1fr;gap:1rem;align-items:baseline;padding:.82rem 0;color:#40506b;text-decoration:none;border-bottom:1px solid #ded4bf;transition:color 150ms ease}.ds-garden-path span{color:#172b4d;font-family:Fraunces,Georgia,serif;font-size:1.03rem;font-weight:600}.ds-garden-path small{color:#8b806d;font-family:Manrope,system-ui,sans-serif;font-size:.82rem;line-height:1.5}.ds-garden-path:hover span,.ds-garden-path:focus-visible span{color:#bd5438}"
     },
     {
       "name": "Garden Window",
-      "kind": "hero",
-      "description": "One abstract, code-native scene of leaves and light that establishes place without behaving like a portfolio banner.",
-      "html": "<div class=\"garden-window\" aria-hidden=\"true\"></div>",
-      "css": ".garden-window{height:13rem;background:#90a9c5;border:2px solid #172b4d;overflow:hidden}"
+      "kind": "custom",
+      "refersTo": "garden-window",
+      "description": "A framed light-filled window that establishes place without behaving like a portfolio banner.",
+      "html": "<div class=\"ds-garden-window\" aria-hidden=\"true\"><canvas class=\"ds-garden-flower\"></canvas></div>",
+      "css": ".ds-garden-window{height:13rem;background:#90a9c5;border:2px solid #172b4d;box-shadow:inset 0 0 0 4px #f5efe1;overflow:hidden}.ds-garden-flower{width:100%;height:100%;image-rendering:pixelated}"
+    },
+    {
+      "name": "Garden List",
+      "kind": "nav",
+      "refersTo": "garden-list",
+      "description": "A ruled list of recently tended notes and work.",
+      "html": "<a class=\"ds-garden-list\" href=\"#\"><strong>A small field note</strong><small>reliability, local-first software, and learning in public</small><time>seedling · Aug 2026</time></a>",
+      "css": ".ds-garden-list{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1.35rem;align-items:start;padding:.9rem 0;color:#40506b;text-decoration:none;border-bottom:1px solid #ded4bf}.ds-garden-list strong{display:block;color:#172b4d;font-family:Fraunces,Georgia,serif;font-size:1.04rem;font-weight:600;line-height:1.35}.ds-garden-list small{display:block;margin-top:.25rem;color:#8b806d;font-family:Manrope,system-ui,sans-serif;font-size:.82rem;line-height:1.5}.ds-garden-list time{color:#8b806d;font-family:Caveat,\"Segoe Print\",cursive;font-size:.94rem;white-space:nowrap}.ds-garden-list:hover strong,.ds-garden-list:focus-visible strong{color:#bd5438}"
     }
   ],
   "narrative": {
     "northStar": "The Working Garden",
-    "overview": "A warm personal hypertext space where notes, projects, and technical interests are allowed to overlap.",
+    "overview": "The site feels like a personal patch of the web rather than a formatted résumé. It borrows the quiet, literary rhythm of jzhao.xyz—serif landmarks, handwritten marginalia, warm paper, and conversational hyperlinks—while keeping Shariq’s own navy/rust palette and an abstract window of leaves and light.",
     "keyCharacteristics": [
       "Warm paper and navy ink",
       "Sparse navigation chrome",
