@@ -31,7 +31,10 @@ test("exports published quotes and skips drafts", async () => {
 
   const result = await exportQuotes({ vaultRoot, outputRoot })
   assert.deepEqual(result.generated, ["index.md", "kept-line.md"])
-  assert.match(await readFile(path.join(outputRoot, "kept-line.md"), "utf8"), /\/quotes\/kept-line/)
+  assert.match(
+    await readFile(path.join(outputRoot, "kept-line.md"), "utf8"),
+    /A line worth keeping/,
+  )
 })
 
 test("refuses to export a private quote collection", async () => {

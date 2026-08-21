@@ -7,7 +7,6 @@ publish: true
 title: I hope whatever season you are going through they are all radiant
 tags:
   - quote
-permalink: /quotes/2026-08-21-11-radiant-seasons
 draft: false
 ---
 

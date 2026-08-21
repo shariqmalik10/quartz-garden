@@ -9,7 +9,6 @@ title: No matter how hard you try to go on with life, the broken parts seem to
   crop up again
 tags:
   - quote
-permalink: /quotes/2026-08-21-03-broken-parts
 draft: false
 ---
 

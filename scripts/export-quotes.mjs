@@ -82,7 +82,6 @@ export async function exportQuotes({ vaultRoot, outputRoot, dryRun = false }) {
     const indexData = {
       ...map.data,
       title: map.data.title ?? "Quotes I collected",
-      permalink: "/quotes",
       publish: true,
       draft: false,
     }
@@ -106,7 +105,6 @@ export async function exportQuotes({ vaultRoot, outputRoot, dryRun = false }) {
         ...parsed.data,
         title: parsed.data.title ?? parsed.data.quote,
         tags: [...new Set([...(Array.isArray(parsed.data.tags) ? parsed.data.tags : []), "quote"])],
-        permalink: `/quotes/${slug}`,
         draft: false,
       }
       const body = parsed.body.trim() || `> ${parsed.data.quote}\n`

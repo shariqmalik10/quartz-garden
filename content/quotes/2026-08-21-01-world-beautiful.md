@@ -9,7 +9,6 @@ title: You showed me this world  you helped me see how beautiful it is because
   you are in it
 tags:
   - quote
-permalink: /quotes/2026-08-21-01-world-beautiful
 draft: false
 ---
 

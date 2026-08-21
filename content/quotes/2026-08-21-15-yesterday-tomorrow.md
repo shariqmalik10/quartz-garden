@@ -7,7 +7,6 @@ publish: true
 title: Yesterday is over. tommorow is yet to come
 tags:
   - quote
-permalink: /quotes/2026-08-21-15-yesterday-tomorrow
 draft: false
 ---
 

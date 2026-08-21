@@ -7,7 +7,6 @@ publish: true
 title: mono no aware
 tags:
   - quote
-permalink: /quotes/2026-08-21-14-mono-no-aware
 draft: false
 ---
 

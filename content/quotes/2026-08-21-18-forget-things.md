@@ -7,7 +7,6 @@ publish: true
 title: i think we forget things if nobody’s there to tell them
 tags:
   - quote
-permalink: /quotes/2026-08-21-18-forget-things
 draft: false
 ---
 

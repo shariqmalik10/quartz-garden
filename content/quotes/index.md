@@ -3,7 +3,6 @@ kind: quote-collection
 visibility: garden
 title: Quotes I collected
 site_slug: quotes
-permalink: /quotes
 publish: true
 draft: false
 ---

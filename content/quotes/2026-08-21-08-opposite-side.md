@@ -10,7 +10,6 @@ title: I want to see someone living on the opposite side of the world and feel
   like that i exist there too
 tags:
   - quote
-permalink: /quotes/2026-08-21-08-opposite-side
 draft: false
 ---
 
