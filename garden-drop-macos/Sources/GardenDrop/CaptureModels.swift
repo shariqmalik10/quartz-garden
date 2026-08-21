@@ -194,6 +194,21 @@ enum CaptureID {
 
 struct VaultConfiguration: Equatable, Sendable {
     let rootURL: URL
+    /// A runtime vault is configured only after an explicit environment
+    /// override or a security-scoped bookmark has been validated. Keeping the
+    /// URL non-optional lets the existing destination model remain simple,
+    /// while this flag prevents the fixture path from ever becoming a write
+    /// target in production.
+    let isConfigured: Bool
+
+    init(rootURL: URL) {
+        self.init(rootURL: rootURL, isConfigured: true)
+    }
+
+    private init(rootURL: URL, isConfigured: Bool) {
+        self.rootURL = rootURL
+        self.isConfigured = isConfigured
+    }
 
     static var runtime: VaultConfiguration {
         runtime(bookmarkStore: VaultBookmarkStore())
@@ -202,27 +217,62 @@ struct VaultConfiguration: Equatable, Sendable {
     static func runtime(bookmarkStore: VaultBookmarkStore) -> VaultConfiguration {
         if let configuredPath = ProcessInfo.processInfo.environment["GARDEN_DROP_VAULT"],
            !configuredPath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            return VaultConfiguration(rootURL: URL(fileURLWithPath: configuredPath, isDirectory: true))
+            let url = URL(
+                fileURLWithPath: configuredPath.trimmingCharacters(in: .whitespacesAndNewlines),
+                isDirectory: true
+            )
+            return isDirectory(url) ? VaultConfiguration(rootURL: url) : .unconfigured
         }
 
         if let bookmarkedURL = bookmarkStore.resolve() {
-            return VaultConfiguration(rootURL: bookmarkedURL)
+            return isDirectory(bookmarkedURL)
+                ? VaultConfiguration(rootURL: bookmarkedURL)
+                : .unconfigured
         }
 
-        let fixtureURL = FileManager.default.temporaryDirectory
+        // A missing bookmark is a setup state, not permission to write to a
+        // test fixture. The fixture-shaped URL is retained only as a harmless
+        // placeholder for destination calculations and diagnostics.
+        return .unconfigured
+    }
+
+    static var unconfigured: VaultConfiguration {
+        unconfigured(at: fixtureURL)
+    }
+
+    static func unconfigured(at rootURL: URL) -> VaultConfiguration {
+        VaultConfiguration(rootURL: rootURL, isConfigured: false)
+    }
+
+    /// Explicit opt-in for unit tests and local fixtures. Production runtime
+    /// resolution never calls this factory.
+    static func fixtureForTesting(at rootURL: URL? = nil) -> VaultConfiguration {
+        VaultConfiguration(rootURL: rootURL ?? fixtureURL)
+    }
+
+    private static var fixtureURL: URL {
+        FileManager.default.temporaryDirectory
             .appendingPathComponent("GardenDropFixtureVault", isDirectory: true)
-        return VaultConfiguration(rootURL: fixtureURL)
+    }
+
+    private static func isDirectory(_ url: URL) -> Bool {
+        var isDirectory = ObjCBool(false)
+        return FileManager.default.fileExists(
+            atPath: url.path,
+            isDirectory: &isDirectory
+        ) && isDirectory.boolValue
     }
 
     var isFixture: Bool {
-        rootURL.path == FileManager.default.temporaryDirectory
-            .appendingPathComponent("GardenDropFixtureVault", isDirectory: true)
-            .path
+        rootURL.standardizedFileURL == Self.fixtureURL.standardizedFileURL
     }
 
     var displayName: String {
-        if isFixture {
+        guard isConfigured else {
             return "No vault selected"
+        }
+        if isFixture {
+            return "Fixture vault · local only"
         }
         return rootURL.lastPathComponent.isEmpty ? rootURL.path : rootURL.lastPathComponent
     }

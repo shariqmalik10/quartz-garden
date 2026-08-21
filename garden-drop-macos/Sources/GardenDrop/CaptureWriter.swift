@@ -2,6 +2,7 @@ import Foundation
 
 enum CaptureWriteError: LocalizedError, Equatable {
     case invalidPathComponent(String)
+    case vaultNotConfigured
     case vaultUnavailable(URL)
     case noteAlreadyExists(URL)
     case attachmentAlreadyExists(URL)
@@ -10,6 +11,8 @@ enum CaptureWriteError: LocalizedError, Equatable {
         switch self {
         case .invalidPathComponent:
             return "The area or attachment name contains characters that cannot be used safely."
+        case .vaultNotConfigured:
+            return "Choose an Obsidian vault in Settings before saving."
         case .vaultUnavailable:
             return "The vault folder is unavailable. Choose it again in Settings."
         case .noteAlreadyExists:
@@ -21,20 +24,27 @@ enum CaptureWriteError: LocalizedError, Equatable {
 }
 actor CaptureWriter {
     private let vaultRoot: URL
+    private let isConfigured: Bool
     private let fileManager: FileManager
     private let renderer: CaptureMarkdownRenderer
 
     init(
         vaultRoot: URL,
+        isConfigured: Bool = true,
         fileManager: FileManager = .default,
         renderer: CaptureMarkdownRenderer = CaptureMarkdownRenderer()
     ) {
         self.vaultRoot = vaultRoot
+        self.isConfigured = isConfigured
         self.fileManager = fileManager
         self.renderer = renderer
     }
 
     func write(_ draft: CaptureDraft) throws -> CaptureResult {
+        guard isConfigured else {
+            throw CaptureWriteError.vaultNotConfigured
+        }
+
         let captureID = try VaultNameValidator.validate(draft.id)
         let attachmentName = try draft.source.attachment.map {
             try VaultNameValidator.validate($0.fileName)

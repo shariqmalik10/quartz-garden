@@ -205,6 +205,7 @@ struct CaptureComposerView: View {
             "\(model.selectedDestination.title), \(model.visibility.displayName) \(model.selectedDestination.kind.displayName)"
         )
         .accessibilityHint("Choose a quick destination, folder, or Markdown file")
+        .disabled(model.isSaving || !model.vaultConfiguration.isConfigured)
     }
 
     private func destinationButton(_ destination: CaptureDestination) -> some View {
@@ -220,6 +221,9 @@ struct CaptureComposerView: View {
     }
 
     private func chooseDestination(_ kind: CaptureDestinationKind) {
+        guard model.vaultConfiguration.isConfigured else {
+            return
+        }
         guard let destination = DestinationPicker.choose(
             kind: kind,
             vaultRoot: model.vaultConfiguration.rootURL
@@ -239,12 +243,12 @@ struct CaptureComposerView: View {
                 Button {
                     model.save()
                 } label: {
-                    Label(model.visibility.actionTitle, systemImage: model.visibility.symbolName)
+                    Label(saveTitle, systemImage: saveSymbol)
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(gardenRust)
                 .keyboardShortcut(.return, modifiers: [.command])
-                .disabled(model.isSaving || !model.canPlant)
+                .disabled(model.isSaving || !model.canPlant || !model.vaultConfiguration.isConfigured)
 
                 Text("⌘Return to save")
                     .font(.system(size: 10))
@@ -257,7 +261,14 @@ struct CaptureComposerView: View {
     private var statusView: some View {
         switch model.status {
         case .idle:
-            Label(model.vaultLabel, systemImage: "externaldrive")
+            Label(
+                model.vaultConfiguration.isConfigured
+                    ? model.vaultLabel
+                    : "Choose a vault in Settings before saving",
+                systemImage: model.vaultConfiguration.isConfigured
+                    ? "externaldrive"
+                    : "externaldrive.badge.plus"
+            )
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
         case .saving:
@@ -274,6 +285,18 @@ struct CaptureComposerView: View {
                 .foregroundStyle(.red)
                 .lineLimit(3)
         }
+    }
+
+    private var saveTitle: String {
+        model.vaultConfiguration.isConfigured
+            ? model.visibility.actionTitle
+            : "Choose vault in Settings"
+    }
+
+    private var saveSymbol: String {
+        model.vaultConfiguration.isConfigured
+            ? model.visibility.symbolName
+            : "externaldrive.badge.plus"
     }
 
     private var sourceSymbol: String {

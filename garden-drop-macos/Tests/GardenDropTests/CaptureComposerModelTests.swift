@@ -197,6 +197,54 @@ final class CaptureComposerModelTests: XCTestCase {
         XCTFail("The refreshed-vault capture did not finish within the test window.")
     }
 
+    func testNextComposerRestoresTheLastSuccessfullyUsedDestination() async throws {
+        let vaultURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GardenDropLastDestinationTest-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: vaultURL) }
+
+        let blogsMapURL = vaultURL.appendingPathComponent("Areas/Blogs/Blogs.md")
+        try FileManager.default.createDirectory(
+            at: blogsMapURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        try Data("---\nkind: area\nvisibility: garden\n---\n".utf8).write(to: blogsMapURL)
+
+        let suiteName = "GardenDropLastDestinationTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let store = DestinationStore(defaults: defaults)
+        let firstModel = CaptureComposerModel(
+            source: .blank,
+            vaultConfiguration: VaultConfiguration(rootURL: vaultURL),
+            destinationStore: store
+        )
+        firstModel.chooseDestination(CaptureDestination.blogs)
+        firstModel.linkText = "https://example.com/blog"
+        firstModel.thought = "Keep opening with the blog shelf."
+        firstModel.save()
+
+        for _ in 0..<40 {
+            if case .saved = firstModel.status {
+                let nextModel = CaptureComposerModel(
+                    source: .blank,
+                    vaultConfiguration: VaultConfiguration(rootURL: vaultURL),
+                    destinationStore: DestinationStore(defaults: defaults)
+                )
+                XCTAssertEqual(nextModel.selectedDestination.id, CaptureDestination.blogs.id)
+                XCTAssertEqual(nextModel.selectedDestination.visibility, .garden)
+                return
+            }
+            if case .failed(let message) = firstModel.status {
+                XCTFail("The first capture failed: \(message)")
+                return
+            }
+            try await Task.sleep(for: .milliseconds(25))
+        }
+
+        XCTFail("The first capture did not finish within the test window.")
+    }
+
     func testSavesHandEnteredNoteWithoutALink() async throws {
         let vaultURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("GardenDropNoteTest-\(UUID().uuidString)", isDirectory: true)

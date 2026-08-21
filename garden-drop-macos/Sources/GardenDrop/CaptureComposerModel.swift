@@ -104,8 +104,7 @@ final class CaptureComposerModel: ObservableObject {
         let initialLinkText = source.url?.absoluteString ?? ""
         let initialDraftInput = ""
         let initialThought = ""
-        let initialDestination = (destinationStore.favorites.first ?? CaptureDestination.design)
-            .resolved(in: vaultConfiguration.rootURL)
+        let initialDestination = destinationStore.defaultDestination(in: vaultConfiguration.rootURL)
         let initialAttachment: CaptureAttachment? = nil
 
         self.source = source
@@ -116,7 +115,10 @@ final class CaptureComposerModel: ObservableObject {
         self.droppedAttachment = initialAttachment
         self.vaultConfiguration = vaultConfiguration
         self.destinationStore = destinationStore
-        self.writer = CaptureWriter(vaultRoot: vaultConfiguration.rootURL)
+        self.writer = CaptureWriter(
+            vaultRoot: vaultConfiguration.rootURL,
+            isConfigured: vaultConfiguration.isConfigured
+        )
         self.savedSnapshot = DraftSnapshot(
             linkText: initialLinkText,
             draftInput: initialDraftInput,
@@ -231,9 +233,9 @@ final class CaptureComposerModel: ObservableObject {
     }
 
     var vaultLabel: String {
-        vaultConfiguration.isFixture
-            ? "Fixture vault · local only"
-            : "Vault · \(vaultConfiguration.displayName)"
+        vaultConfiguration.isConfigured
+            ? "Vault · \(vaultConfiguration.displayName)"
+            : "Vault not configured"
     }
 
     func chooseDestination(_ destination: CaptureDestination) {
@@ -247,7 +249,10 @@ final class CaptureComposerModel: ObservableObject {
         }
 
         vaultConfiguration = configuration
-        writer = CaptureWriter(vaultRoot: configuration.rootURL)
+        writer = CaptureWriter(
+            vaultRoot: configuration.rootURL,
+            isConfigured: configuration.isConfigured
+        )
         selectedDestination = selectedDestination.resolved(in: configuration.rootURL)
     }
 
@@ -258,6 +263,11 @@ final class CaptureComposerModel: ObservableObject {
 
         if hasPendingInput {
             commitDraftInput()
+        }
+
+        guard vaultConfiguration.isConfigured else {
+            setState(.error("Choose an Obsidian vault in Settings before saving."))
+            return
         }
 
         guard hasCaptureContent else {
@@ -283,6 +293,7 @@ final class CaptureComposerModel: ObservableObject {
         Task { @MainActor in
             do {
                 let result = try await writer.write(draft)
+                destinationStore.markLastUsed(draft.destination)
                 if currentSnapshot == draftSnapshot {
                     savedSnapshot = draftSnapshot
                     isDirty = false

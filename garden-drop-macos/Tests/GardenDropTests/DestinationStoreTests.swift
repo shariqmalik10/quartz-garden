@@ -56,6 +56,34 @@ final class DestinationStoreTests: XCTestCase {
         XCTAssertEqual(store.favorites.count, 3)
     }
 
+    func testLastUsedDestinationPersistsAndFallsBackWhenItIsRemoved() {
+        let suiteName = "GardenDropLastUsedDestinationTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let customFolder = CaptureDestination.folder(
+            relativePath: "Areas/Blogs/Longform",
+            visibility: .garden,
+            title: "Longform"
+        )
+        let store = DestinationStore(defaults: defaults)
+        store.remember(customFolder)
+        store.markLastUsed(customFolder)
+
+        let restored = DestinationStore(defaults: defaults)
+        XCTAssertEqual(restored.lastUsedDestination?.id, customFolder.id)
+        XCTAssertEqual(
+            restored.defaultDestination(in: FileManager.default.temporaryDirectory).id,
+            customFolder.id
+        )
+
+        restored.forget(customFolder)
+        XCTAssertEqual(
+            restored.defaultDestination(in: FileManager.default.temporaryDirectory).id,
+            restored.favorites[0].id
+        )
+    }
+
     func testDestinationFromURLStaysInsideVaultAndInfersPrivacy() throws {
         let vaultURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("GardenDropDestinationTest-\(UUID().uuidString)", isDirectory: true)

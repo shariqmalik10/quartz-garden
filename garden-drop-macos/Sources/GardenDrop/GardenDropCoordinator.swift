@@ -90,7 +90,8 @@ final class GardenDropCoordinator: NSObject, ObservableObject {
         panel.directoryURL = vaultConfiguration.isFixture ? nil : vaultConfiguration.rootURL
 
         guard panel.runModal() == .OK,
-              let url = panel.url else {
+              let url = panel.url,
+              isDirectory(url) else {
             return false
         }
 
@@ -110,6 +111,14 @@ final class GardenDropCoordinator: NSObject, ObservableObject {
         vaultConfiguration = VaultConfiguration.runtime(bookmarkStore: bookmarkStore)
         destinationStore.refreshVisibility(for: vaultConfiguration.rootURL)
         updateCaptureSurfaces()
+    }
+
+    private func isDirectory(_ url: URL) -> Bool {
+        var isDirectory = ObjCBool(false)
+        return FileManager.default.fileExists(
+            atPath: url.path,
+            isDirectory: &isDirectory
+        ) && isDirectory.boolValue
     }
 
     func openMenuBarCapture() {
@@ -286,7 +295,11 @@ struct GardenDropSettingsView: View {
         Form {
             Section("Obsidian vault") {
                 LabeledContent {
-                    Text(coordinator.vaultConfiguration.rootURL.path)
+                    Text(
+                        coordinator.vaultConfiguration.isConfigured
+                            ? coordinator.vaultConfiguration.rootURL.path
+                            : "No vault selected"
+                    )
                         .font(.system(size: 11, design: .monospaced))
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
@@ -302,10 +315,10 @@ struct GardenDropSettingsView: View {
                             : "Vault selection was cancelled or could not be saved."
                     }
 
-                    if !coordinator.vaultConfiguration.isFixture {
+                    if coordinator.vaultConfiguration.isConfigured {
                         Button("Forget", role: .destructive) {
                             coordinator.clearVault()
-                            vaultSelectionMessage = "Garden Drop will use its local fixture until a vault is selected."
+                            vaultSelectionMessage = "No vault is selected. Choose a vault before saving captures."
                         }
                     }
                 }
@@ -339,9 +352,11 @@ struct GardenDropSettingsView: View {
                     Button("Add folder…") {
                         chooseSavedDestination(.folder)
                     }
+                    .disabled(!coordinator.vaultConfiguration.isConfigured)
                     Button("Add Markdown file…") {
                         chooseSavedDestination(.markdownFile)
                     }
+                    .disabled(!coordinator.vaultConfiguration.isConfigured)
                 }
 
                 if destinationStore.savedDestinations.isEmpty {
@@ -427,6 +442,7 @@ struct GardenDropSettingsView: View {
                 chooseFavoriteFolder(at: index)
             }
             .accessibilityLabel("Choose quick destination \(index + 1)")
+            .disabled(!coordinator.vaultConfiguration.isConfigured)
         }
     }
 
@@ -458,6 +474,9 @@ struct GardenDropSettingsView: View {
     }
 
     private func chooseFavoriteFolder(at index: Int) {
+        guard coordinator.vaultConfiguration.isConfigured else {
+            return
+        }
         guard let destination = DestinationPicker.choose(
             kind: .folder,
             vaultRoot: coordinator.vaultConfiguration.rootURL
@@ -468,6 +487,9 @@ struct GardenDropSettingsView: View {
     }
 
     private func chooseSavedDestination(_ kind: CaptureDestinationKind) {
+        guard coordinator.vaultConfiguration.isConfigured else {
+            return
+        }
         guard let destination = DestinationPicker.choose(
             kind: kind,
             vaultRoot: coordinator.vaultConfiguration.rootURL

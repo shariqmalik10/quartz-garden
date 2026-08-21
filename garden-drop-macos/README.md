@@ -12,13 +12,14 @@ Garden Drop is a private, local-first capture utility for a personal Obsidian va
 - Click-to-expand capture zone accepting dropped links, files, and text alongside hand-entered notes and links.
 - URL field accepting full links or hostnames and normalizing hostnames to HTTPS.
 - Deterministic Markdown rendering for capture notes and append-only link entries.
-- Atomic note and attachment writes into a fixture vault.
+- Atomic note and attachment writes into the explicitly selected vault.
 - Persisted Obsidian vault access using a security-scoped bookmark.
 - Three persisted quick folder destinations (including `Areas/Blogs/Captures` by default).
+- The next composer restores the last destination that completed a capture, when it is still a valid quick or saved destination.
 - Destination menu for saved folders and existing Markdown files; selecting a Markdown file appends a marked link entry instead of overwriting it.
 - Tests for YAML frontmatter, wikilinks, attachments, and invalid vault names.
 
-The app uses a fixture vault under the user's temporary directory until a vault is selected in Settings. For headless/local testing, set `GARDEN_DROP_VAULT` to point at a real Obsidian vault. The Settings picker stores only a security-scoped bookmark and never copies vault contents into app preferences.
+Production builds fail closed until a vault is selected in Settings: the composer shows **Vault not configured** and refuses to write captures. For headless/local testing, set `GARDEN_DROP_VAULT` to an existing Obsidian vault, or use the explicit `VaultConfiguration.fixtureForTesting()` factory in unit tests. The Settings picker stores only a security-scoped bookmark and never copies vault contents into app preferences.
 
 ## Run
 
@@ -44,7 +45,7 @@ The release script builds a release Swift executable, wraps it in a macOS app bu
 
 ```sh
 ./scripts/build-dmg.sh
-open dist/GardenDrop-0.4.2.dmg
+open dist/GardenDrop-0.4.3.dmg
 ```
 
 To create an explicitly versioned build:

@@ -305,9 +305,11 @@ enum VaultPathValidator {
 final class DestinationStore: ObservableObject {
     private static let favoritesKey = "gardenDrop.destinationFavorites"
     private static let savedKey = "gardenDrop.savedDestinations"
+    private static let lastUsedKey = "gardenDrop.lastUsedDestination"
 
     @Published private(set) var favorites: [CaptureDestination]
     @Published private(set) var savedDestinations: [CaptureDestination]
+    private(set) var lastUsedDestination: CaptureDestination?
 
     private let defaults: UserDefaults
 
@@ -324,6 +326,11 @@ final class DestinationStore: ObservableObject {
 
         let storedDestinations = Self.load(CaptureDestination.self, key: Self.savedKey, defaults: defaults)
         self.savedDestinations = Self.unique(storedDestinations.filter { !loadedFavorites.contains($0) })
+        self.lastUsedDestination = Self.loadValue(
+            CaptureDestination.self,
+            key: Self.lastUsedKey,
+            defaults: defaults
+        )
 
         if defaults.data(forKey: Self.favoritesKey) == nil {
             persistFavorites()
@@ -334,6 +341,33 @@ final class DestinationStore: ObservableObject {
 
     var allDestinations: [CaptureDestination] {
         Self.unique(favorites + savedDestinations)
+    }
+
+    /// Returns the last destination that completed a capture when it is still
+    /// one of the current quick/saved destinations and is safe for this vault.
+    /// A stale destination (for example, one from a different vault or a
+    /// deleted Markdown file) is intentionally discarded in favor of the
+    /// first quick destination.
+    func defaultDestination(in vaultRoot: URL) -> CaptureDestination {
+        if let lastUsedDestination,
+           let currentDestination = allDestinations.first(where: {
+               $0.id == lastUsedDestination.id
+           }) {
+            let resolved = currentDestination.resolved(in: vaultRoot)
+            if isValid(resolved, in: vaultRoot) {
+                return resolved
+            }
+        }
+
+        return (favorites.first ?? CaptureDestination.design).resolved(in: vaultRoot)
+    }
+
+    /// Records a destination only after a capture has been written
+    /// successfully. This keeps an abandoned or failed selection from
+    /// unexpectedly becoming the next capture's default.
+    func markLastUsed(_ destination: CaptureDestination) {
+        lastUsedDestination = destination
+        Self.save(destination, key: Self.lastUsedKey, defaults: defaults)
     }
 
     func setFavorite(_ destination: CaptureDestination, at index: Int) {
@@ -363,7 +397,8 @@ final class DestinationStore: ObservableObject {
             return
         }
 
-        favorites.remove(at: index)
+        let removed = favorites.remove(at: index)
+        clearLastUsedIfNeeded(removed)
         persistFavorites()
     }
 
@@ -380,6 +415,7 @@ final class DestinationStore: ObservableObject {
             return
         }
         savedDestinations.removeAll { $0 == destination }
+        clearLastUsedIfNeeded(destination)
         persistSavedDestinations()
     }
 
@@ -388,8 +424,43 @@ final class DestinationStore: ObservableObject {
         let refreshedSaved = savedDestinations.map { $0.resolved(in: vaultRoot) }
         favorites = Self.unique(refreshedFavorites).filter(\.isFolder).prefix(3).map { $0 }
         savedDestinations = Self.unique(refreshedSaved.filter { !favorites.contains($0) })
+        if let lastUsedDestination {
+            self.lastUsedDestination = lastUsedDestination.resolved(in: vaultRoot)
+            Self.save(self.lastUsedDestination, key: Self.lastUsedKey, defaults: defaults)
+        }
         persistFavorites()
         persistSavedDestinations()
+    }
+
+    private func clearLastUsedIfNeeded(_ destination: CaptureDestination) {
+        guard lastUsedDestination?.id == destination.id else {
+            return
+        }
+        lastUsedDestination = nil
+        defaults.removeObject(forKey: Self.lastUsedKey)
+    }
+
+    private func isValid(_ destination: CaptureDestination, in vaultRoot: URL) -> Bool {
+        guard let validatedPath = try? VaultPathValidator.validate(destination.relativePath),
+              !validatedPath.isEmpty else {
+            return false
+        }
+
+        let resolvedRoot = VaultPathContainment.resolved(vaultRoot)
+        let destinationURL = resolvedRoot.appendingPathComponent(
+            validatedPath,
+            isDirectory: destination.isFolder
+        )
+        guard VaultPathContainment.contains(destinationURL, inside: resolvedRoot) else {
+            return false
+        }
+
+        if destination.kind == .markdownFile {
+            return destinationURL.pathExtension.caseInsensitiveCompare("md") == .orderedSame
+                && FileManager.default.fileExists(atPath: destinationURL.path)
+        }
+
+        return true
     }
 
     private func persistFavorites() {
@@ -415,6 +486,29 @@ final class DestinationStore: ObservableObject {
             return []
         }
         return values
+    }
+
+    private static func loadValue<T: Decodable>(
+        _ type: T.Type,
+        key: String,
+        defaults: UserDefaults
+    ) -> T? {
+        guard let data = defaults.data(forKey: key) else {
+            return nil
+        }
+        return try? JSONDecoder().decode(T.self, from: data)
+    }
+
+    private static func save<T: Encodable>(
+        _ value: T?,
+        key: String,
+        defaults: UserDefaults
+    ) {
+        guard let value,
+              let data = try? JSONEncoder().encode(value) else {
+            return
+        }
+        defaults.set(data, forKey: key)
     }
 
     private static func save<T: Encodable>(
@@ -463,7 +557,7 @@ struct VaultBookmarkStore {
             bookmarkDataIsStale: &isStale
         ),
               url.isFileURL,
-              FileManager.default.fileExists(atPath: url.path) else {
+              isDirectory(url) else {
             return nil
         }
 
@@ -471,6 +565,14 @@ struct VaultBookmarkStore {
             try? save(url: url)
         }
         return url
+    }
+
+    private func isDirectory(_ url: URL) -> Bool {
+        var isDirectory = ObjCBool(false)
+        return FileManager.default.fileExists(
+            atPath: url.path,
+            isDirectory: &isDirectory
+        ) && isDirectory.boolValue
     }
 
     func remove() {

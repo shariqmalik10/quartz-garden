@@ -413,7 +413,7 @@ struct NotchComposerView: View {
             "Destination: \(model.selectedDestination.title), \(model.visibility.displayName) \(model.selectedDestination.kind.displayName)"
         )
         .accessibilityHint("Choose a quick destination, folder, or Markdown file")
-        .disabled(model.isSaving)
+        .disabled(model.isSaving || !model.vaultConfiguration.isConfigured)
     }
 
     private func destinationButton(_ destination: CaptureDestination) -> some View {
@@ -429,6 +429,9 @@ struct NotchComposerView: View {
     }
 
     private func chooseDestination(_ kind: CaptureDestinationKind) {
+        guard model.vaultConfiguration.isConfigured else {
+            return
+        }
         guard let destination = DestinationPicker.choose(
             kind: kind,
             vaultRoot: model.vaultConfiguration.rootURL
@@ -448,9 +451,17 @@ struct NotchComposerView: View {
     private var statusView: some View {
         switch model.state {
         case .empty:
-            statusLabel("Add a source or thought to plant", systemImage: "arrow.down.circle")
+            if model.vaultConfiguration.isConfigured {
+                statusLabel("Add a source or thought to plant", systemImage: "arrow.down.circle")
+            } else {
+                statusLabel("Choose a vault in Settings before saving", systemImage: "externaldrive.badge.plus")
+            }
         case .prepared:
-            statusLabel("Ready to plant locally", systemImage: "externaldrive")
+            if model.vaultConfiguration.isConfigured {
+                statusLabel("Ready to plant locally", systemImage: "externaldrive")
+            } else {
+                statusLabel("Choose a vault in Settings before saving", systemImage: "externaldrive.badge.plus")
+            }
         case .saving:
             statusLabel("Saving locally…", systemImage: "arrow.down.circle")
         case .done:
@@ -534,6 +545,7 @@ struct NotchComposerView: View {
             } label: {
                 Label("Open vault", systemImage: "externaldrive")
             }
+            .disabled(!model.vaultConfiguration.isConfigured)
         } label: {
             Image(systemName: "ellipsis")
                 .font(NotchTypography.font(14, weight: .semibold))
@@ -600,7 +612,7 @@ struct NotchComposerView: View {
     }
 
     private var saveButtonIsEnabled: Bool {
-        !model.isSaving && model.canPlant && !isDone
+        model.vaultConfiguration.isConfigured && !model.isSaving && model.canPlant && !isDone
     }
 
     private var isDone: Bool {
@@ -617,7 +629,9 @@ struct NotchComposerView: View {
         case .done:
             return "Saved to \(model.visibility.displayName)"
         default:
-            return model.visibility.actionTitle
+            return model.vaultConfiguration.isConfigured
+                ? model.visibility.actionTitle
+                : "Choose vault in Settings"
         }
     }
 
@@ -628,7 +642,9 @@ struct NotchComposerView: View {
         case .done:
             return "checkmark"
         default:
-            return model.visibility.symbolName
+            return model.vaultConfiguration.isConfigured
+                ? model.visibility.symbolName
+                : "externaldrive.badge.plus"
         }
     }
 
