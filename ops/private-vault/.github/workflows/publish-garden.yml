@@ -6,6 +6,7 @@ on:
     paths:
       - "Areas/**"
       - "Attachments/Captures/**"
+      - "Quotes/**"
   workflow_dispatch:
 
 permissions:
@@ -55,6 +56,12 @@ jobs:
           --vault "$GITHUB_WORKSPACE/vault"
           --output "$GITHUB_WORKSPACE/site/content/garden-sync"
 
+      - name: Export the public quote collection
+        run: >-
+          node site/scripts/export-quotes.mjs
+          --vault "$GITHUB_WORKSPACE/vault"
+          --output "$GITHUB_WORKSPACE/site/content/quotes"
+
       - name: Validate types and formatting
         working-directory: site
         run: npm run check
@@ -73,7 +80,7 @@ jobs:
           SOURCE_SHA: ${{ github.sha }}
           PUBLIC_QUARTZ_BRANCH: ${{ vars.PUBLIC_QUARTZ_BRANCH }}
         run: |
-          git add -- content/garden-sync
+          git add -- content/garden-sync content/quotes
           if git diff --cached --quiet; then
             echo "No public garden changes."
             exit 0

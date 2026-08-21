@@ -19,6 +19,7 @@
     "vault:sync": "node scripts/sync-obsidian.mjs",
     "vault:watch": "node scripts/sync-obsidian.mjs --watch",
     "garden:export": "node scripts/export-garden.mjs",
+    "quotes:export": "node scripts/export-quotes.mjs",
     "check": "tsc --noEmit && npx prettier . --check",
     "format": "npx prettier . --write",
     "test": "tsx --test",
