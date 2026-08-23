@@ -2,8 +2,39 @@ import AppKit
 import SwiftUI
 
 @MainActor
+protocol GardenDropCaptureWindowPresenting: AnyObject {
+    func show()
+    func close()
+    func updateVaultConfiguration(_ configuration: VaultConfiguration)
+}
+
+extension CaptureWindowController: GardenDropCaptureWindowPresenting {}
+
+@MainActor
+protocol GardenDropNotchControlling: AnyObject {
+    func start()
+    func stop()
+    func showComposer(source: CaptureSource)
+    func updateVaultConfiguration(_ configuration: VaultConfiguration)
+}
+
+extension NotchPanelController: GardenDropNotchControlling {}
+
+@MainActor
 final class GardenDropCoordinator: NSObject, ObservableObject {
     private static let surfaceModeKey = "gardenDrop.surfaceMode"
+
+    typealias SettingsPresenterFactory = @MainActor (GardenDropCoordinator) -> any GardenDropSettingsPresenting
+    typealias CaptureWindowFactory = @MainActor (
+        DestinationStore,
+        VaultConfiguration
+    ) -> any GardenDropCaptureWindowPresenting
+    typealias NotchControllerFactory = @MainActor (
+        DestinationStore,
+        VaultConfiguration,
+        @escaping () -> Void,
+        @escaping () -> Void
+    ) -> any GardenDropNotchControlling
 
     @Published private(set) var surfaceMode: CaptureSurfaceMode
     @Published private(set) var vaultConfiguration: VaultConfiguration
@@ -11,15 +42,43 @@ final class GardenDropCoordinator: NSObject, ObservableObject {
 
     private let defaults: UserDefaults
     private let bookmarkStore: VaultBookmarkStore
-    private var notchController: NotchPanelController?
-    private var captureWindowController: CaptureWindowController?
+    private let makeSettingsPresenter: SettingsPresenterFactory
+    private let makeCaptureWindow: CaptureWindowFactory
+    private let makeNotchController: NotchControllerFactory
+    private let terminateApplication: @MainActor () -> Void
+    private var settingsPresenter: (any GardenDropSettingsPresenting)?
+    private var notchController: (any GardenDropNotchControlling)?
+    private var captureWindowController: (any GardenDropCaptureWindowPresenting)?
     private var statusItem: NSStatusItem?
     private var hasStarted = false
 
-    init(defaults: UserDefaults = .standard) {
+    init(
+        defaults: UserDefaults = .standard,
+        settingsPresenterFactory: @escaping SettingsPresenterFactory = {
+            GardenDropSettingsWindowPresenter(coordinator: $0)
+        },
+        captureWindowFactory: @escaping CaptureWindowFactory = {
+            CaptureWindowController(destinationStore: $0, vaultConfiguration: $1)
+        },
+        notchControllerFactory: @escaping NotchControllerFactory = {
+            NotchPanelController(
+                destinationStore: $0,
+                vaultConfiguration: $1,
+                onComposerRequested: $2,
+                onSettingsRequested: $3
+            )
+        },
+        terminateApplication: @escaping @MainActor () -> Void = {
+            NSApp.terminate(nil)
+        }
+    ) {
         self.defaults = defaults
         self.bookmarkStore = VaultBookmarkStore(defaults: defaults)
         self.destinationStore = DestinationStore(defaults: defaults)
+        self.makeSettingsPresenter = settingsPresenterFactory
+        self.makeCaptureWindow = captureWindowFactory
+        self.makeNotchController = notchControllerFactory
+        self.terminateApplication = terminateApplication
         self.vaultConfiguration = VaultConfiguration.runtime(
             bookmarkStore: VaultBookmarkStore(defaults: defaults)
         )
@@ -52,6 +111,7 @@ final class GardenDropCoordinator: NSObject, ObservableObject {
 
         notchController?.stop()
         captureWindowController?.close()
+        settingsPresenter?.close()
         if let statusItem {
             NSStatusBar.system.removeStatusItem(statusItem)
             self.statusItem = nil
@@ -61,6 +121,10 @@ final class GardenDropCoordinator: NSObject, ObservableObject {
 
     var isMenuBarItemInstalled: Bool {
         statusItem != nil
+    }
+
+    var statusMenu: NSMenu? {
+        statusItem?.menu
     }
 
     func setSurfaceMode(_ mode: CaptureSurfaceMode) {
@@ -126,26 +190,25 @@ final class GardenDropCoordinator: NSObject, ObservableObject {
     }
 
     func openSettings() {
-        NSApp.sendAction(
-            Selector(("showSettingsWindow:")),
-            to: nil,
-            from: nil
-        )
+        if settingsPresenter == nil {
+            settingsPresenter = makeSettingsPresenter(self)
+        }
+        settingsPresenter?.show()
     }
 
     func quit() {
-        NSApp.terminate(nil)
+        terminateApplication()
     }
 
     private func applySurfaceMode() {
         if notchController == nil {
-            notchController = NotchPanelController(
-                destinationStore: destinationStore,
-                vaultConfiguration: vaultConfiguration,
-                onComposerRequested: { [weak self] in
+            notchController = makeNotchController(
+                destinationStore,
+                vaultConfiguration,
+                { [weak self] in
                     self?.showNotchComposer()
                 },
-                onSettingsRequested: { [weak self] in
+                { [weak self] in
                     self?.openSettings()
                 }
             )
@@ -159,14 +222,14 @@ final class GardenDropCoordinator: NSObject, ObservableObject {
     }
 
     private func showNotchComposer() {
-        notchController?.showComposer()
+        notchController?.showComposer(source: .blank)
     }
 
     private func showMenuBarComposer() {
         if captureWindowController == nil {
-            captureWindowController = CaptureWindowController(
-                destinationStore: destinationStore,
-                vaultConfiguration: vaultConfiguration
+            captureWindowController = makeCaptureWindow(
+                destinationStore,
+                vaultConfiguration
             )
         }
         captureWindowController?.show()

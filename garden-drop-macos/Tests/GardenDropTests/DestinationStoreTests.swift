@@ -56,7 +56,7 @@ final class DestinationStoreTests: XCTestCase {
         XCTAssertEqual(store.favorites.count, 3)
     }
 
-    func testLastUsedDestinationPersistsAndFallsBackWhenItIsRemoved() {
+    func testLastUsedSavedFolderPersistsAcrossStoreRelaunchAndFallsBackWhenRemoved() throws {
         let suiteName = "GardenDropLastUsedDestinationTests-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!
         defer { defaults.removePersistentDomain(forName: suiteName) }
@@ -66,6 +66,13 @@ final class DestinationStoreTests: XCTestCase {
             visibility: .garden,
             title: "Longform"
         )
+        let vaultURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GardenDropLastUsedFolderVault-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: vaultURL) }
+        try FileManager.default.createDirectory(
+            at: vaultURL.appendingPathComponent(customFolder.relativePath, isDirectory: true),
+            withIntermediateDirectories: true
+        )
         let store = DestinationStore(defaults: defaults)
         store.remember(customFolder)
         store.markLastUsed(customFolder)
@@ -73,15 +80,121 @@ final class DestinationStoreTests: XCTestCase {
         let restored = DestinationStore(defaults: defaults)
         XCTAssertEqual(restored.lastUsedDestination?.id, customFolder.id)
         XCTAssertEqual(
-            restored.defaultDestination(in: FileManager.default.temporaryDirectory).id,
+            restored.defaultDestination(in: vaultURL).id,
             customFolder.id
         )
 
         restored.forget(customFolder)
         XCTAssertEqual(
-            restored.defaultDestination(in: FileManager.default.temporaryDirectory).id,
+            restored.defaultDestination(in: vaultURL).id,
             restored.favorites[0].id
         )
+    }
+
+    func testLastUsedQuickFolderPersistsAcrossStoreRelaunch() throws {
+        let suiteName = "GardenDropLastUsedQuickDestinationTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let vaultURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GardenDropLastUsedQuickVault-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: vaultURL) }
+
+        let store = DestinationStore(defaults: defaults)
+        let quickDestination = store.favorites[1]
+        try FileManager.default.createDirectory(
+            at: vaultURL.appendingPathComponent(quickDestination.relativePath, isDirectory: true),
+            withIntermediateDirectories: true
+        )
+        store.markLastUsed(quickDestination)
+
+        let restored = DestinationStore(defaults: defaults)
+        XCTAssertEqual(restored.defaultDestination(in: vaultURL).id, quickDestination.id)
+    }
+
+    func testLastUsedSavedMarkdownFilePersistsAcrossStoreRelaunch() throws {
+        let suiteName = "GardenDropLastUsedMarkdownDestinationTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let vaultURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GardenDropLastUsedMarkdownVault-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: vaultURL) }
+        let destination = CaptureDestination.markdownFile(
+            relativePath: "Areas/Reading/Reading.md",
+            visibility: .privateArea,
+            title: "Reading"
+        )
+        let fileURL = vaultURL.appendingPathComponent(destination.relativePath)
+        try FileManager.default.createDirectory(
+            at: fileURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        try Data("# Reading\n".utf8).write(to: fileURL)
+
+        let store = DestinationStore(defaults: defaults)
+        store.remember(destination)
+        store.markLastUsed(destination)
+
+        let restored = DestinationStore(defaults: defaults)
+        XCTAssertEqual(restored.defaultDestination(in: vaultURL).id, destination.id)
+    }
+
+    func testDeletedLastUsedFolderAndEscapingPathFallBackSafely() throws {
+        let suiteName = "GardenDropStaleLastUsedTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let vaultURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GardenDropStaleVault-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: vaultURL) }
+        try FileManager.default.createDirectory(at: vaultURL, withIntermediateDirectories: true)
+
+        let deletedFolder = CaptureDestination.folder(
+            relativePath: "Areas/Deleted/Captures",
+            visibility: .garden,
+            title: "Deleted"
+        )
+        let store = DestinationStore(defaults: defaults)
+        store.remember(deletedFolder)
+        store.markLastUsed(deletedFolder)
+        XCTAssertNotEqual(store.defaultDestination(in: vaultURL).id, deletedFolder.id)
+
+        let escaping = CaptureDestination.folder(
+            relativePath: "../Outside",
+            visibility: .garden,
+            title: "Outside"
+        )
+        store.remember(escaping)
+        store.markLastUsed(escaping)
+        XCTAssertNotEqual(store.defaultDestination(in: vaultURL).id, escaping.id)
+    }
+
+    func testVisibilityRefreshKeepsLastUsedDestinationIdentity() throws {
+        let suiteName = "GardenDropLastUsedVisibilityTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let vaultURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GardenDropVisibilityRefreshVault-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: vaultURL) }
+        let destination = CaptureDestination.folder(
+            relativePath: "Areas/Writing/Captures",
+            visibility: .privateArea,
+            title: "Captures"
+        )
+        try FileManager.default.createDirectory(
+            at: vaultURL.appendingPathComponent(destination.relativePath, isDirectory: true),
+            withIntermediateDirectories: true
+        )
+        let mapURL = vaultURL.appendingPathComponent("Areas/Writing/Writing.md")
+        try Data("---\nvisibility: garden\n---\n".utf8).write(to: mapURL)
+
+        let store = DestinationStore(defaults: defaults)
+        store.remember(destination)
+        store.markLastUsed(destination)
+        store.refreshVisibility(for: vaultURL)
+
+        let restored = DestinationStore(defaults: defaults)
+        let selected = restored.defaultDestination(in: vaultURL)
+        XCTAssertEqual(selected.id, destination.id)
+        XCTAssertEqual(selected.visibility, .garden)
     }
 
     func testDestinationFromURLStaysInsideVaultAndInfersPrivacy() throws {

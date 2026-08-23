@@ -248,12 +248,24 @@ final class CaptureComposerModel: ObservableObject {
             return
         }
 
+        let wasConfigured = vaultConfiguration.isConfigured
         vaultConfiguration = configuration
         writer = CaptureWriter(
             vaultRoot: configuration.rootURL,
             isConfigured: configuration.isConfigured
         )
-        selectedDestination = selectedDestination.resolved(in: configuration.rootURL)
+        // A long-lived composer can be created before a persisted bookmark is
+        // resolved or while no vault is configured. Re-select from the store
+        // when the vault changes so it receives the last successful, valid
+        // destination for that vault instead of retaining the placeholder's
+        // first quick destination.
+        selectedDestination = !wasConfigured && configuration.isConfigured
+            ? destinationStore.defaultDestination(in: configuration.rootURL)
+            : selectedDestination.resolved(in: configuration.rootURL)
+    }
+
+    func isSelectedDestination(_ destination: CaptureDestination) -> Bool {
+        selectedDestination.id == destination.id
     }
 
     func save() {

@@ -349,6 +349,13 @@ final class DestinationStore: ObservableObject {
     /// deleted Markdown file) is intentionally discarded in favor of the
     /// first quick destination.
     func defaultDestination(in vaultRoot: URL) -> CaptureDestination {
+        let accessStarted = vaultRoot.startAccessingSecurityScopedResource()
+        defer {
+            if accessStarted {
+                vaultRoot.stopAccessingSecurityScopedResource()
+            }
+        }
+
         if let lastUsedDestination,
            let currentDestination = allDestinations.first(where: {
                $0.id == lastUsedDestination.id
@@ -359,7 +366,13 @@ final class DestinationStore: ObservableObject {
             }
         }
 
-        return (favorites.first ?? CaptureDestination.design).resolved(in: vaultRoot)
+        // Do not immediately select the same stale location again when it is
+        // also a quick destination. Quick destinations may be created on the
+        // first write, so they remain usable fallbacks; only the known-stale
+        // last-used entry is skipped here.
+        let fallback = favorites.first(where: { $0.id != lastUsedDestination?.id })
+            ?? CaptureDestination.design
+        return fallback.resolved(in: vaultRoot)
     }
 
     /// Records a destination only after a capture has been written
@@ -420,6 +433,13 @@ final class DestinationStore: ObservableObject {
     }
 
     func refreshVisibility(for vaultRoot: URL) {
+        let accessStarted = vaultRoot.startAccessingSecurityScopedResource()
+        defer {
+            if accessStarted {
+                vaultRoot.stopAccessingSecurityScopedResource()
+            }
+        }
+
         let refreshedFavorites = favorites.map { $0.resolved(in: vaultRoot) }
         let refreshedSaved = savedDestinations.map { $0.resolved(in: vaultRoot) }
         favorites = Self.unique(refreshedFavorites).filter(\.isFolder).prefix(3).map { $0 }
@@ -455,12 +475,20 @@ final class DestinationStore: ObservableObject {
             return false
         }
 
-        if destination.kind == .markdownFile {
-            return destinationURL.pathExtension.caseInsensitiveCompare("md") == .orderedSame
-                && FileManager.default.fileExists(atPath: destinationURL.path)
+        var isDirectory = ObjCBool(false)
+        guard FileManager.default.fileExists(
+            atPath: destinationURL.path,
+            isDirectory: &isDirectory
+        ) else {
+            return false
         }
 
-        return true
+        if destination.kind == .markdownFile {
+            return destinationURL.pathExtension.caseInsensitiveCompare("md") == .orderedSame
+                && !isDirectory.boolValue
+        }
+
+        return isDirectory.boolValue
     }
 
     private func persistFavorites() {

@@ -423,7 +423,11 @@ struct NotchComposerView: View {
             Label {
                 Text("\(destination.title) · \(destination.visibility.displayName)")
             } icon: {
-                Image(systemName: destination.kind.symbolName)
+                Image(
+                    systemName: model.isSelectedDestination(destination)
+                        ? "checkmark"
+                        : destination.kind.symbolName
+                )
             }
         }
     }

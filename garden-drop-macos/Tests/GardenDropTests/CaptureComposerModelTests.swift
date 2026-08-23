@@ -245,6 +245,40 @@ final class CaptureComposerModelTests: XCTestCase {
         XCTFail("The first capture did not finish within the test window.")
     }
 
+    func testExistingComposerRestoresPersistedDestinationWhenVaultConfigurationArrives() throws {
+        let vaultURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GardenDropDelayedVaultTest-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: vaultURL) }
+        let destination = CaptureDestination.folder(
+            relativePath: "Areas/Personal/Clippings",
+            visibility: .privateArea,
+            title: "Clippings"
+        )
+        try FileManager.default.createDirectory(
+            at: vaultURL.appendingPathComponent(destination.relativePath, isDirectory: true),
+            withIntermediateDirectories: true
+        )
+
+        let suiteName = "GardenDropDelayedVaultDestinationTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let store = DestinationStore(defaults: defaults)
+        store.remember(destination)
+        store.markLastUsed(destination)
+
+        let model = CaptureComposerModel(
+            source: .blank,
+            vaultConfiguration: .runtime,
+            destinationStore: store
+        )
+        XCTAssertNotEqual(model.selectedDestination.id, destination.id)
+
+        model.updateVaultConfiguration(VaultConfiguration(rootURL: vaultURL))
+
+        XCTAssertEqual(model.selectedDestination.id, destination.id)
+        XCTAssertTrue(model.isSelectedDestination(destination))
+    }
+
     func testSavesHandEnteredNoteWithoutALink() async throws {
         let vaultURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("GardenDropNoteTest-\(UUID().uuidString)", isDirectory: true)
