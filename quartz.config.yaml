@@ -50,7 +50,7 @@ plugins:
       position: left
       priority: 40
       display: desktop-only
-  - source: ./plugins/writing-list
+  - source: ./plugins/mobile-writing-list
     enabled: true
     options:
       limit: 5
