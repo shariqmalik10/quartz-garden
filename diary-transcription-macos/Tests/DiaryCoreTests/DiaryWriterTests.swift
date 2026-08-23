@@ -153,4 +153,25 @@ final class DiaryWriterTests: XCTestCase {
             )
         }
     }
+
+    func testIdempotencyKeyPreventsDuplicateRetry() async throws {
+        let writer = DiaryWriter(calendar: calendar)
+        try await writer.configureVault(vaultURL)
+
+        let firstURL = try await writer.append(
+            "Recovered exactly once",
+            at: firstDate,
+            idempotencyKey: "entry-123"
+        )
+        let secondURL = try await writer.append(
+            "Recovered exactly once",
+            at: firstDate,
+            idempotencyKey: "entry-123"
+        )
+
+        XCTAssertEqual(firstURL, secondURL)
+        let text = try String(contentsOf: firstURL, encoding: .utf8)
+        XCTAssertEqual(text.components(separatedBy: "Recovered exactly once").count - 1, 1)
+        XCTAssertEqual(text.components(separatedBy: "<!-- diary-transcription:entry-123 -->").count - 1, 1)
+    }
 }

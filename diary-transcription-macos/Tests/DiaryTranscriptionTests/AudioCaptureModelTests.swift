@@ -114,6 +114,68 @@ final class AudioCaptureModelTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: attemptedURL.path))
     }
 
+    func testSubsecondDurationIsPreservedWhenRecordingStops() async throws {
+        let root = makeTemporaryRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let session = FakeAudioRecordingSession(permission: .allowed)
+        let model = AudioCaptureModel(
+            session: session,
+            store: PendingAudioStore(baseDirectory: root),
+            automaticMetering: false
+        )
+
+        await model.startRecording()
+        session.time = 0.7
+        model.stopRecording()
+
+        XCTAssertEqual(model.elapsedTime, 0.7, accuracy: 0.001)
+        XCTAssertEqual(model.phase, .captured)
+    }
+
+    func testTenMinuteSafetyLimitStopsAndRetainsRecording() async throws {
+        let root = makeTemporaryRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let session = FakeAudioRecordingSession(permission: .allowed)
+        let model = AudioCaptureModel(
+            session: session,
+            store: PendingAudioStore(baseDirectory: root),
+            automaticMetering: false
+        )
+
+        await model.startRecording()
+        let recordingURL = try XCTUnwrap(model.capturedURL)
+        session.time = AudioCaptureModel.maximumRecordingDuration
+        model.refreshMeter()
+
+        guard case .interrupted = model.phase else {
+            return XCTFail("Expected the safety limit to stop capture")
+        }
+        XCTAssertFalse(session.isRecording)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: recordingURL.path))
+    }
+
+    func testMultipleRecoveredRecordingsAreSurfacedOldestFirst() throws {
+        let root = makeTemporaryRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = PendingAudioStore(baseDirectory: root)
+        let older = try store.makeRecordingURL(at: Date(timeIntervalSince1970: 1_000))
+        let newer = try store.makeRecordingURL(at: Date(timeIntervalSince1970: 2_000))
+        try Data("older".utf8).write(to: older)
+        try Data("newer".utf8).write(to: newer)
+        try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSince1970: 1_000)], ofItemAtPath: older.path)
+        try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSince1970: 2_000)], ofItemAtPath: newer.path)
+
+        let model = AudioCaptureModel(
+            session: FakeAudioRecordingSession(permission: .allowed),
+            store: store,
+            automaticMetering: false
+        )
+
+        XCTAssertEqual(model.capturedURL?.standardizedFileURL, older.standardizedFileURL)
+        model.discardRecording()
+        XCTAssertEqual(model.capturedURL?.standardizedFileURL, newer.standardizedFileURL)
+    }
+
     private func makeTemporaryRoot() -> URL {
         FileManager.default.temporaryDirectory
             .appendingPathComponent("DiaryCaptureTests-\(UUID().uuidString)", isDirectory: true)

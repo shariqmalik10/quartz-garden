@@ -17,11 +17,11 @@
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.2.0</string>
+    <string>1.0.0</string>
     <key>CFBundleVersion</key>
-    <string>2</string>
+    <string>1</string>
     <key>LSMinimumSystemVersion</key>
-    <string>14.0</string>
+    <string>15.0</string>
     <key>LSUIElement</key>
     <true/>
     <key>NSHighResolutionCapable</key>
@@ -30,5 +30,7 @@
     <string>Diary Transcription uses the microphone only while you record a diary entry. Audio stays on this Mac.</string>
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
+    <key>NSHumanReadableCopyright</key>
+    <string>Copyright © 2026 Shariq Malik</string>
 </dict>
 </plist>

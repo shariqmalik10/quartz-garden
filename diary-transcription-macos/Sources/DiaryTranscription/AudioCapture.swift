@@ -144,14 +144,14 @@ struct PendingAudioStore {
         return directoryURL.appendingPathComponent(name)
     }
 
-    func latestRecordingURL() throws -> URL? {
+    func nextRecordingURL() throws -> URL? {
         guard fileManager.fileExists(atPath: directoryURL.path) else { return nil }
         let urls = try fileManager.contentsOfDirectory(
             at: directoryURL,
             includingPropertiesForKeys: [.contentModificationDateKey],
             options: [.skipsHiddenFiles]
         ).filter { $0.pathExtension == "m4a" }
-        return try urls.max { lhs, rhs in
+        return try urls.min { lhs, rhs in
             let left = try lhs.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate ?? .distantPast
             let right = try rhs.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate ?? .distantPast
             return left < right
@@ -160,6 +160,13 @@ struct PendingAudioStore {
 
     func isReadableRecording(_ url: URL) -> Bool {
         (try? AVAudioFile(forReading: url)) != nil
+    }
+
+    func duration(of url: URL) -> TimeInterval? {
+        guard let file = try? AVAudioFile(forReading: url), file.fileFormat.sampleRate > 0 else {
+            return nil
+        }
+        return Double(file.length) / file.fileFormat.sampleRate
     }
 
     func discard(_ url: URL) throws {
@@ -175,6 +182,7 @@ struct PendingAudioStore {
 @MainActor
 @Observable
 final class AudioCaptureModel {
+    static let maximumRecordingDuration: TimeInterval = 10 * 60
     enum Phase: Equatable {
         case idle
         case requestingPermission
@@ -205,12 +213,7 @@ final class AudioCaptureModel {
         self.session = session
         self.store = store
         self.automaticMetering = automaticMetering
-        if let pending = try? store.latestRecordingURL() {
-            capturedURL = pending
-            phase = store.isReadableRecording(pending)
-                ? .captured
-                : .interrupted("The pending audio could not be verified. You can inspect or discard the file.")
-        }
+        restoreNextPendingRecording()
         session.onUnexpectedEnd = { [weak self] event in
             self?.handleUnexpectedEnd(event)
         }
@@ -269,6 +272,9 @@ final class AudioCaptureModel {
         meterTask?.cancel()
         meterTask = nil
         session.stopRecording()
+        if let capturedURL {
+            elapsedTime = store.duration(of: capturedURL) ?? session.currentTime
+        }
         inputLevel = 0
         phase = .captured
     }
@@ -278,9 +284,17 @@ final class AudioCaptureModel {
         do {
             try store.discard(capturedURL)
             reset()
+            restoreNextPendingRecording()
         } catch {
             phase = .interrupted("The recording is still on disk, but it could not be discarded: \(error.localizedDescription)")
         }
+    }
+
+    func completeRecording() throws {
+        guard let capturedURL else { return }
+        try store.discard(capturedURL)
+        reset()
+        restoreNextPendingRecording()
     }
 
     func resetPermissionState() {
@@ -297,8 +311,16 @@ final class AudioCaptureModel {
         waveform.append(inputLevel)
         samples = waveform.samples
         let currentTime = session.currentTime
-        if Int(currentTime) != Int(elapsedTime) {
-            elapsedTime = currentTime
+        elapsedTime = currentTime
+        if currentTime >= Self.maximumRecordingDuration {
+            meterTask?.cancel()
+            meterTask = nil
+            session.stopRecording()
+            if let capturedURL {
+                elapsedTime = store.duration(of: capturedURL) ?? currentTime
+            }
+            inputLevel = 0
+            phase = .interrupted("Recording stopped at the 10-minute safety limit. Retry to transcribe it, or discard it.")
         }
     }
 
@@ -323,8 +345,14 @@ final class AudioCaptureModel {
         inputLevel = 0
         switch event {
         case .completed:
+            if let capturedURL {
+                elapsedTime = store.duration(of: capturedURL) ?? session.currentTime
+            }
             phase = .captured
         case let .failed(message):
+            if let capturedURL {
+                elapsedTime = store.duration(of: capturedURL) ?? session.currentTime
+            }
             phase = .interrupted(message)
         }
     }
@@ -350,5 +378,14 @@ final class AudioCaptureModel {
         elapsedTime = 0
         capturedURL = nil
         phase = .idle
+    }
+
+    private func restoreNextPendingRecording() {
+        guard capturedURL == nil, let pending = try? store.nextRecordingURL() else { return }
+        capturedURL = pending
+        elapsedTime = store.duration(of: pending) ?? 0
+        phase = store.isReadableRecording(pending)
+            ? .captured
+            : .interrupted("The pending audio could not be verified. You can inspect or discard the file.")
     }
 }

@@ -15,8 +15,8 @@ A 31-bar waveform is the visual center. While recording, real microphone levels 
 ## Interaction rules
 
 - The first viewport tells one story: listening state, live signal, elapsed time, primary action.
-- Recording is impossible to confuse with saving. Captured audio is labelled as local and pending transcription.
-- Audio is retained in Application Support until the user explicitly discards it or a later transcription pipeline completes successfully.
+- Recording, transcription, and saving have distinct language and progress states.
+- Audio and any completed transcript are retained in Application Support until the Markdown append completes successfully.
 - Vault configuration remains visible but secondary to capture.
 - Manual writing is a fallback, not a competing primary action.
 - Permission and error states appear in place; the root hierarchy does not jump.
@@ -32,7 +32,7 @@ A 31-bar waveform is the visual center. While recording, real microphone levels 
 - Record/stop: coral (`#F0785E`)
 - Hairline: white at 10–14% opacity
 - Corner radius: 14 pt for the window field, 9 pt for controls, circular only for recording
-- Motion: 180–280 ms localized transitions; no looping movement without live audio
+- Motion: 180–280 ms localized transitions; only live microphone input drives continuous movement
 
 ## Accessibility
 

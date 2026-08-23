@@ -45,7 +45,7 @@ The release script builds a release Swift executable, wraps it in a macOS app bu
 
 ```sh
 ./scripts/build-dmg.sh
-open dist/GardenDrop-0.4.3.dmg
+open dist/GardenDrop-0.4.5.dmg
 ```
 
 To create an explicitly versioned build:

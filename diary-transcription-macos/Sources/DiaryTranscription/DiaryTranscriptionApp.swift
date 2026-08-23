@@ -2,16 +2,16 @@ import SwiftUI
 
 @main
 struct DiaryTranscriptionApp: App {
+    @NSApplicationDelegateAdaptor(DiaryAppDelegate.self) private var appDelegate
     @State private var model = DiaryAppModel()
-    @State private var capture = AudioCaptureModel()
 
     var body: some Scene {
         MenuBarExtra {
-            MenuBarContentView(model: model, capture: capture)
+            MenuBarContentView(model: model)
         } label: {
             Label(
-                capture.isRecording ? "Diary Transcription is recording" : "Diary Transcription",
-                systemImage: capture.isRecording ? "waveform" : "book.pages"
+                model.capture.isRecording ? "Diary Transcription is recording" : "Diary Transcription",
+                systemImage: model.capture.isRecording ? "waveform" : "book.pages"
             )
         }
         .menuBarExtraStyle(.window)

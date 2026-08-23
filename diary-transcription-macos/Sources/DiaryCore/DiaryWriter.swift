@@ -41,10 +41,23 @@ public actor DiaryWriter {
         vaultURL
     }
 
+    public func diaryFileURL(at date: Date = Date()) throws -> URL {
+        guard let vaultURL else {
+            throw DiaryError.vaultNotConfigured
+        }
+        return vaultURL
+            .appendingPathComponent("Diary", isDirectory: true)
+            .appendingPathComponent(formatting.fileName(for: date))
+    }
+
     /// Appends one Markdown section and returns the daily file URL.
     /// The daily file is absent until this method has a non-empty entry to persist.
     @discardableResult
-    public func append(_ text: String, at date: Date = Date()) throws -> URL {
+    public func append(
+        _ text: String,
+        at date: Date = Date(),
+        idempotencyKey: String? = nil
+    ) throws -> URL {
         guard let vaultURL else {
             throw DiaryError.vaultNotConfigured
         }
@@ -65,21 +78,29 @@ public actor DiaryWriter {
         let normalizedText = text.trimmingCharacters(in: .newlines)
         let day = formatting.dateString(for: date)
         let time = formatting.timeString(for: date)
+        let marker = idempotencyKey.map { "<!-- diary-transcription:\($0) -->" }
 
         try coordinateWrite(at: fileURL) { coordinatedURL in
             if self.fileManager.fileExists(atPath: coordinatedURL.path) {
+                if let marker,
+                   let existing = try? String(contentsOf: coordinatedURL, encoding: .utf8),
+                   existing.contains(marker) {
+                    return
+                }
                 try self.appendToExistingFile(
                     at: coordinatedURL,
                     entryText: normalizedText,
                     time: time,
-                    day: day
+                    day: day,
+                    marker: marker
                 )
             } else {
                 try self.createFirstEntryAtomically(
                     at: coordinatedURL,
                     entryText: normalizedText,
                     time: time,
-                    day: day
+                    day: day,
+                    marker: marker
                 )
             }
         }
@@ -115,9 +136,11 @@ public actor DiaryWriter {
         at fileURL: URL,
         entryText: String,
         time: String,
-        day: String
+        day: String,
+        marker: String?
     ) throws {
-        let contents = "# Diary Log — \(day)\n\n## \(time)\n\(entryText)\n"
+        let markerLine = marker.map { "\($0)\n" } ?? ""
+        let contents = "# Diary Log — \(day)\n\n## \(time)\n\(markerLine)\(entryText)\n"
         let data = Data(contents.utf8)
         // Stage a complete sibling file, then move it into the previously absent target.
         // `moveItem` refuses to replace a file that appeared in the meantime.
@@ -133,14 +156,16 @@ public actor DiaryWriter {
         at fileURL: URL,
         entryText: String,
         time: String,
-        day: String
+        day: String,
+        marker: String?
     ) throws {
         let handle = try FileHandle(forUpdating: fileURL)
         defer { try? handle.close() }
 
         let size = try handle.seekToEnd()
         if size == 0 {
-            let contents = "# Diary Log — \(day)\n\n## \(time)\n\(entryText)\n"
+            let markerLine = marker.map { "\($0)\n" } ?? ""
+            let contents = "# Diary Log — \(day)\n\n## \(time)\n\(markerLine)\(entryText)\n"
             try handle.write(contentsOf: Data(contents.utf8))
             try handle.synchronize()
             return
@@ -160,7 +185,8 @@ public actor DiaryWriter {
             separator = "\n\n"
         }
 
-        let entry = "\(separator)## \(time)\n\(entryText)\n"
+        let markerLine = marker.map { "\($0)\n" } ?? ""
+        let entry = "\(separator)## \(time)\n\(markerLine)\(entryText)\n"
         try handle.write(contentsOf: Data(entry.utf8))
         try handle.synchronize()
     }

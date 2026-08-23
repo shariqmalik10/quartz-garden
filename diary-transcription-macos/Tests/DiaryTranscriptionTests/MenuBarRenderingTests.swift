@@ -14,14 +14,13 @@ final class MenuBarRenderingTests: XCTestCase {
             automaticMetering: false
         )
         let renderer = ImageRenderer(content: MenuBarContentView(
-            model: DiaryAppModel(),
-            capture: capture
+            model: DiaryAppModel(capture: capture)
         ))
         renderer.scale = 2
-        renderer.proposedSize = ProposedViewSize(width: 392, height: nil)
+        renderer.proposedSize = ProposedViewSize(width: 404, height: nil)
 
         let image = try XCTUnwrap(renderer.cgImage)
-        XCTAssertEqual(image.width, 784)
+        XCTAssertEqual(image.width, 808)
         XCTAssertGreaterThan(image.height, 700)
         assertFirstViewportStructure(in: image)
 
@@ -40,8 +39,9 @@ final class MenuBarRenderingTests: XCTestCase {
                 .appendingPathComponent("DiarySnapshot-\(UUID().uuidString)")),
             automaticMetering: false
         )
-        let model = DiaryAppModel()
+        let model = DiaryAppModel(capture: capture)
         model.vaultPath = "/tmp/Notes Vault"
+        model.modelState = .ready
 
         await capture.startRecording()
         for index in 0..<31 {
@@ -53,13 +53,13 @@ final class MenuBarRenderingTests: XCTestCase {
             capture.refreshMeter()
         }
 
-        let renderer = ImageRenderer(content: MenuBarContentView(model: model, capture: capture))
+        let renderer = ImageRenderer(content: MenuBarContentView(model: model))
         renderer.scale = 2
-        renderer.proposedSize = ProposedViewSize(width: 392, height: nil)
+        renderer.proposedSize = ProposedViewSize(width: 404, height: nil)
         let image = try XCTUnwrap(renderer.cgImage)
         capture.stopRecording()
 
-        XCTAssertEqual(image.width, 784)
+        XCTAssertEqual(image.width, 808)
         XCTAssertGreaterThan(image.height, 700)
         assertFirstViewportStructure(in: image)
 
