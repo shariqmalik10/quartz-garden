@@ -24,6 +24,12 @@ const escapeHtml = (value) =>
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
 
+const slugify = (value) =>
+  String(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+
 function collectionFromSource(source) {
   const marker = "export const COLLECTION_LINKS"
   const markerIndex = source.indexOf(marker)
@@ -62,19 +68,28 @@ function renderPage(collection, sourceUrl) {
     const entries = groups
       .get(category)
       .sort((left, right) => left.title.localeCompare(right.title, "en"))
+    const groupId = `atlas-${slugify(category)}`
     const items = entries
       .map(
-        (entry) => `  <li><a href="${escapeHtml(entry.url)}">${escapeHtml(entry.title)}</a></li>`,
+        (entry) =>
+          `  <li data-atlas-item><a href="${escapeHtml(entry.url)}">${escapeHtml(entry.title)}</a></li>`,
       )
       .join("\n")
     const open = category === "Inspiration" ? " open" : ""
-    return `<details class="atlas-group"${open}>
-<summary><span>${escapeHtml(category)}</span><small>${entries.length} links</small></summary>
+    return `<details id="${groupId}" class="atlas-group" data-atlas-group data-atlas-label="${escapeHtml(category)}"${open}>
+<summary><span>${escapeHtml(category)}</span><small data-atlas-count data-total="${entries.length}">${entries.length} links</small></summary>
 <ul class="garden-link-list atlas-links">
 ${items}
 </ul>
 </details>`
   })
+
+  const categoryLinks = categories
+    .map((category) => {
+      const count = groups.get(category).length
+      return `<a href="#atlas-${slugify(category)}" data-atlas-jump>${escapeHtml(category)} <span>${count}</span></a>`
+    })
+    .join("\n")
 
   return `---
 title: Collected links
@@ -87,6 +102,22 @@ cssclasses:
 These are links I collect for inspiration and study. They are separate from [[notes/index|my own writing and notes]]. Start with <a href="/inspiration/blogs">blogs I return to</a> or <a href="/inspiration/design-interaction">saved design and interaction links</a>, then browse the fuller atlas below.
 
 <p class="atlas-source">${collection.length} links synced from <a href="${escapeHtml(sourceUrl)}">Signal Atlas</a>.</p>
+
+<section class="atlas-controls" aria-labelledby="atlas-controls-title">
+<div class="atlas-search" role="search">
+<label id="atlas-controls-title" for="atlas-filter">Find a useful trail</label>
+<div class="atlas-search-line">
+<input id="atlas-filter" type="search" placeholder="Search names, sites, or categories" autocomplete="off" spellcheck="false">
+<button type="button" data-atlas-clear hidden>Clear</button>
+</div>
+<p class="atlas-status" data-atlas-status aria-live="polite">${collection.length} links across ${categories.length} collections</p>
+</div>
+<nav class="atlas-category-nav" aria-label="Browse link collections">
+${categoryLinks}
+</nav>
+</section>
+
+<p class="atlas-empty" data-atlas-empty hidden>Nothing collected under that search yet. Try a broader word.</p>
 
 ${sections.join("\n\n")}
 `

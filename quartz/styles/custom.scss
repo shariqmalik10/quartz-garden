@@ -41,8 +41,8 @@ FORM: A Quartz hypertext garden—calm reading first, lightweight wayfinding sec
   --garden-paper-deep: #e8deca;
   --garden-ink: #172b4d;
   --garden-body: #40506b;
-  --garden-faded: #8b806d;
-  --garden-rust: #bd5438;
+  --garden-faded: #756b5b;
+  --garden-rust: #a4432d;
   --garden-sky: #90a9c5;
   --garden-leaf: #536d59;
   --garden-rule: #ded4bf;
@@ -577,6 +577,165 @@ article.inspiration-atlas + .page-listing {
   font-size: 0.9rem;
 }
 
+/*
+THESIS: The quote itself is the destination; the archive refuses a directory of linked titles.
+OWN-WORLD: Warm paper, navy type, rust marginal marks, quiet rules, and irregular horizontal placement.
+STORY: Enter through a small collection note, then read every line in one unbroken, attributed procession.
+FIRST VIEWPORT: The page title gives way to a large opening mark and two or three differently scaled lines.
+FORM: A loose-leaf quote field, fifth in the structural study; source order stays linear while alignment drifts.
+*/
+body[data-slug="quotes/index"] .center > .popover-hint,
+body[data-slug="quotes/index"] .center > hr {
+  display: none;
+}
+
+body[data-slug="quotes/index"] .center,
+body[data-slug="quotes/index"] .quote-field {
+  max-width: 58rem;
+}
+
+.quote-field {
+  width: 100%;
+  margin-top: 2.25rem;
+}
+
+.quote-field-intro {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+  max-width: 38rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--garden-rule);
+}
+
+.quote-field-mark {
+  color: var(--garden-rust);
+  font-family: var(--headerFont);
+  font-size: clamp(2.6rem, 6vw, 4.5rem);
+  line-height: 0.8;
+}
+
+.quote-field-count,
+.quote-field-note {
+  text-wrap: pretty;
+}
+
+.quote-field-count {
+  margin: 0;
+  color: var(--garden-ink);
+  font-family: var(--headerFont);
+  font-size: clamp(1.1rem, 2vw, 1.35rem);
+  font-weight: 600;
+}
+
+.quote-field-note {
+  max-width: 42ch;
+  margin: 0.35rem 0 0;
+  color: var(--garden-faded);
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+.quote-field-list {
+  display: grid;
+  gap: 2.75rem;
+  padding: 0;
+  margin: 3.5rem 0 0;
+  list-style: none;
+}
+
+.quote-field-item {
+  padding: 0;
+  margin: 0;
+}
+
+.quote-field-item figure {
+  position: relative;
+  box-sizing: border-box;
+  width: min(100%, 44rem);
+  padding: 1.2rem 0 0 1.8rem;
+  margin: 0;
+  border-top: 1px solid var(--garden-rule);
+}
+
+.quote-field-item:nth-child(3n + 2) figure {
+  width: min(88%, 40rem);
+  margin-left: auto;
+}
+
+.quote-field-item:nth-child(3n) figure {
+  width: min(92%, 42rem);
+  margin-inline: auto;
+}
+
+.quote-field-item-mark {
+  position: absolute;
+  top: 1.05rem;
+  left: 0;
+  color: var(--garden-rust);
+  font-family: var(--headerFont);
+  font-size: 1rem;
+}
+
+.quote-field-item blockquote {
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+.quote-field-item blockquote::before {
+  content: none;
+}
+
+.quote-field-item blockquote p {
+  margin: 0;
+  color: var(--garden-ink);
+  font-family: var(--bodyFont);
+  font-size: clamp(1.12rem, 2vw, 1.38rem);
+  font-weight: 550;
+  line-height: 1.58;
+  text-wrap: pretty;
+}
+
+.quote-field-item.quote-field-short blockquote p {
+  font-family: var(--headerFont);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.quote-field-item.quote-field-long blockquote p {
+  font-size: clamp(1.02rem, 1.6vw, 1.2rem);
+  line-height: 1.68;
+}
+
+.quote-field-item figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  align-items: baseline;
+  margin-top: 0.8rem;
+  color: var(--garden-faded);
+  font-family: var(--bodyFont);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.quote-field-item cite {
+  color: var(--garden-body);
+  font-style: normal;
+}
+
+.quote-field-item time {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.quote-field-empty {
+  color: var(--garden-faded);
+}
+
 .quotes-rail {
   width: 100%;
   min-width: 0;
@@ -852,12 +1011,123 @@ article.inspiration-atlas + .page-listing {
   font-size: 0.9rem;
 }
 
+/*
+THESIS: A 365-link archive should answer a search before it asks for a scroll.
+OWN-WORLD: The garden becomes an atlas ledger: ink search line, rust focus, leaf trail marks, and ruled groups.
+STORY: Search directly or choose a collection, scan a compact list, then leave through an ordinary external link.
+FIRST VIEWPORT: Intro and provenance lead into one search line, a live count, and the complete category index.
+FORM: A filterable atlas ledger, fourth in the structural study; native details remain the no-script foundation.
+*/
+body[data-slug="inspiration/index"] .center > article {
+  max-width: 54rem;
+}
+
 .inspiration-atlas .atlas-source {
   color: var(--garden-faded);
   font-size: 0.88rem;
 }
 
+.atlas-controls {
+  position: sticky;
+  top: 1rem;
+  z-index: 2;
+  padding: 1.25rem 0 1rem;
+  margin: 2rem 0 2.5rem;
+  background: var(--garden-paper);
+  border-top: 1px solid var(--garden-rule);
+  border-bottom: 1px solid var(--garden-rule);
+}
+
+.atlas-search > label {
+  display: block;
+  margin-bottom: 0.55rem;
+  color: var(--garden-ink);
+  font-family: var(--headerFont);
+  font-size: clamp(1.15rem, 2vw, 1.4rem);
+  font-weight: 600;
+  text-wrap: balance;
+}
+
+.atlas-search-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: end;
+}
+
+.atlas-search-line input {
+  min-width: 0;
+  width: 100%;
+  padding: 0.55rem 0;
+  color: var(--garden-ink);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--garden-body);
+  border-radius: 0;
+  font-family: var(--bodyFont);
+  font-size: 1rem;
+}
+
+.atlas-search-line input::placeholder {
+  color: var(--garden-faded);
+  opacity: 1;
+}
+
+.atlas-search-line button {
+  padding: 0.5rem 0;
+  color: var(--garden-rust);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid currentColor;
+  border-radius: 0;
+  cursor: pointer;
+  font-family: var(--bodyFont);
+  font-size: 0.82rem;
+}
+
+.atlas-status {
+  margin: 0.55rem 0 0;
+  color: var(--garden-faded);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.atlas-category-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 1.2rem;
+  margin-top: 1rem;
+}
+
+.atlas-category-nav a {
+  color: var(--garden-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration-color: color-mix(in srgb, var(--garden-rust) 55%, transparent);
+}
+
+.atlas-category-nav a:hover {
+  color: var(--garden-rust);
+}
+
+.atlas-category-nav span {
+  margin-left: 0.2rem;
+  color: var(--garden-faded);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 400;
+}
+
+.atlas-empty {
+  padding: 1.25rem 0;
+  color: var(--garden-faded);
+  border-top: 1px solid var(--garden-rule);
+  border-bottom: 1px solid var(--garden-rule);
+  text-wrap: pretty;
+}
+
 .atlas-group {
+  scroll-margin-top: 13rem;
   border-top: 1px solid var(--garden-rule);
 }
 
@@ -886,6 +1156,10 @@ article.inspiration-atlas + .page-listing {
   font-weight: 400;
 }
 
+.atlas-group[open] summary > span {
+  color: var(--garden-rust);
+}
+
 .atlas-links {
   columns: 2 16rem;
   column-gap: 2rem;
@@ -895,6 +1169,10 @@ article.inspiration-atlas + .page-listing {
 
 .atlas-links > li {
   break-inside: avoid;
+}
+
+.atlas-links > li::before {
+  content: none !important;
 }
 
 body[data-slug="notes/index"] .page-listing .section-ul {
@@ -1091,6 +1369,31 @@ footer {
   .quotes-heading {
     border-bottom: 0;
   }
+
+  .quote-field {
+    margin-top: 1.75rem;
+  }
+
+  .quote-field-list {
+    gap: 2rem;
+    margin-top: 2.5rem;
+  }
+
+  .quote-field-item figure,
+  .quote-field-item:nth-child(3n + 2) figure,
+  .quote-field-item:nth-child(3n) figure {
+    width: 100%;
+    margin-inline: 0;
+  }
+
+  .atlas-controls {
+    position: static;
+    margin-top: 1.5rem;
+  }
+
+  .atlas-group {
+    scroll-margin-top: 1rem;
+  }
 }
 
 @media (min-width: 801px) and (max-width: 1200px) {
@@ -1119,6 +1422,29 @@ footer {
 
   .quotes-drawer-sheet {
     padding-inline: 1.1rem;
+  }
+
+  .quote-field-intro {
+    gap: 0.65rem;
+  }
+
+  .quote-field-item figure {
+    padding-left: 1.35rem;
+  }
+
+  .quote-field-item figcaption {
+    display: block;
+  }
+
+  .quote-field-item time {
+    display: block;
+    margin: 0.25rem 0 0;
+  }
+
+  .atlas-category-nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem 1rem;
   }
 
   .atlas-links {

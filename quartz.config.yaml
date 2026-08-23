@@ -27,8 +27,8 @@ configuration:
         darkgray: "#40506b"
         dark: "#172b4d"
         secondary: "#274f7a"
-        tertiary: "#bd5438"
-        highlight: rgba(189, 84, 56, 0.11)
+        tertiary: "#a4432d"
+        highlight: rgba(164, 67, 45, 0.11)
         textHighlight: "#e8bd5288"
       darkMode:
         light: "#08172c"
@@ -67,6 +67,16 @@ plugins:
     layout:
       position: right
       priority: 5
+  - source: ./plugins/quote-archive
+    enabled: true
+    layout:
+      position: beforeBody
+      priority: 25
+  - source: ./plugins/atlas-navigation
+    enabled: true
+    layout:
+      position: afterBody
+      priority: 90
   - source: "@quartz-community/created-modified-date"
     enabled: true
     options:
