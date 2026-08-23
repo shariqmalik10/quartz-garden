@@ -2,6 +2,9 @@
 title: Learning all the way down
 description: Why small implementations from first principles still belong beside production work.
 date: 2026-08-10
+kind: writing
+visibility: public
+draft: false
 tags:
   - learning
   - seedling

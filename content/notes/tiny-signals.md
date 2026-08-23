@@ -2,6 +2,9 @@
 title: A small note about tiny signals
 description: A sample field note about noticing the quiet feedback inside a system.
 date: 2026-08-10
+kind: writing
+visibility: public
+draft: false
 tags:
   - sample
   - field-note

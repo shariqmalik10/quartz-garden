@@ -48,10 +48,10 @@ FORM: A Quartz hypertext garden—calm reading first, lightweight wayfinding sec
   --garden-rule: #ded4bf;
   --garden-hand: "Playwrite GB J Guides", "Segoe Print", "Bradley Hand", cursive;
 
-  // Fraunces landmarks give way to Nerko One's thick marker strokes. Body
-  // (Manrope) and code (IBM Plex Mono) keep their Google Fonts loading.
+  // Nerko One is reserved for the identity mark. Fraunces handles headings at
+  // reading sizes; Manrope handles body text, labels, dates, and quote copy.
   --titleFont: "Nerko One", system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --headerFont: "Nerko One", system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --headerFont: "Fraunces", Georgia, "Times New Roman", serif;
 }
 
 :root[saved-theme="dark"] {
@@ -59,7 +59,7 @@ FORM: A Quartz hypertext garden—calm reading first, lightweight wayfinding sec
   --garden-paper-deep: #172b48;
   --garden-ink: #f1f5fb;
   --garden-body: #c9daf1;
-  --garden-faded: #7890b0;
+  --garden-faded: #91a8c7;
   --garden-rust: #ef7856;
   --garden-sky: #7898bd;
   --garden-leaf: #819d81;
@@ -134,10 +134,9 @@ input:focus-visible {
 
 .page-title a {
   color: var(--garden-ink);
-  font-family: var(--headerFont);
+  font-family: var(--titleFont);
   font-size: clamp(1.7rem, 3vw, 2.15rem);
   font-weight: 400;
-  letter-spacing: -0.005em;
 }
 
 .search {
@@ -193,8 +192,8 @@ body[data-slug="index"] .center > article {
 }
 
 article {
-  font-size: 0.96rem;
-  line-height: 1.7;
+  font-size: 1rem;
+  line-height: 1.75;
 }
 
 article > h1,
@@ -203,8 +202,7 @@ article > h3,
 .article-title {
   color: var(--garden-ink);
   font-family: var(--headerFont);
-  font-weight: 400;
-  letter-spacing: -0.005em;
+  font-weight: 600;
 }
 
 article > h2 {
@@ -281,9 +279,9 @@ article .garden-list a.internal:not(.tag-link) {
 }
 
 .garden-intro {
-  max-width: 43rem;
-  font-size: clamp(1rem, 1.7vw, 1.1rem);
-  line-height: 1.7;
+  max-width: 68ch;
+  font-size: clamp(1rem, 1.7vw, 1.08rem);
+  line-height: 1.75;
 }
 
 .garden-intro p:first-child {
@@ -347,14 +345,15 @@ article .garden-list a.internal:not(.tag-link) {
 .garden-paths span {
   color: var(--garden-ink);
   font-family: var(--headerFont);
-  font-size: 1.03rem;
+  font-size: 1.05rem;
+  font-weight: 600;
   transition: color 150ms ease;
 }
 
 .garden-paths small {
   color: var(--garden-faded);
-  font-size: 0.82rem;
-  line-height: 1.5;
+  font-size: 0.88rem;
+  line-height: 1.55;
 }
 
 .garden-list {
@@ -403,6 +402,7 @@ article .garden-list a.internal:not(.tag-link) {
   color: var(--garden-ink);
   font-family: var(--headerFont);
   font-size: 1.04rem;
+  font-weight: 600;
   line-height: 1.35;
 }
 
@@ -413,21 +413,116 @@ article .garden-list a.internal:not(.tag-link) {
 .garden-list small {
   margin-top: 0.25rem;
   color: var(--garden-faded);
-  font-size: 0.82rem;
-  line-height: 1.5;
+  font-size: 0.88rem;
+  line-height: 1.55;
 }
 
 .garden-list time {
   color: var(--garden-faded);
-  font-family: var(--garden-hand);
-  font-size: 0.94rem;
+  font-family: var(--bodyFont);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+.writing-index {
+  width: 100%;
+  margin-top: 2.5rem;
+}
+
+.writing-index-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid var(--garden-rule);
+}
+
+.writing-index-heading h2 {
+  margin: 0;
+  color: var(--garden-ink);
+  font-family: var(--headerFont);
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.writing-index-heading span {
+  color: var(--garden-rust);
+  font-size: 1rem;
+}
+
+.writing-index-list {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.writing-index-list li {
+  margin: 0;
+  border-bottom: 1px solid var(--garden-rule);
+}
+
+.writing-index-list a.internal {
+  display: block;
+  padding: 0.72rem 0;
+  color: var(--garden-ink);
+  background: transparent;
+  border-radius: 0;
+  text-decoration: none;
+}
+
+.writing-index-list a.internal:hover span {
+  color: var(--garden-rust);
+}
+
+.writing-index-list span {
+  display: block;
+  font-family: var(--headerFont);
+  font-size: 0.96rem;
+  font-weight: 600;
+  line-height: 1.35;
+  transition: color 150ms ease;
+}
+
+.writing-index-list time {
+  display: block;
+  margin-top: 0.28rem;
+  color: var(--garden-faded);
+  font-family: var(--bodyFont);
+  font-size: 0.74rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+}
+
+.writing-index-more.internal,
+.writing-index-empty {
+  color: var(--garden-faded);
+  font-family: var(--bodyFont);
+  font-size: 0.8rem;
+}
+
+.writing-index-more.internal {
+  display: inline-block;
+  padding-top: 0.7rem;
+  background: transparent;
+  border-radius: 0;
+  text-decoration: underline;
+  text-decoration-color: var(--garden-rust);
+}
+
+.writing-index-empty {
+  line-height: 1.5;
 }
 
 // Vault-backed link collections render as a compact reading list. The capture
 // notes still exist for search and backlinks; the folder renderer is redundant
 // on these deliberately curated index pages.
 article.external-link-index + .page-listing {
+  display: none;
+}
+
+article.inspiration-atlas + .page-listing {
   display: none;
 }
 
@@ -511,14 +606,15 @@ article.external-link-index + .page-listing {
   color: var(--garden-ink);
   font-family: var(--headerFont);
   font-size: 1.05rem;
+  font-weight: 600;
 }
 
 .quotes-heading p {
   margin: 0.12rem 0 0;
   color: var(--garden-faded);
-  font-family: var(--garden-hand);
-  font-size: 0.88rem;
-  line-height: 1.35;
+  font-family: var(--bodyFont);
+  font-size: 0.78rem;
+  line-height: 1.45;
 }
 
 .quotes-list {
@@ -554,9 +650,10 @@ article.external-link-index + .page-listing {
 .quotes-rail blockquote p {
   margin: 0;
   color: var(--garden-ink);
-  font-family: var(--headerFont);
-  font-size: 0.96rem;
-  line-height: 1.45;
+  font-family: var(--bodyFont);
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.6;
   transition: color 150ms ease;
 }
 
@@ -568,10 +665,10 @@ article.external-link-index + .page-listing {
   padding: 0;
   margin: 0.55rem 0 0;
   color: var(--garden-faded);
-  font-family: var(--garden-hand);
-  font-size: 0.82rem;
-  font-style: italic;
-  line-height: 1.4;
+  font-family: var(--bodyFont);
+  font-size: 0.78rem;
+  font-style: normal;
+  line-height: 1.5;
   border: 0;
 }
 
@@ -583,30 +680,199 @@ article.external-link-index + .page-listing {
   display: block;
   margin-top: 0.25rem;
   color: var(--garden-faded);
-  font-family: var(--garden-hand);
-  font-size: 0.76rem;
+  font-family: var(--bodyFont);
+  font-size: 0.74rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .quote-source {
   opacity: 0.88;
 }
 
-.quotes-more.internal {
+.quotes-more {
+  appearance: none;
   display: inline-block;
   padding: 0.9rem 0 0;
   color: var(--garden-faded);
   background: transparent;
+  border: 0;
   border-radius: 0;
+  cursor: pointer;
+  font-family: var(--bodyFont);
   font-size: 0.82rem;
   text-decoration: underline;
   text-decoration-color: var(--garden-rust);
   text-underline-offset: 0.22em;
 }
 
+.quotes-more:hover {
+  color: var(--garden-rust);
+}
+
+.quotes-drawer {
+  width: min(36rem, 100%);
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  padding: 0;
+  margin: 0 0 0 auto;
+  color: var(--garden-body);
+  background: var(--garden-paper);
+  border: 0;
+  border-left: 1px solid var(--garden-rule);
+}
+
+.quotes-drawer::backdrop {
+  background: rgba(8, 23, 44, 0.58);
+}
+
+.quotes-drawer-sheet {
+  box-sizing: border-box;
+  height: 100%;
+  padding: max(1.5rem, env(safe-area-inset-top)) max(1.5rem, env(safe-area-inset-right))
+    max(1.5rem, env(safe-area-inset-bottom)) 1.5rem;
+  overflow-y: auto;
+}
+
+.quotes-drawer-header {
+  position: sticky;
+  top: calc(-1 * max(1.5rem, env(safe-area-inset-top)));
+  z-index: 2;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: max(1.5rem, env(safe-area-inset-top)) 0 1rem;
+  margin: 0;
+  background: var(--garden-paper);
+  border-bottom: 1px solid var(--garden-rule);
+}
+
+.quotes-drawer-header h2 {
+  margin: 0;
+  color: var(--garden-ink);
+  font-family: var(--headerFont);
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.quotes-drawer-header p {
+  margin: 0.2rem 0 0;
+  color: var(--garden-faded);
+  font-size: 0.8rem;
+}
+
+.quotes-close {
+  padding: 0.3rem 0;
+  color: var(--garden-ink);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--garden-rust);
+  cursor: pointer;
+  font-family: var(--bodyFont);
+  font-size: 0.82rem;
+}
+
+.quotes-list-all .quote-entry.internal {
+  padding: 1.15rem 0;
+}
+
+.quotes-archive-link.internal {
+  display: inline-block;
+  margin-top: 1.25rem;
+  color: var(--garden-ink);
+  background: transparent;
+  border-radius: 0;
+  text-decoration-color: var(--garden-rust);
+}
+
 .quotes-empty {
   color: var(--garden-faded);
-  font-family: var(--garden-hand);
+  font-family: var(--bodyFont);
   font-size: 0.9rem;
+}
+
+.inspiration-atlas .atlas-source {
+  color: var(--garden-faded);
+  font-size: 0.88rem;
+}
+
+.atlas-group {
+  border-top: 1px solid var(--garden-rule);
+}
+
+.atlas-group:last-child {
+  border-bottom: 1px solid var(--garden-rule);
+}
+
+.atlas-group summary {
+  display: flex;
+  gap: 1rem;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0.9rem 0;
+  color: var(--garden-ink);
+  cursor: pointer;
+  font-family: var(--headerFont);
+  font-size: 1.08rem;
+  font-weight: 600;
+}
+
+.atlas-group summary small {
+  color: var(--garden-faded);
+  font-family: var(--bodyFont);
+  font-size: 0.76rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 400;
+}
+
+.atlas-links {
+  columns: 2 16rem;
+  column-gap: 2rem;
+  padding-bottom: 1rem;
+  margin-top: 0;
+}
+
+.atlas-links > li {
+  break-inside: avoid;
+}
+
+body[data-slug="notes/index"] .page-listing .section-ul {
+  padding: 0;
+  margin-top: 1.25rem;
+  list-style: none;
+  border-top: 1px solid var(--garden-rule);
+}
+
+body[data-slug="notes/index"] .page-listing .section-li {
+  margin: 0;
+  border-bottom: 1px solid var(--garden-rule);
+}
+
+body[data-slug="notes/index"] .page-listing .section {
+  display: flex;
+  flex-direction: column;
+  padding: 0.9rem 0;
+}
+
+body[data-slug="notes/index"] .page-listing .desc {
+  order: 1;
+}
+
+body[data-slug="notes/index"] .page-listing .meta {
+  order: 2;
+  margin: 0.28rem 0 0;
+  color: var(--garden-faded);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+body[data-slug="notes/index"] .page-listing .tags {
+  display: none;
+}
+
+body[data-slug="notes/index"] .page-listing h3 {
+  font-size: 1.08rem;
 }
 
 hr {
@@ -710,6 +976,16 @@ footer {
     padding-inline: 0;
   }
 
+  .page > #quartz-body .sidebar.left {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .page > #quartz-body .sidebar.left > .flex-component {
+    flex: 0 0 auto;
+  }
+
   .page > #quartz-body .sidebar.right > * {
     box-sizing: border-box;
     min-width: 0;
@@ -725,6 +1001,16 @@ footer {
 
   .garden-window {
     margin-top: 1.4rem;
+  }
+
+  .writing-index {
+    margin-top: 1.25rem;
+  }
+
+  .writing-index-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 1.25rem;
   }
 
   .toc,
@@ -767,5 +1053,13 @@ footer {
 
   .garden-window {
     height: 9.5rem;
+  }
+
+  .quotes-drawer-sheet {
+    padding-inline: 1.1rem;
+  }
+
+  .atlas-links {
+    columns: 1;
   }
 }
