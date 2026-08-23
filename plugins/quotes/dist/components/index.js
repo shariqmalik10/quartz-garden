@@ -7,28 +7,62 @@ function setupQuotesDrawer() {
   if (!(openButton instanceof HTMLButtonElement) || !(dialog instanceof HTMLDialogElement)) return
 
   const closeButton = dialog.querySelector("[data-quotes-close]")
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)")
+  let closeTimer
+
+  const finishClose = () => {
+    if (closeTimer) window.clearTimeout(closeTimer)
+    closeTimer = undefined
+    dialog.classList.remove("is-closing")
+    if (dialog.open) dialog.close()
+  }
   const openDrawer = () => {
+    if (closeTimer) window.clearTimeout(closeTimer)
+    closeTimer = undefined
+    dialog.classList.remove("is-closing")
     if (!dialog.open) dialog.showModal()
     openButton.setAttribute("aria-expanded", "true")
+    if (closeButton instanceof HTMLButtonElement) closeButton.focus({ preventScroll: true })
   }
-  const closeDrawer = () => dialog.close()
+  const closeDrawer = () => {
+    if (!dialog.open || dialog.classList.contains("is-closing")) return
+    if (reduceMotion.matches) {
+      finishClose()
+      return
+    }
+
+    dialog.classList.add("is-closing")
+    closeTimer = window.setTimeout(finishClose, 220)
+  }
   const closeFromBackdrop = (event) => {
     if (event.target === dialog) closeDrawer()
   }
+  const closeFromEscape = (event) => {
+    event.preventDefault()
+    closeDrawer()
+  }
+  const closeAfterAnimation = (event) => {
+    if (event.target === dialog && event.animationName === "quotes-drawer-out") finishClose()
+  }
   const returnFocus = () => {
     openButton.setAttribute("aria-expanded", "false")
-    openButton.focus()
+    openButton.focus({ preventScroll: true })
   }
 
   openButton.addEventListener("click", openDrawer)
   closeButton?.addEventListener("click", closeDrawer)
   dialog.addEventListener("click", closeFromBackdrop)
+  dialog.addEventListener("cancel", closeFromEscape)
+  dialog.addEventListener("animationend", closeAfterAnimation)
   dialog.addEventListener("close", returnFocus)
 
   window.addCleanup?.(() => {
+    if (closeTimer) window.clearTimeout(closeTimer)
     openButton.removeEventListener("click", openDrawer)
     closeButton?.removeEventListener("click", closeDrawer)
     dialog.removeEventListener("click", closeFromBackdrop)
+    dialog.removeEventListener("cancel", closeFromEscape)
+    dialog.removeEventListener("animationend", closeAfterAnimation)
     dialog.removeEventListener("close", returnFocus)
   })
 }
