@@ -49,6 +49,16 @@ plugins:
     layout:
       position: left
       priority: 40
+      display: desktop-only
+  - source: ./plugins/writing-list
+    enabled: true
+    options:
+      limit: 5
+      linkToMore: /notes
+    layout:
+      position: afterBody
+      priority: 40
+      display: mobile-only
   - source: ./plugins/quotes
     enabled: true
     options:

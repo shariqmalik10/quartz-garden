@@ -27,9 +27,9 @@ export const WritingList = (userOptions = {}) => {
       })
       .slice(0, Math.max(1, Number(options.limit) || 5))
 
-    return h("nav", { class: "writing-index", "aria-labelledby": "writing-index-title" }, [
+    return h("nav", { class: "writing-index", "aria-label": "Latest writing" }, [
       h("div", { class: "writing-index-heading" }, [
-        h("h2", { id: "writing-index-title" }, "Latest writing"),
+        h("h2", null, "Latest writing"),
         h("span", { "aria-hidden": "true" }, "✎"),
       ]),
       entries.length
