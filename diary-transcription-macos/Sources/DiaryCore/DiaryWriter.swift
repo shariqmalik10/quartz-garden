@@ -26,10 +26,12 @@ public actor DiaryWriter {
     }
 
     let diaryDirectory = normalizedURL.appendingPathComponent("Diary", isDirectory: true)
-    try fileManager.createDirectory(
-      at: diaryDirectory,
-      withIntermediateDirectories: true
-    )
+    for relativePath in ["Diary", "Writing/Blogs", "Notes"] {
+      try fileManager.createDirectory(
+        at: normalizedURL.appendingPathComponent(relativePath, isDirectory: true),
+        withIntermediateDirectories: true
+      )
+    }
     vaultURL = normalizedURL
     return diaryDirectory
   }
@@ -218,6 +220,74 @@ public actor DiaryWriter {
     return fileURL
   }
 
+  /// Creates a plain Markdown document inside the configured vault. This is
+  /// used for private notes and custom files that should not receive Quartz
+  /// publishing metadata automatically.
+  @discardableResult
+  public func createMarkdownDocument(
+    at requestedURL: URL,
+    title: String? = nil
+  ) throws -> URL {
+    let normalizedURL =
+      requestedURL.pathExtension.lowercased() == "md"
+      ? requestedURL
+      : requestedURL.appendingPathExtension("md")
+    let fileURL = try validatedMarkdownURL(normalizedURL, mustExist: false)
+    guard !fileManager.fileExists(atPath: fileURL.path) else {
+      throw DiaryError.entryFileAlreadyExists(fileURL)
+    }
+
+    try fileManager.createDirectory(
+      at: fileURL.deletingLastPathComponent(),
+      withIntermediateDirectories: true
+    )
+    let cleanTitle = Self.cleanTitle(
+      title
+        ?? fileURL.deletingPathExtension().lastPathComponent
+        .replacingOccurrences(of: "-", with: " ")
+        .replacingOccurrences(of: "_", with: " ")
+        .capitalized
+    )
+    try Data("# \(cleanTitle)\n\n".utf8).write(to: fileURL, options: .withoutOverwriting)
+    return fileURL
+  }
+
+  /// Creates one named subfolder below an existing vault-relative directory.
+  /// Folder names are deliberately single-component so a prompt cannot escape
+  /// the workspace selected in the UI.
+  @discardableResult
+  public func createSubdirectory(
+    named requestedName: String,
+    under parentRelativePath: String
+  ) throws -> URL {
+    guard let vaultURL else {
+      throw DiaryError.vaultNotConfigured
+    }
+    let name = requestedName.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !name.isEmpty,
+      name != ".",
+      name != "..",
+      !name.contains("/"),
+      !name.contains(":")
+    else {
+      throw DiaryError.invalidEntryFolderName(requestedName)
+    }
+
+    let parentURL = try validatedDirectoryURL(
+      vaultURL.appendingPathComponent(parentRelativePath, isDirectory: true),
+      mustExist: true
+    )
+    let folderURL = try validatedDirectoryURL(
+      parentURL.appendingPathComponent(name, isDirectory: true),
+      mustExist: false
+    )
+    guard !fileManager.fileExists(atPath: folderURL.path) else {
+      throw DiaryError.entryFolderAlreadyExists(folderURL)
+    }
+    try fileManager.createDirectory(at: folderURL, withIntermediateDirectories: false)
+    return folderURL
+  }
+
   private func coordinateWrite(at fileURL: URL, operation: (URL) throws -> Void) throws {
     let coordinator = NSFileCoordinator(filePresenter: nil)
     var coordinationError: NSError?
@@ -360,6 +430,37 @@ public actor DiaryWriter {
     return candidateURL
   }
 
+  private func validatedDirectoryURL(_ requestedURL: URL, mustExist: Bool) throws -> URL {
+    guard let vaultURL else {
+      throw DiaryError.vaultNotConfigured
+    }
+    let rootURL = vaultURL.resolvingSymlinksInPath().standardizedFileURL
+    let candidateURL: URL
+    if fileManager.fileExists(atPath: requestedURL.path) {
+      candidateURL = requestedURL.resolvingSymlinksInPath().standardizedFileURL
+    } else {
+      let parent = requestedURL.deletingLastPathComponent()
+        .resolvingSymlinksInPath()
+        .standardizedFileURL
+      candidateURL = parent.appendingPathComponent(
+        requestedURL.lastPathComponent,
+        isDirectory: true
+      )
+    }
+    guard isInside(rootURL, candidateURL) else {
+      throw DiaryError.invalidEntryFolder(candidateURL)
+    }
+    if mustExist {
+      var isDirectory: ObjCBool = false
+      guard fileManager.fileExists(atPath: candidateURL.path, isDirectory: &isDirectory),
+        isDirectory.boolValue
+      else {
+        throw DiaryError.invalidEntryFolder(candidateURL)
+      }
+    }
+    return candidateURL
+  }
+
   private func relativePathForPotentialFile(_ fileURL: URL, vaultURL: URL) throws -> String {
     let rootPath = vaultURL.resolvingSymlinksInPath().standardizedFileURL.path
     guard isInside(URL(fileURLWithPath: rootPath), fileURL) else {
@@ -371,7 +472,14 @@ public actor DiaryWriter {
   private func isInside(_ parent: URL, _ child: URL) -> Bool {
     let parentPath = parent.standardizedFileURL.path
     let childPath = child.standardizedFileURL.path
-    return childPath.hasPrefix(parentPath + "/")
+    return childPath == parentPath || childPath.hasPrefix(parentPath + "/")
+  }
+
+  private static func cleanTitle(_ value: String) -> String {
+    value
+      .split(whereSeparator: { $0.isNewline })
+      .joined(separator: " ")
+      .trimmingCharacters(in: .whitespacesAndNewlines)
   }
 }
 

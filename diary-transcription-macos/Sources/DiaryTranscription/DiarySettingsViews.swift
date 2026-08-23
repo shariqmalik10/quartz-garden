@@ -49,9 +49,11 @@ private struct VaultSettingsTab: View {
 
       Section("Where entries go") {
         LabeledContent("Private daily capture", value: "Diary/diary-log_YYYY-MM-DD.md")
-        LabeledContent("Private blog drafts", value: "Writing/<your-title>.md")
+        LabeledContent("Private blog drafts", value: "Writing/Blogs/<your-title>.md")
+        LabeledContent("Study and working notes", value: "Notes/<your-title>.md")
+        LabeledContent("Any existing Markdown", value: "Any .md file inside the vault")
         Text(
-          "Use Start private blog draft in the app, yap into it, and continue the same file later. Publishing remains an explicit metadata change in Obsidian."
+          "The destination studio remembers recent files. New blogs start private; publishing remains an explicit metadata change in Obsidian."
         )
         .font(.caption)
         .foregroundStyle(.secondary)
@@ -148,12 +150,7 @@ private struct AppearanceSettingsTab: View {
       }
 
       Section("Sound capture") {
-        Picker("Visualization", selection: $model.visualizationStyle) {
-          ForEach(CaptureVisualizationStyle.allCases) { style in
-            Label(style.name, systemImage: style.symbolName).tag(style)
-          }
-        }
-        .pickerStyle(.segmented)
+        visualizationPicker
         AudioVisualizationView(
           capture: model.capture,
           style: model.visualizationStyle
@@ -174,18 +171,29 @@ private struct AppearanceSettingsTab: View {
   }
 
   private var themeSwatches: some View {
-    HStack(spacing: 8) {
+    LazyVGrid(
+      columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4),
+      spacing: 8
+    ) {
       ForEach(DiaryThemeChoice.allCases) { theme in
         let colors = theme.palette
         Button {
           model.themeChoice = theme
         } label: {
-          HStack(spacing: 0) {
-            Rectangle().fill(colors.canvas)
-            Rectangle().fill(colors.signal)
-            Rectangle().fill(colors.record)
+          VStack(alignment: .leading, spacing: 5) {
+            HStack(spacing: 0) {
+              Rectangle().fill(colors.canvas)
+              Rectangle().fill(colors.signal)
+              Rectangle().fill(colors.record)
+            }
+            .frame(height: 25)
+            Text(theme.name)
+              .font(.caption2.weight(.medium))
+              .foregroundStyle(.primary)
+              .lineLimit(1)
           }
-          .frame(width: 62, height: 28)
+          .padding(5)
+          .frame(maxWidth: .infinity, alignment: .leading)
           .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
           .overlay {
             RoundedRectangle(cornerRadius: 6, style: .continuous)
@@ -199,6 +207,43 @@ private struct AppearanceSettingsTab: View {
         .accessibilityLabel(theme.name)
       }
     }
+  }
+
+  private var visualizationPicker: some View {
+    LazyVGrid(
+      columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3),
+      spacing: 8
+    ) {
+      ForEach(CaptureVisualizationStyle.allCases) { style in
+        Button {
+          model.visualizationStyle = style
+        } label: {
+          VStack(spacing: 6) {
+            Image(systemName: style.symbolName)
+              .font(.system(size: 16, weight: .semibold))
+            Text(style.name)
+              .font(.caption2.weight(.medium))
+              .lineLimit(1)
+          }
+          .foregroundStyle(
+            model.visualizationStyle == style
+              ? model.themeChoice.palette.controlInk
+              : model.themeChoice.palette.text
+          )
+          .frame(maxWidth: .infinity)
+          .padding(.vertical, 9)
+          .background(
+            model.visualizationStyle == style
+              ? model.themeChoice.palette.signal
+              : model.themeChoice.palette.elevated
+          )
+          .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(model.visualizationStyle == style ? .isSelected : [])
+      }
+    }
+    .environment(\.diaryPalette, model.themeChoice.palette)
   }
 }
 

@@ -12,6 +12,9 @@ public enum DiaryError: LocalizedError, Equatable {
   case entryFileMissing(URL)
   case invalidWritingDestination(URL)
   case entryFileAlreadyExists(URL)
+  case invalidEntryFolderName(String)
+  case invalidEntryFolder(URL)
+  case entryFolderAlreadyExists(URL)
 
   public var errorDescription: String? {
     switch self {
@@ -36,7 +39,13 @@ public enum DiaryError: LocalizedError, Equatable {
     case .invalidWritingDestination(let url):
       "New blog drafts must be saved inside the vault's Writing folder: \(url.path)"
     case .entryFileAlreadyExists(let url):
-      "A file already exists at the chosen blog-draft location: \(url.path)"
+      "A Markdown file already exists at the chosen location: \(url.path)"
+    case .invalidEntryFolderName(let name):
+      "Use a single folder name without slashes: \(name)"
+    case .invalidEntryFolder(let url):
+      "Choose a folder inside the connected Obsidian vault: \(url.path)"
+    case .entryFolderAlreadyExists(let url):
+      "A folder already exists at that location: \(url.path)"
     }
   }
 }

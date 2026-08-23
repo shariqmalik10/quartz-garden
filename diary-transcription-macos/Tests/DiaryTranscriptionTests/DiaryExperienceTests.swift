@@ -70,6 +70,33 @@ final class DiaryExperienceTests: XCTestCase {
     let series = stats.recentDays(endingAt: today, count: 7, calendar: calendar)
     XCTAssertEqual(series.count, 7)
     XCTAssertEqual(series.suffix(2).map(\.words), [4, 2])
+    XCTAssertEqual(series.suffix(2).map(\.audioSeconds), [42, 0])
+  }
+
+  func testMarkdownPathsResolveToTheExpectedWorkspace() {
+    XCTAssertEqual(DiaryAppModel.workspace(forRelativePath: "Diary/today.md"), .diary)
+    XCTAssertEqual(
+      DiaryAppModel.workspace(forRelativePath: "Writing/Blogs/my-post.md"),
+      .blog
+    )
+    XCTAssertEqual(
+      DiaryAppModel.workspace(forRelativePath: "Writing/older-draft.md"),
+      .blog
+    )
+    XCTAssertEqual(DiaryAppModel.workspace(forRelativePath: "Notes/postgres.md"), .notes)
+    XCTAssertEqual(
+      DiaryAppModel.workspace(forRelativePath: "Projects/garden.md"),
+      .anyMarkdown
+    )
+  }
+
+  func testWorkspaceRootsMatchTheQuartzAndPrivateFolderMap() {
+    XCTAssertEqual(EntryWorkspace.diary.directoryRelativePath, "Diary")
+    XCTAssertEqual(EntryWorkspace.blog.directoryRelativePath, "Writing/Blogs")
+    XCTAssertEqual(EntryWorkspace.notes.directoryRelativePath, "Notes")
+    XCTAssertEqual(EntryWorkspace.anyMarkdown.directoryRelativePath, "")
+    XCTAssertTrue(EntryWorkspace.blog.accepts(relativePath: "Writing/legacy.md"))
+    XCTAssertFalse(EntryWorkspace.blog.accepts(relativePath: "Notes/private.md"))
   }
 
   func testSelectingWritingFolderResolvesToActualObsidianVaultRoot() throws {

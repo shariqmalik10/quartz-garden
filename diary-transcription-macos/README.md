@@ -2,7 +2,7 @@
 
 A native Apple-silicon macOS 15+ menu-bar app that records a thought, transcribes it locally with Cohere Transcribe 2B INT8 through Apple MLX, and appends plain Markdown to an existing Obsidian vault.
 
-## What version 1.1 does
+## What version 1.2 does
 
 - remembers an existing Obsidian vault using a security-scoped bookmark;
 - creates `<Vault>/Diary/` and appends to `diary-log_YYYY-MM-DD.md`;
@@ -20,10 +20,14 @@ A native Apple-silicon macOS 15+ menu-bar app that records a thought, transcribe
 - opens the exact saved file directly in Obsidian through `obsidian://`;
 - switches between **Speak**, **Write**, and a local pixel-style **Stats** ledger at the top;
 - can append future recordings or typed text to any existing Markdown file inside the vault;
-- creates private Quartz-ready blog drafts under `Writing/`;
+- offers a destination studio for Diary, Blog, Notes, and Any Markdown;
+- creates default `Diary/`, `Writing/Blogs/`, and `Notes/` workspaces;
+- offers new file, new folder + file, recent-file resume, and existing-file selection flows;
+- creates private Quartz-ready blog drafts under `Writing/Blogs/`;
 - remembers the selected destination across launches and pins it into pending recovery metadata;
-- offers Ink, Black & White, Night Plum, and Forest themes;
-- offers waveform, signal-ring, and pixel-meter capture visualizations.
+- offers eight themes, including Dither Signal, Cobalt, Solar Paper, and Rosewood;
+- offers six input visualizations, including ribbon, radial, and ordered-dither signals;
+- renders a scrub-responsive fourteen-day Dither-style writing chart from local aggregates.
 
 There is no cloud transcription, cleanup LLM, database, or proprietary note format.
 
@@ -43,7 +47,7 @@ To create the drag-to-Applications disk image:
 ./scripts/build-dmg.sh
 ```
 
-The result is `dist/DiaryTranscription-1.1.0.dmg`.
+The result is `dist/DiaryTranscription-1.2.0.dmg`.
 
 The package script builds an ad-hoc-signed local app and copies SwiftPM resource bundles, including a colocated MLX Metal library, into the application. Test with:
 
@@ -56,16 +60,16 @@ swift test
 1. Open the menu-bar app and choose the folder that contains your Obsidian vault.
 2. Choose **Install** for the 2.42 GB Cohere INT8 model. The first installation needs internet access.
 3. Optionally open Settings to select a language or record a global shortcut. No shortcut is assigned by default; safe shortcuts require at least two modifiers, and Delete clears one.
-4. Leave **Adding to** on today’s diary, choose **Continue existing file…**, or choose **Start private blog draft…**.
+4. Open **Resume / switch**, choose Diary, Blog, Notes, or Any file, then select new file, new folder + file, or continue existing.
 5. Press the microphone, speak, and press Stop. The app transcribes locally and appends the result.
 6. Choose **Open in Obsidian** to jump to the exact file that was saved.
 
 ## Yap into a blog and continue it later
 
-1. In **Speak** or **Write**, choose **Change → Start private blog draft…** and name the file.
-2. The app creates `<Vault>/Writing/<name>.md` with `visibility: private` and `draft: true`.
+1. In **Speak** or **Write**, choose **Resume / switch → Blog → New blog draft…** and name the file.
+2. The app creates `<Vault>/Writing/Blogs/<name>.md` with `visibility: private` and `draft: true`.
 3. Speak or type as many additions as you want. Existing text is never replaced.
-4. On another day, choose **Change → Continue existing file…** and select the same Markdown file. The selection is remembered.
+4. On another day, pick the file under **Recent**, or choose **Continue existing file…**. The selection is remembered.
 5. Review the draft in Obsidian. When it is genuinely public, set `visibility: public` and `draft: false`.
 6. From the Quartz repository, run `npm run writing:export -- --vault "/Users/shariq/Documents/Obsidian Vault" --output "./content/notes"`, then preview and publish the site.
 
@@ -76,6 +80,8 @@ Daily `Diary/` logs are intentionally outside the public export. A blog draft on
 | Content                                                            | Location                                                          |
 | ------------------------------------------------------------------ | ----------------------------------------------------------------- |
 | Final diary notes                                                  | `<Your Vault>/Diary/diary-log_YYYY-MM-DD.md`                      |
+| Private blog drafts                                                | `<Your Vault>/Writing/Blogs/<title>.md`                           |
+| Private study and working notes                                    | `<Your Vault>/Notes/<title>.md`                                   |
 | Pending recordings                                                 | `~/Library/Application Support/DiaryTranscription/Pending Audio/` |
 | Downloaded model                                                   | `~/Library/Application Support/DiaryTranscription/Models/`        |
 | Vault bookmark, language, shortcut, appearance, destination, stats | macOS `UserDefaults` for `com.shariq.DiaryTranscription`          |

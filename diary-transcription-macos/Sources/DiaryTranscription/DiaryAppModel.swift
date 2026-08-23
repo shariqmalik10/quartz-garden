@@ -4,6 +4,65 @@ import Foundation
 import Observation
 import UniformTypeIdentifiers
 
+enum EntryWorkspace: String, CaseIterable, Codable, Identifiable, Sendable {
+  case diary
+  case blog
+  case notes
+  case anyMarkdown
+
+  var id: String { rawValue }
+
+  var title: String {
+    switch self {
+    case .diary: "Diary"
+    case .blog: "Blog"
+    case .notes: "Notes"
+    case .anyMarkdown: "Any file"
+    }
+  }
+
+  var detail: String {
+    switch self {
+    case .diary: "Private daily logs"
+    case .blog: "Quartz-ready drafts"
+    case .notes: "Study and working notes"
+    case .anyMarkdown: "Anywhere in your vault"
+    }
+  }
+
+  var symbolName: String {
+    switch self {
+    case .diary: "calendar"
+    case .blog: "text.book.closed"
+    case .notes: "note.text"
+    case .anyMarkdown: "doc.text.magnifyingglass"
+    }
+  }
+
+  var directoryRelativePath: String {
+    switch self {
+    case .diary: "Diary"
+    case .blog: "Writing/Blogs"
+    case .notes: "Notes"
+    case .anyMarkdown: ""
+    }
+  }
+
+  func accepts(relativePath: String) -> Bool {
+    switch self {
+    case .diary:
+      relativePath.hasPrefix("Diary/")
+    case .blog:
+      // Continue older Writing/ drafts while placing every new blog in Writing/Blogs/.
+      relativePath.hasPrefix("Writing/")
+    case .notes:
+      relativePath.hasPrefix("Notes/")
+    case .anyMarkdown:
+      true
+    }
+  }
+}
+
 @MainActor
 @Observable
 final class DiaryAppModel {
@@ -81,6 +140,19 @@ final class DiaryAppModel {
     let name: String
   }
 
+  struct RecentDestination: Identifiable, Equatable, Sendable {
+    let relativePath: String
+    let workspace: EntryWorkspace
+
+    var id: String { relativePath }
+    var title: String {
+      URL(fileURLWithPath: relativePath).deletingPathExtension().lastPathComponent
+    }
+    var folder: String {
+      URL(fileURLWithPath: relativePath).deletingLastPathComponent().path
+    }
+  }
+
   static let languages: [Language] = [
     .init(id: "en", name: "English"),
     .init(id: "ar", name: "Arabic"),
@@ -116,6 +188,9 @@ final class DiaryAppModel {
       }
     }
   }
+  var selectedWorkspace: EntryWorkspace {
+    didSet { defaults.set(selectedWorkspace.rawValue, forKey: Keys.workspace) }
+  }
   var themeChoice: DiaryThemeChoice {
     didSet { defaults.set(themeChoice.rawValue, forKey: Keys.theme) }
   }
@@ -126,6 +201,9 @@ final class DiaryAppModel {
   var lastSavedFilePath: String?
   var languageCode: String {
     didSet { defaults.set(languageCode, forKey: Keys.language) }
+  }
+  private(set) var recentDestinationPaths: [String] {
+    didSet { defaults.set(recentDestinationPaths, forKey: Keys.recentDestinations) }
   }
 
   private let writer: DiaryWriter
@@ -156,9 +234,13 @@ final class DiaryAppModel {
     statsStore = DiaryUsageStatsStore(defaults: defaults)
     self.shortcutController = shortcutController
     modelState = transcriber.isInstalled ? .installed : .notInstalled
-    entryDestination =
-      defaults.string(forKey: Keys.destination)
-      .map { .existing(relativePath: $0) } ?? .todayDiary
+    let storedDestination = defaults.string(forKey: Keys.destination)
+    entryDestination = storedDestination.map { .existing(relativePath: $0) } ?? .todayDiary
+    selectedWorkspace =
+      defaults.string(forKey: Keys.workspace)
+      .flatMap(EntryWorkspace.init(rawValue:))
+      ?? storedDestination.map(Self.workspace(forRelativePath:))
+      ?? .diary
     themeChoice =
       defaults.string(forKey: Keys.theme)
       .flatMap(DiaryThemeChoice.init(rawValue:)) ?? .ink
@@ -167,6 +249,12 @@ final class DiaryAppModel {
       .flatMap(CaptureVisualizationStyle.init(rawValue:)) ?? .waveform
     usageStats = statsStore.load()
     lastSavedFilePath = defaults.string(forKey: Keys.lastSavedFile)
+    var initialRecentDestinations =
+      defaults.stringArray(forKey: Keys.recentDestinations) ?? []
+    if let storedDestination, !initialRecentDestinations.contains(storedDestination) {
+      initialRecentDestinations.insert(storedDestination, at: 0)
+    }
+    recentDestinationPaths = initialRecentDestinations
     let storedLanguage = defaults.string(forKey: Keys.language) ?? "en"
     languageCode =
       Self.languages.contains(where: { $0.id == storedLanguage })
@@ -188,6 +276,15 @@ final class DiaryAppModel {
   }
 
   var hasPendingRecording: Bool { capture.capturedURL != nil }
+  var destinationWorkspace: EntryWorkspace {
+    switch entryDestination {
+    case .todayDiary:
+      .diary
+    case .existing(let relativePath):
+      Self.workspace(forRelativePath: relativePath)
+    }
+  }
+
   var destinationTitle: String {
     switch entryDestination {
     case .todayDiary:
@@ -200,11 +297,27 @@ final class DiaryAppModel {
   var destinationDetail: String {
     switch entryDestination {
     case .todayDiary:
-      "Diary/ · private"
-    case .existing(let relativePath) where relativePath.hasPrefix("Writing/"):
-      "\(relativePath) · private draft"
+      "Diary/ · today’s private log"
+    case .existing(let relativePath) where destinationWorkspace == .blog:
+      "\(relativePath) · blog draft"
     case .existing(let relativePath):
       relativePath
+    }
+  }
+
+  func recentDestinations(for workspace: EntryWorkspace) -> [RecentDestination] {
+    guard let vaultPath else { return [] }
+    let vaultURL = URL(fileURLWithPath: vaultPath, isDirectory: true)
+    return recentDestinationPaths.compactMap { relativePath in
+      guard workspace.accepts(relativePath: relativePath),
+        FileManager.default.fileExists(
+          atPath: vaultURL.appendingPathComponent(relativePath).path
+        )
+      else { return nil }
+      return RecentDestination(
+        relativePath: relativePath,
+        workspace: Self.workspace(forRelativePath: relativePath)
+      )
     }
   }
 
@@ -288,21 +401,32 @@ final class DiaryAppModel {
 
   func useTodayDiary() {
     guard !capture.isRecording, !workflowState.isBusy else { return }
+    selectedWorkspace = .diary
     entryDestination = .todayDiary
     status = .ready("New entries will append to today’s private Diary log.")
   }
 
   func chooseExistingEntry() async {
+    await chooseExistingEntry(in: .anyMarkdown)
+  }
+
+  func chooseExistingEntry(in workspace: EntryWorkspace) async {
     guard !capture.isRecording, !workflowState.isBusy,
       let vaultPath
     else { return }
     let vaultURL = URL(fileURLWithPath: vaultPath, isDirectory: true)
+    let directoryURL = vaultURL.appendingPathComponent(
+      workspace.directoryRelativePath,
+      isDirectory: true
+    )
     let panel = NSOpenPanel()
-    panel.title = "Continue an Obsidian Entry"
+    panel.title =
+      workspace == .anyMarkdown
+      ? "Continue Any Markdown File" : "Continue a \(workspace.title) File"
     panel.message =
-      "Choose an existing Markdown file inside this vault. New speech and writing will be appended without replacing its contents."
-    panel.prompt = "Continue This File"
-    panel.directoryURL = vaultURL
+      "Choose an existing Markdown file. Every new capture is added at the end on a fresh line; existing text is never replaced."
+    panel.prompt = "Resume Writing"
+    panel.directoryURL = directoryURL
     panel.allowedContentTypes = [UTType(filenameExtension: "md") ?? .plainText]
     panel.canChooseFiles = true
     panel.canChooseDirectories = false
@@ -311,49 +435,120 @@ final class DiaryAppModel {
     guard panel.runModal() == .OK, let url = panel.url else { return }
     do {
       let relativePath = try await writer.relativePath(for: url)
-      entryDestination = .existing(relativePath: relativePath)
-      workflowState = .idle
-      status = .ready("Continuing \(relativePath). Existing text will be preserved.")
+      guard workspace.accepts(relativePath: relativePath) else {
+        throw NSError(
+          domain: "DiaryTranscription.Workspace",
+          code: 1,
+          userInfo: [
+            NSLocalizedDescriptionKey:
+              "That file is outside \(workspace.directoryRelativePath)/. Choose Any file to resume it instead."
+          ]
+        )
+      }
+      selectExistingDestination(
+        relativePath,
+        workspace: workspace == .anyMarkdown
+          ? Self.workspace(forRelativePath: relativePath) : workspace,
+        message: "Continuing \(relativePath). New text will start at the end of the file."
+      )
     } catch {
       status = .error(error.localizedDescription)
     }
   }
 
   func createBlogDraft() async {
+    await createNewEntry(in: .blog)
+  }
+
+  func createNewEntry(in workspace: EntryWorkspace) async {
     guard !capture.isRecording, !workflowState.isBusy,
       let vaultPath
     else { return }
+    if workspace == .diary {
+      useTodayDiary()
+      return
+    }
     let vaultURL = URL(fileURLWithPath: vaultPath, isDirectory: true)
-    let writingURL = vaultURL.appendingPathComponent("Writing", isDirectory: true)
+    let directoryURL = vaultURL.appendingPathComponent(
+      workspace.directoryRelativePath,
+      isDirectory: true
+    )
+    await createNewEntry(in: workspace, directoryURL: directoryURL)
+  }
+
+  func createFolderAndEntry(in workspace: EntryWorkspace, folderName: String) async {
+    guard !capture.isRecording, !workflowState.isBusy, workspace != .diary else { return }
     do {
-      try FileManager.default.createDirectory(
-        at: writingURL,
-        withIntermediateDirectories: true
+      let folderURL = try await writer.createSubdirectory(
+        named: folderName,
+        under: workspace.directoryRelativePath
       )
+      await createNewEntry(in: workspace, directoryURL: folderURL)
+    } catch {
+      status = .error(error.localizedDescription)
+    }
+  }
+
+  func resumeExisting(relativePath: String) {
+    guard !capture.isRecording, !workflowState.isBusy,
+      let vaultPath
+    else { return }
+    let fileURL = URL(fileURLWithPath: vaultPath, isDirectory: true)
+      .appendingPathComponent(relativePath)
+    guard FileManager.default.fileExists(atPath: fileURL.path) else {
+      status = .error("That recent file moved or was renamed. Choose it again.")
+      recentDestinationPaths.removeAll { $0 == relativePath }
+      return
+    }
+    selectExistingDestination(
+      relativePath,
+      workspace: Self.workspace(forRelativePath: relativePath),
+      message: "Resuming \(relativePath). New text will start at the end of the file."
+    )
+  }
+
+  private func createNewEntry(in workspace: EntryWorkspace, directoryURL: URL) async {
+    do {
+      try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
     } catch {
       status = .error(error.localizedDescription)
       return
     }
 
     let panel = NSSavePanel()
-    panel.title = "Start a Private Blog Draft"
+    panel.title = workspace == .blog ? "Start a Private Blog Draft" : "Create a Markdown File"
     panel.message =
-      "The draft starts private. In Obsidian, change visibility to public and draft to false only when it is ready for Quartz."
-    panel.prompt = "Create Draft"
-    panel.directoryURL = writingURL
-    panel.nameFieldStringValue = "new-blog-\(Self.todayString()).md"
+      workspace == .blog
+      ? "This starts private. Publish later by changing its Obsidian frontmatter."
+      : "The file stays inside your Obsidian vault and future captures append at its end."
+    panel.prompt = workspace == .blog ? "Create Blog Draft" : "Create File"
+    panel.directoryURL = directoryURL
+    panel.nameFieldStringValue =
+      switch workspace {
+      case .blog: "new-blog-\(Self.todayString()).md"
+      case .notes: "new-note-\(Self.todayString()).md"
+      case .anyMarkdown: "new-entry-\(Self.todayString()).md"
+      case .diary: "diary-log_\(Self.todayString()).md"
+      }
     panel.allowedContentTypes = [UTType(filenameExtension: "md") ?? .plainText]
-    panel.canCreateDirectories = true
+    panel.canCreateDirectories = false
 
     guard panel.runModal() == .OK, let url = panel.url else { return }
     do {
-      let fileURL = try await writer.createWritingDraft(at: url)
+      let fileURL =
+        workspace == .blog
+        ? try await writer.createWritingDraft(at: url)
+        : try await writer.createMarkdownDocument(at: url)
       let relativePath = try await writer.relativePath(for: fileURL)
-      entryDestination = .existing(relativePath: relativePath)
       lastSavedFilePath = fileURL.path
       defaults.set(fileURL.path, forKey: Keys.lastSavedFile)
-      workflowState = .idle
-      status = .ready("Private blog draft created. Speak or write to continue it.")
+      selectExistingDestination(
+        relativePath,
+        workspace: workspace,
+        message: workspace == .blog
+          ? "Private blog draft created. Speak or write to keep building it."
+          : "Markdown file created. Your next entry will start below its title."
+      )
     } catch {
       status = .error(error.localizedDescription)
     }
@@ -676,6 +871,31 @@ final class DiaryAppModel {
   private func rememberSavedFile(_ fileURL: URL) {
     lastSavedFilePath = fileURL.path
     defaults.set(fileURL.path, forKey: Keys.lastSavedFile)
+    guard let vaultPath else { return }
+    let rootPath = URL(fileURLWithPath: vaultPath, isDirectory: true).standardizedFileURL.path
+    let filePath = fileURL.standardizedFileURL.path
+    guard filePath.hasPrefix(rootPath + "/") else { return }
+    rememberRecentDestination(String(filePath.dropFirst(rootPath.count + 1)))
+  }
+
+  private func selectExistingDestination(
+    _ relativePath: String,
+    workspace: EntryWorkspace,
+    message: String
+  ) {
+    selectedWorkspace = workspace
+    entryDestination = .existing(relativePath: relativePath)
+    rememberRecentDestination(relativePath)
+    workflowState = .idle
+    status = .ready(message)
+  }
+
+  private func rememberRecentDestination(_ relativePath: String) {
+    recentDestinationPaths.removeAll { $0 == relativePath }
+    recentDestinationPaths.insert(relativePath, at: 0)
+    if recentDestinationPaths.count > 8 {
+      recentDestinationPaths.removeLast(recentDestinationPaths.count - 8)
+    }
   }
 
   private func openInObsidian(_ fileURL: URL) throws {
@@ -707,13 +927,20 @@ final class DiaryAppModel {
     _ = try await writer.configureVault(access.url)
     vaultAccess = access
     vaultPath = access.url.path
+    recentDestinationPaths.removeAll { relativePath in
+      !FileManager.default.fileExists(
+        atPath: access.url.appendingPathComponent(relativePath).path
+      )
+    }
     if case .existing(let relativePath) = entryDestination {
       do {
         let destinationURL = try await writer.fileURL(for: relativePath)
         if !FileManager.default.fileExists(atPath: destinationURL.path) {
+          selectedWorkspace = .diary
           entryDestination = .todayDiary
         }
       } catch {
+        selectedWorkspace = .diary
         entryDestination = .todayDiary
       }
     }
@@ -752,6 +979,13 @@ final class DiaryAppModel {
     return formatter.string(from: date)
   }
 
+  static func workspace(forRelativePath relativePath: String) -> EntryWorkspace {
+    if relativePath.hasPrefix("Diary/") { return .diary }
+    if relativePath.hasPrefix("Writing/") { return .blog }
+    if relativePath.hasPrefix("Notes/") { return .notes }
+    return .anyMarkdown
+  }
+
   static func obsidianVaultRoot(containing selectedURL: URL) -> URL? {
     var cursor = selectedURL.standardizedFileURL
     let fileManager = FileManager.default
@@ -774,6 +1008,8 @@ final class DiaryAppModel {
     static let shortcut = "DiaryTranscription.globalShortcut"
     static let language = "DiaryTranscription.language"
     static let destination = "DiaryTranscription.destinationRelativePath"
+    static let workspace = "DiaryTranscription.destinationWorkspace"
+    static let recentDestinations = "DiaryTranscription.recentDestinations"
     static let theme = "DiaryTranscription.theme"
     static let visualization = "DiaryTranscription.visualization"
     static let lastSavedFile = "DiaryTranscription.lastSavedFile"

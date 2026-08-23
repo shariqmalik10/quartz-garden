@@ -29,9 +29,10 @@ Obsidian Vault/
 │   ├── Tools & References/
 │   ├── Writing & Ideas/
 │   └── Personal/                    # visibility: private
-├── Notes/
+├── Notes/                         # private study and working notes
 ├── Projects/
 ├── Writing/
+│   └── Blogs/                     # private drafts; explicit public export
 ├── Quotes/
 ├── Daily/
 ├── Diary/                         # Diary Transcription; always private

@@ -7,7 +7,7 @@ PACKAGE_DIRECTORY=${SCRIPT_DIRECTORY:h}
 APP_DIRECTORY="$PACKAGE_DIRECTORY/.build/DiaryTranscription.app"
 STAGING_DIRECTORY="$PACKAGE_DIRECTORY/.build/dmg-staging"
 DIST_DIRECTORY="$PACKAGE_DIRECTORY/dist"
-DMG_PATH="$DIST_DIRECTORY/DiaryTranscription-1.1.0.dmg"
+DMG_PATH="$DIST_DIRECTORY/DiaryTranscription-1.2.0.dmg"
 
 "$SCRIPT_DIRECTORY/build-app.sh" >/dev/null
 
@@ -18,7 +18,7 @@ ln -s /Applications "$STAGING_DIRECTORY/Applications"
 rm -f "$DMG_PATH"
 
 hdiutil create \
-    -volname "Diary Transcription 1.1.0" \
+    -volname "Diary Transcription 1.2.0" \
     -srcfolder "$STAGING_DIRECTORY" \
     -ov \
     -format UDZO \

@@ -7,7 +7,8 @@ their source workflow instead of edited by hand.
 | What you are adding                         | Source of truth                                                               | Where it appears                             |
 | ------------------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------------- |
 | Your private daily transcription            | `/Users/shariq/Documents/Obsidian Vault/Diary/diary-log_<date>.md`            | Private; never exported                      |
-| Your blog drafts and study writing          | `/Users/shariq/Documents/Obsidian Vault/Writing/<short-title>.md`             | `/notes` only after explicit public export   |
+| Your blog drafts and publishable writing    | `/Users/shariq/Documents/Obsidian Vault/Writing/Blogs/<short-title>.md`       | `/notes` only after explicit public export   |
+| Your private study and working notes        | `/Users/shariq/Documents/Obsidian Vault/Notes/<short-title>.md`               | Private; never exported automatically        |
 | A quote                                     | `/Users/shariq/Documents/Obsidian Vault/Quotes/Entries/<date-and-title>.md`   | Home quote rail, quote drawer, and `/quotes` |
 | A link to someone else's blog               | `/Users/shariq/Documents/Obsidian Vault/Areas/Blogs/Captures/<capture-id>.md` | `/inspiration/blogs`                         |
 | Another saved inspiration link              | `Obsidian Vault/Areas/<Area>/Captures/<capture-id>.md`                        | The matching `/inspiration/<area>` page      |
@@ -22,12 +23,17 @@ their source workflow instead of edited by hand.
 
 The Diary Transcription app is the shortest path:
 
-1. Choose **Change → Start private blog draft…**.
-2. Name the file; the app creates it under `Obsidian Vault/Writing/` with
+1. Choose **Resume / switch → Blog → New blog draft…**.
+2. Name the file; the app creates it under `Obsidian Vault/Writing/Blogs/` with
    `visibility: private` and `draft: true`.
 3. Speak or type into it. The app appends and never replaces existing text.
-4. Later, choose **Change → Continue existing file…** and select the same note.
+4. Later, pick it under **Recent**, or choose **Continue existing file…**.
 5. Choose **Open in Obsidian** after a save to jump to that exact entry.
+
+For a private study note, choose **Notes** instead. To resume any other Markdown
+file in the vault, choose **Any file → Select any Markdown file…**. New folder +
+file creates one folder below the selected workspace and then asks for its first
+Markdown filename.
 
 You can also create the Markdown file yourself using
 `content/templates/writing-note.md` as the metadata reference. Use a short

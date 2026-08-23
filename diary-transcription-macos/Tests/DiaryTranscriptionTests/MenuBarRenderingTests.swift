@@ -46,6 +46,7 @@ final class MenuBarRenderingTests: XCTestCase {
     let model = DiaryAppModel(capture: capture)
     model.vaultPath = "/tmp/Notes Vault"
     model.modelState = .ready
+    model.visualizationStyle = .dither
 
     await capture.startRecording()
     for index in 0..<31 {
@@ -86,15 +87,23 @@ final class MenuBarRenderingTests: XCTestCase {
     model.vaultPath = "/tmp/Notes Vault"
     model.modelState = .ready
     var stats = DiaryUsageStats()
-    stats.record(
-      entryID: "snapshot-entry",
-      text: "A small spoken thought for the weekly pixel ledger",
-      audioDuration: 83,
-      date: Date()
-    )
+    for offset in 0..<14 {
+      let date = Calendar.current.date(byAdding: .day, value: -offset, to: Date()) ?? Date()
+      let repeatedWords = Array(
+        repeating: "thought",
+        count: 8 + ((offset * 13) % 47)
+      ).joined(separator: " ")
+      stats.record(
+        entryID: "snapshot-entry-\(offset)",
+        text: repeatedWords,
+        audioDuration: offset.isMultiple(of: 2) ? 32 + Double(offset * 4) : nil,
+        date: date
+      )
+    }
     model.usageStats = stats
 
     for mode in [DiaryMode.write, .stats] {
+      model.themeChoice = mode == .stats ? .dither : .ink
       let renderer = ImageRenderer(
         content: MenuBarContentView(
           model: model,
@@ -116,6 +125,41 @@ final class MenuBarRenderingTests: XCTestCase {
         let data = try XCTUnwrap(representation.representation(using: .png, properties: [:]))
         try data.write(to: URL(fileURLWithPath: outputPath), options: .atomic)
       }
+    }
+  }
+
+  func testDestinationStudioRendersBlogWorkflow() throws {
+    let model = DiaryAppModel(
+      capture: AudioCaptureModel(
+        session: SnapshotAudioRecordingSession(),
+        store: PendingAudioStore(
+          baseDirectory: FileManager.default.temporaryDirectory
+            .appendingPathComponent("DiaryDestinationSnapshot-\(UUID().uuidString)")),
+        automaticMetering: false
+      )
+    )
+    model.vaultPath = "/tmp/Notes Vault"
+    model.modelState = .ready
+    model.themeChoice = .dither
+
+    let renderer = ImageRenderer(
+      content: DestinationStudioView(
+        model: model,
+        workspace: .constant(.blog),
+        dismiss: {}
+      )
+      .environment(\.diaryPalette, DiaryThemeChoice.dither.palette)
+    )
+    renderer.scale = 2
+    renderer.proposedSize = ProposedViewSize(width: 356, height: nil)
+    let image = try XCTUnwrap(renderer.cgImage)
+    XCTAssertEqual(image.width, 712)
+    XCTAssertGreaterThan(image.height, 500)
+
+    if let outputPath = ProcessInfo.processInfo.environment["DIARY_DESTINATION_SNAPSHOT_PATH"] {
+      let representation = NSBitmapImageRep(cgImage: image)
+      let data = try XCTUnwrap(representation.representation(using: .png, properties: [:]))
+      try data.write(to: URL(fileURLWithPath: outputPath), options: .atomic)
     }
   }
 

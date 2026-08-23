@@ -44,6 +44,13 @@ final class DiaryWriterTests: XCTestCase {
     XCTAssertTrue(FileManager.default.fileExists(atPath: diaryURL.path, isDirectory: &isDirectory))
     XCTAssertTrue(isDirectory.boolValue)
     XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: diaryURL.path), [])
+    XCTAssertTrue(
+      FileManager.default.fileExists(
+        atPath: vaultURL.appendingPathComponent("Writing/Blogs").path
+      ))
+    XCTAssertTrue(
+      FileManager.default.fileExists(atPath: vaultURL.appendingPathComponent("Notes").path)
+    )
   }
 
   func testFirstWriteCreatesExpectedMarkdown() async throws {
@@ -257,6 +264,63 @@ final class DiaryWriterTests: XCTestCase {
     XCTAssertTrue(result.contains("visibility: private"))
     XCTAssertTrue(result.contains("draft: true"))
     XCTAssertTrue(result.hasSuffix("The first spoken paragraph.\n"))
+  }
+
+  func testCreatePlainMarkdownThenAppendStartsAfterItsTitle() async throws {
+    let writer = DiaryWriter(calendar: calendar)
+    try await writer.configureVault(vaultURL)
+    let fileURL = vaultURL.appendingPathComponent("Notes/query-plans.md")
+
+    _ = try await writer.createMarkdownDocument(at: fileURL, title: "Query Plans")
+    _ = try await writer.appendToMarkdownFile(
+      "The planner estimates cost before execution.",
+      relativePath: "Notes/query-plans.md"
+    )
+
+    XCTAssertEqual(
+      try String(contentsOf: fileURL, encoding: .utf8),
+      "# Query Plans\n\nThe planner estimates cost before execution.\n"
+    )
+  }
+
+  func testCreateWorkspaceSubdirectoryAndNestedBlogDraft() async throws {
+    let writer = DiaryWriter(calendar: calendar)
+    try await writer.configureVault(vaultURL)
+
+    let folderURL = try await writer.createSubdirectory(
+      named: "Data Systems",
+      under: "Writing/Blogs"
+    )
+    let fileURL = folderURL.appendingPathComponent("indexes.md")
+    _ = try await writer.createWritingDraft(at: fileURL, date: firstDate)
+
+    XCTAssertEqual(folderURL, vaultURL.appendingPathComponent("Writing/Blogs/Data Systems"))
+    XCTAssertTrue(FileManager.default.fileExists(atPath: fileURL.path))
+  }
+
+  func testWorkspaceSubdirectoryRejectsTraversalAndDuplicates() async throws {
+    let writer = DiaryWriter(calendar: calendar)
+    try await writer.configureVault(vaultURL)
+
+    for invalid in ["", "..", "../Private", "nested/folder"] {
+      do {
+        _ = try await writer.createSubdirectory(named: invalid, under: "Notes")
+        XCTFail("Expected invalid folder name: \(invalid)")
+      } catch {
+        XCTAssertEqual(error as? DiaryError, .invalidEntryFolderName(invalid))
+      }
+    }
+
+    _ = try await writer.createSubdirectory(named: "Databases", under: "Notes")
+    do {
+      _ = try await writer.createSubdirectory(named: "Databases", under: "Notes")
+      XCTFail("Expected duplicate folder rejection")
+    } catch {
+      XCTAssertEqual(
+        error as? DiaryError,
+        .entryFolderAlreadyExists(vaultURL.appendingPathComponent("Notes/Databases"))
+      )
+    }
   }
 
   func testBlogDraftCannotBeCreatedOutsideWriting() async throws {

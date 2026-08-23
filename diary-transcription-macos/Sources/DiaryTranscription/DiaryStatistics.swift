@@ -12,6 +12,7 @@ struct DiaryUsageStats: Codable, Equatable, Sendable {
     let label: String
     let words: Int
     let entries: Int
+    let audioSeconds: TimeInterval
   }
 
   private(set) var totalEntries = 0
@@ -64,7 +65,8 @@ struct DiaryUsageStats: Codable, Equatable, Sendable {
         id: key,
         label: String(weekday.prefix(1)).uppercased(),
         words: values.words,
-        entries: values.entries
+        entries: values.entries,
+        audioSeconds: values.audioSeconds
       )
     }
   }

@@ -6,11 +6,13 @@ Operate. This is a small native macOS utility for capturing a thought quickly an
 
 ## Visual thesis
 
-The menu-bar window is a quiet listening field. Deep ink is the default, with three intentional alternative palettes. Sea-glass marks active audio; warm coral is reserved for the one consequential action: start or stop recording. Typography is native, compact, and calm. Layout uses open space and fine rules rather than a stack of cards.
+The menu-bar window is a quiet listening field. Deep ink is the default, with seven intentional alternative palettes spanning light and dark environments. Sea-glass marks active audio; warm coral is reserved for the one consequential action: start or stop recording. Typography is native, compact, and calm. Layout uses open space and fine rules rather than a stack of cards.
 
 ## Signature interaction
 
-The chosen waveform, signal rings, or pixel meter is the visual center. While recording, real microphone levels feed the bounded signal, so movement confirms that the Mac can hear the user. When capture stops, the last signal settles into a static fingerprint. Reduced Motion removes interpolation and decorative drift while preserving the same level information and state changes.
+The chosen waveform, signal rings, pixel meter, ribbon, radial signal, or dither field is the visual center. While recording, real microphone levels feed the bounded signal, so movement confirms that the Mac can hear the user. When capture stops, the last signal settles into a static fingerprint. Reduced Motion removes interpolation and decorative drift while preserving the same level information and state changes.
+
+The Dither Signal theme adapts the ordered-pixel chart language of Dither Kit: data-bound dots, restrained bloom, crisp lines, and pointer focus. It does not imitate web controls or apply pixel effects to body text.
 
 ## Interaction rules
 
@@ -19,11 +21,11 @@ The chosen waveform, signal rings, or pixel meter is the visual center. While re
 - Audio and any completed transcript are retained in Application Support until the Markdown append completes successfully.
 - Vault configuration remains visible but secondary to capture.
 - Speak, Write, and Stats are visible in one top-level segmented control; recording locks mode changes until the current operation is safe.
-- One shared destination control makes voice and writing continue the same file.
+- One shared destination studio makes voice and writing continue the same file. It reveals Diary, Blog, Notes, and Any file before asking for a new file, new folder + file, or existing file.
 - Daily capture is private by default. Blog drafts begin private and require an explicit publication metadata change.
 - Permission and error states appear in place; the root hierarchy does not jump.
 - No gradients, glass effects, ornamental containers, or continuous animation unrelated to actual input.
-- The pixel ledger uses real seven-day word totals; it is not decorative texture.
+- The dithered ledger uses real fourteen-day word totals and supports pointer scrubbing; it is not decorative texture.
 
 ## Tokens
 
