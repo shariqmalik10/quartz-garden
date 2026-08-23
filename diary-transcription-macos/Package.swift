@@ -20,6 +20,10 @@ let package = Package(
         .testTarget(
             name: "DiaryCoreTests",
             dependencies: ["DiaryCore"]
+        ),
+        .testTarget(
+            name: "DiaryTranscriptionTests",
+            dependencies: ["DiaryTranscription", "DiaryCore"]
         )
     ]
 )
