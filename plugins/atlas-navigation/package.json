@@ -1,0 +1,28 @@
+{
+  "name": "@shariq/atlas-navigation",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./dist/index.js",
+    "./components": "./dist/components/index.js"
+  },
+  "main": "./dist/index.js",
+  "quartz": {
+    "name": "atlas-navigation",
+    "displayName": "Atlas Navigation",
+    "description": "Adds accessible filtering and category jumps to the inspiration atlas.",
+    "category": "component",
+    "version": "1.0.0",
+    "quartzVersion": ">=5.0.0",
+    "dependencies": [],
+    "defaultEnabled": true,
+    "components": {
+      "AtlasNavigation": {
+        "displayName": "Atlas Navigation",
+        "defaultPosition": "afterBody",
+        "defaultPriority": 90
+      }
+    }
+  }
+}

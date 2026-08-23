@@ -7,7 +7,7 @@ configuration:
   analytics:
     provider: plausible
   locale: en-US
-  baseUrl: shariq.vercel.app
+  baseUrl: shariq-quartz-garden.vercel.app
   ignorePatterns:
     - private
     - templates
@@ -27,8 +27,8 @@ configuration:
         darkgray: "#40506b"
         dark: "#172b4d"
         secondary: "#274f7a"
-        tertiary: "#bd5438"
-        highlight: rgba(189, 84, 56, 0.11)
+        tertiary: "#a4432d"
+        highlight: rgba(164, 67, 45, 0.11)
         textHighlight: "#e8bd5288"
       darkMode:
         light: "#08172c"
@@ -41,6 +41,24 @@ configuration:
         highlight: rgba(239, 120, 86, 0.14)
         textHighlight: "#a8643f66"
 plugins:
+  - source: ./plugins/writing-list
+    enabled: true
+    options:
+      limit: 5
+      linkToMore: /notes
+    layout:
+      position: left
+      priority: 40
+      display: desktop-only
+  - source: ./plugins/mobile-writing-list
+    enabled: true
+    options:
+      limit: 5
+      linkToMore: /notes
+    layout:
+      position: afterBody
+      priority: 40
+      display: mobile-only
   - source: ./plugins/quotes
     enabled: true
     options:
@@ -49,6 +67,16 @@ plugins:
     layout:
       position: right
       priority: 5
+  - source: ./plugins/quote-archive
+    enabled: true
+    layout:
+      position: beforeBody
+      priority: 25
+  - source: ./plugins/atlas-navigation
+    enabled: true
+    layout:
+      position: afterBody
+      priority: 90
   - source: "@quartz-community/created-modified-date"
     enabled: true
     options:
@@ -75,6 +103,9 @@ plugins:
   - source: "@quartz-community/github-flavored-markdown"
     enabled: true
     order: 40
+  - source: ./plugins/heading-permalinks
+    enabled: true
+    order: 45
   - source: "@quartz-community/table-of-contents"
     enabled: true
     order: 50

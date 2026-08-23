@@ -19,3 +19,4 @@ quartz/cli/tui/dist/
 .swiftpm/
 DerivedData/
 garden-drop-macos/dist/
+.vercel

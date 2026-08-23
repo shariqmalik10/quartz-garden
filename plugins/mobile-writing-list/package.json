@@ -1,0 +1,40 @@
+{
+  "name": "@shariq/mobile-writing-list",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./dist/index.js",
+    "./components": "./dist/components/index.js"
+  },
+  "main": "./dist/index.js",
+  "quartz": {
+    "name": "mobile-writing-list",
+    "displayName": "Mobile Latest Writing",
+    "description": "Places the shared latest-writing list after the home content on mobile.",
+    "category": "component",
+    "version": "1.0.0",
+    "quartzVersion": ">=5.0.0",
+    "dependencies": [],
+    "defaultEnabled": true,
+    "defaultOptions": {
+      "limit": 5,
+      "linkToMore": "/notes"
+    },
+    "components": {
+      "MobileWritingList": {
+        "displayName": "Mobile Latest Writing",
+        "defaultPosition": "afterBody",
+        "defaultPriority": 40
+      }
+    },
+    "optionSchema": {
+      "limit": {
+        "type": "number"
+      },
+      "linkToMore": {
+        "type": "string"
+      }
+    }
+  }
+}
