@@ -2,15 +2,15 @@
 
 ## Product mode
 
-Operate. This is a small native macOS utility for capturing a private thought quickly and confidently, not a dashboard or publishing surface.
+Operate. This is a small native macOS utility for capturing a thought quickly and confidently. A restrained local stats ledger supports the habit without turning the utility into an analytics product or an automatic publishing surface.
 
 ## Visual thesis
 
-The menu-bar window is a quiet listening field. Deep ink surfaces reduce glare and make the live signal legible; sea-glass marks active audio; warm coral is reserved for the one consequential action: start or stop recording. Typography is native, compact, and calm. Layout uses open space and fine rules rather than a stack of cards.
+The menu-bar window is a quiet listening field. Deep ink is the default, with three intentional alternative palettes. Sea-glass marks active audio; warm coral is reserved for the one consequential action: start or stop recording. Typography is native, compact, and calm. Layout uses open space and fine rules rather than a stack of cards.
 
 ## Signature interaction
 
-A 31-bar waveform is the visual center. While recording, real microphone levels feed a bounded rolling signal, so the movement confirms that the Mac can hear the user. When capture stops, the last signal settles into a static fingerprint. Reduced Motion removes spring interpolation and decorative drift while preserving the same level information and state changes.
+The chosen waveform, signal rings, or pixel meter is the visual center. While recording, real microphone levels feed the bounded signal, so movement confirms that the Mac can hear the user. When capture stops, the last signal settles into a static fingerprint. Reduced Motion removes interpolation and decorative drift while preserving the same level information and state changes.
 
 ## Interaction rules
 
@@ -18,9 +18,12 @@ A 31-bar waveform is the visual center. While recording, real microphone levels 
 - Recording, transcription, and saving have distinct language and progress states.
 - Audio and any completed transcript are retained in Application Support until the Markdown append completes successfully.
 - Vault configuration remains visible but secondary to capture.
-- Manual writing is a fallback, not a competing primary action.
+- Speak, Write, and Stats are visible in one top-level segmented control; recording locks mode changes until the current operation is safe.
+- One shared destination control makes voice and writing continue the same file.
+- Daily capture is private by default. Blog drafts begin private and require an explicit publication metadata change.
 - Permission and error states appear in place; the root hierarchy does not jump.
 - No gradients, glass effects, ornamental containers, or continuous animation unrelated to actual input.
+- The pixel ledger uses real seven-day word totals; it is not decorative texture.
 
 ## Tokens
 

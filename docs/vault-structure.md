@@ -34,6 +34,7 @@ Obsidian Vault/
 ├── Writing/
 ├── Quotes/
 ├── Daily/
+├── Diary/                         # Diary Transcription; always private
 ├── Inbox/
 ├── Private/
 ├── Attachments/Captures/
@@ -137,6 +138,19 @@ The exporter owns only `content/garden-sync/`. Its manifest records generated
 files. On a later run it deletes only files named by the previous manifest and
 preserves untracked/handmade files. Validation happens in a staging directory,
 so a failed export does not mutate the current public output.
+
+Personal writing has a separate, opt-in bridge:
+
+```bash
+npm run writing:export -- \
+  --vault "/Users/shariq/Documents/Obsidian Vault" \
+  --output "./content/notes"
+```
+
+It reads only `Writing/` and exports only notes with `kind: writing`,
+`visibility: public`, and `draft: false`. `Diary/`, `Daily/`, `Notes/`,
+`Private/`, `Karage Work/`, and private `Writing/` drafts remain outside the
+public repository.
 
 ## Link storage
 

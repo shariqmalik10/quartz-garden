@@ -20,6 +20,7 @@
     "vault:watch": "node scripts/sync-obsidian.mjs --watch",
     "garden:export": "node scripts/export-garden.mjs",
     "quotes:export": "node scripts/export-quotes.mjs",
+    "writing:export": "node scripts/export-writing.mjs",
     "links:sync": "node scripts/import-signal-atlas.mjs",
     "check": "tsc --noEmit && npx prettier . --check",
     "format": "npx prettier . --write",

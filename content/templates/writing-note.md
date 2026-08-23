@@ -12,7 +12,7 @@ tags:
 Write here.
 
 <!--
-Private/local draft: keep visibility: private and draft: true.
-Public note: move this file into content/notes/, then set visibility: public and draft: false.
-Do not commit genuinely private writing to a public Git repository.
+Private/local draft: keep this in Obsidian Vault/Writing/ with visibility: private and draft: true.
+Public note: set visibility: public and draft: false, then run the writing exporter.
+The exporter copies only explicitly public writing into content/notes/.
 -->

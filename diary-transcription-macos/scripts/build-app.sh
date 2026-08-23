@@ -69,6 +69,13 @@ if [[ ! -f "$APP_DIRECTORY/Contents/Resources/mlx-swift_Cmlx.bundle/Contents/Res
     exit 1
 fi
 
+# MLX first looks beside the executable for `mlx.metallib`. Keeping a colocated
+# copy makes the packaged app independent of SwiftPM bundle discovery, which is
+# not reliable when the package executable is assembled into an app manually.
+cp \
+    "$APP_DIRECTORY/Contents/Resources/mlx-swift_Cmlx.bundle/Contents/Resources/default.metallib" \
+    "$APP_DIRECTORY/Contents/MacOS/mlx.metallib"
+
 codesign \
     --force \
     --deep \

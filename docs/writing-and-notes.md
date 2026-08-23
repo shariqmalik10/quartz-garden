@@ -4,23 +4,34 @@ Use this map when deciding where something belongs. Files under `content/`
 become pages on the Quartz site; generated folders should be updated through
 their source workflow instead of edited by hand.
 
-| What you are adding                               | Source of truth                                                               | Where it appears                                   |
-| ------------------------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------------------- |
-| Your writing, diary-like thoughts, or study notes | `content/notes/<short-title>.md`                                              | `/notes`, plus **Latest writing** on the home page |
-| A quote                                           | `/Users/shariq/Documents/Obsidian Vault/Quotes/Entries/<date-and-title>.md`   | Home quote rail, quote drawer, and `/quotes`       |
-| A link to someone else's blog                     | `/Users/shariq/Documents/Obsidian Vault/Areas/Blogs/Captures/<capture-id>.md` | `/inspiration/blogs`                               |
-| Another saved inspiration link                    | `Obsidian Vault/Areas/<Area>/Captures/<capture-id>.md`                        | The matching `/inspiration/<area>` page            |
-| A link in the large Signal Atlas collection       | `signal-atlas/src/data/atlas.ts`                                              | The grouped collection at `/inspiration`           |
-| A project or case study                           | `content/projects/<project-name>.md`                                          | `/projects`                                        |
-| A current-status update                           | `content/now.md`                                                              | `/now`                                             |
-| Your biography                                    | `content/about.md`                                                            | `/about`                                           |
-| An area overview                                  | `content/areas/<area-name>.md`                                                | `/areas/<area-name>`                               |
-| Home-page copy                                    | `content/index.md`                                                            | `/`                                                |
+| What you are adding                         | Source of truth                                                               | Where it appears                             |
+| ------------------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------------- |
+| Your private daily transcription            | `/Users/shariq/Documents/Obsidian Vault/Diary/diary-log_<date>.md`            | Private; never exported                      |
+| Your blog drafts and study writing          | `/Users/shariq/Documents/Obsidian Vault/Writing/<short-title>.md`             | `/notes` only after explicit public export   |
+| A quote                                     | `/Users/shariq/Documents/Obsidian Vault/Quotes/Entries/<date-and-title>.md`   | Home quote rail, quote drawer, and `/quotes` |
+| A link to someone else's blog               | `/Users/shariq/Documents/Obsidian Vault/Areas/Blogs/Captures/<capture-id>.md` | `/inspiration/blogs`                         |
+| Another saved inspiration link              | `Obsidian Vault/Areas/<Area>/Captures/<capture-id>.md`                        | The matching `/inspiration/<area>` page      |
+| A link in the large Signal Atlas collection | `signal-atlas/src/data/atlas.ts`                                              | The grouped collection at `/inspiration`     |
+| A project or case study                     | `content/projects/<project-name>.md`                                          | `/projects`                                  |
+| A current-status update                     | `content/now.md`                                                              | `/now`                                       |
+| Your biography                              | `content/about.md`                                                            | `/about`                                     |
+| An area overview                            | `content/areas/<area-name>.md`                                                | `/areas/<area-name>`                         |
+| Home-page copy                              | `content/index.md`                                                            | `/`                                          |
 
 ## Your writing, diary entries, and study notes
 
-Start from `content/templates/writing-note.md`. Use a short kebab-case filename,
-for example `content/notes/learning-postgres-indexes.md`.
+The Diary Transcription app is the shortest path:
+
+1. Choose **Change → Start private blog draft…**.
+2. Name the file; the app creates it under `Obsidian Vault/Writing/` with
+   `visibility: private` and `draft: true`.
+3. Speak or type into it. The app appends and never replaces existing text.
+4. Later, choose **Change → Continue existing file…** and select the same note.
+5. Choose **Open in Obsidian** after a save to jump to that exact entry.
+
+You can also create the Markdown file yourself using
+`content/templates/writing-note.md` as the metadata reference. Use a short
+kebab-case filename such as `learning-postgres-indexes.md`.
 
 To publish it, set:
 
@@ -30,9 +41,18 @@ visibility: public
 draft: false
 ```
 
-Public entries are added automatically to the Writing & Notes page and to the
-Latest writing list. Both lists sort by the frontmatter `date`, newest first.
-There is no numbering on the site, and the date is shown under each title.
+Then export from the repository root:
+
+```bash
+npm run writing:export -- \
+  --vault "/Users/shariq/Documents/Obsidian Vault" \
+  --output "./content/notes"
+```
+
+Only files with both public settings cross into the repository. Public entries
+are added automatically to the Writing & Notes page and to the Latest writing
+list. Both lists sort by the frontmatter `date`, newest first. There is no
+numbering on the site, and the date is shown under each title.
 
 For a private or unfinished entry, use:
 
@@ -42,12 +62,13 @@ visibility: private
 draft: true
 ```
 
-Quartz excludes drafts from the built site. A public Git repository still
-exposes committed source files, even when Quartz does not render them, so truly
-private writing must remain outside this repository. Keep private essay or
-diary drafts in `Obsidian Vault/Writing/`, and private study notes in
-`Obsidian Vault/Notes/`. Copy them into `content/notes/` only when they are
-ready to publish.
+The writing exporter skips these files entirely, so private drafts never enter
+the public repository. Daily captures under `Diary/`, private study notes under
+`Notes/`, and anything under `Private/` are not inputs to this exporter.
+
+The exporter owns only its manifest-listed files inside `content/notes/`. It
+refuses to replace handmade notes such as `content/notes/index.md` and removes
+only stale files that it generated previously.
 
 ## Quotes
 
