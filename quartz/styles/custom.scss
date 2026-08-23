@@ -2,11 +2,39 @@
 
 /*
 THESIS: A lived-in personal garden where work, notes, and curiosity meet.
-OWN-WORLD: Warm paper, navy ink, rust underlines, serif landmarks, handwritten marginalia, and a single abstract garden window.
+OWN-WORLD: Warm paper, navy ink, rust underlines, marker-drawn landmarks, handwritten marginalia, and a single abstract garden window.
 STORY: Receive a quiet welcome, follow conversational links, wander through notes, then inspect selected work only when invited.
 FIRST VIEWPORT: A compact name/search/theme row and a framed, light-filled garden window above an informal introduction.
 FORM: A Quartz hypertext garden—calm reading first, lightweight wayfinding second, professional evidence deeper in the paths.
 */
+
+// Landmark type is self-hosted so the garden never depends on the CDN for its
+// voice. These unlayered @font-face rules deliberately reuse the family names
+// that quartz.config.yaml typography would fetch from Google Fonts; being
+// declared later and outside `@layer quartz-base`, they win the cascade.
+@font-face {
+  font-family: "Nerko One";
+  src: url("./static/fonts/NerkoOne-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Playwrite GB J Guides";
+  src: url("./static/fonts/PlaywriteGBJGuides-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Playwrite GB J Guides";
+  src: url("./static/fonts/PlaywriteGBJGuides-italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
 
 :root {
   --garden-paper: #f5efe1;
@@ -18,7 +46,12 @@ FORM: A Quartz hypertext garden—calm reading first, lightweight wayfinding sec
   --garden-sky: #90a9c5;
   --garden-leaf: #536d59;
   --garden-rule: #ded4bf;
-  --garden-hand: "Caveat", "Segoe Print", "Bradley Hand", cursive;
+  --garden-hand: "Playwrite GB J Guides", "Segoe Print", "Bradley Hand", cursive;
+
+  // Fraunces landmarks give way to Nerko One's thick marker strokes. Body
+  // (Manrope) and code (IBM Plex Mono) keep their Google Fonts loading.
+  --titleFont: "Nerko One", system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --headerFont: "Nerko One", system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 :root[saved-theme="dark"] {
@@ -103,8 +136,8 @@ input:focus-visible {
   color: var(--garden-ink);
   font-family: var(--headerFont);
   font-size: clamp(1.7rem, 3vw, 2.15rem);
-  font-weight: 600;
-  letter-spacing: -0.035em;
+  font-weight: 400;
+  letter-spacing: -0.005em;
 }
 
 .search {
@@ -170,8 +203,8 @@ article > h3,
 .article-title {
   color: var(--garden-ink);
   font-family: var(--headerFont);
-  font-weight: 600;
-  letter-spacing: -0.025em;
+  font-weight: 400;
+  letter-spacing: -0.005em;
 }
 
 article > h2 {
@@ -237,7 +270,6 @@ article .garden-list a.internal:not(.tag-link) {
 .garden-signoff {
   color: var(--garden-rust);
   font-family: var(--garden-hand);
-  font-weight: 600;
 }
 
 .garden-welcome {
@@ -316,7 +348,6 @@ article .garden-list a.internal:not(.tag-link) {
   color: var(--garden-ink);
   font-family: var(--headerFont);
   font-size: 1.03rem;
-  font-weight: 600;
   transition: color 150ms ease;
 }
 
@@ -372,7 +403,6 @@ article .garden-list a.internal:not(.tag-link) {
   color: var(--garden-ink);
   font-family: var(--headerFont);
   font-size: 1.04rem;
-  font-weight: 600;
   line-height: 1.35;
 }
 
@@ -481,8 +511,6 @@ article.external-link-index + .page-listing {
   color: var(--garden-ink);
   font-family: var(--headerFont);
   font-size: 1.05rem;
-  font-weight: 600;
-  letter-spacing: -0.02em;
 }
 
 .quotes-heading p {
@@ -528,7 +556,6 @@ article.external-link-index + .page-listing {
   color: var(--garden-ink);
   font-family: var(--headerFont);
   font-size: 0.96rem;
-  font-weight: 550;
   line-height: 1.45;
   transition: color 150ms ease;
 }
@@ -543,6 +570,7 @@ article.external-link-index + .page-listing {
   color: var(--garden-faded);
   font-family: var(--garden-hand);
   font-size: 0.82rem;
+  font-style: italic;
   line-height: 1.4;
   border: 0;
 }
