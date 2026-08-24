@@ -21,7 +21,7 @@ their source workflow instead of edited by hand.
 
 ## Your writing, diary entries, and study notes
 
-The Diary Transcription app is the shortest path:
+The standalone Yap app is the shortest path:
 
 1. Choose **Resume / switch → Blog → New blog draft…**.
 2. Name the file; the app creates it under `Obsidian Vault/Writing/Blogs/` with

@@ -35,7 +35,7 @@ Obsidian Vault/
 │   └── Blogs/                     # private drafts; explicit public export
 ├── Quotes/
 ├── Daily/
-├── Diary/                         # Diary Transcription; always private
+├── Diary/                         # Yap voice entries; always private
 ├── Inbox/
 ├── Private/
 ├── Attachments/Captures/
