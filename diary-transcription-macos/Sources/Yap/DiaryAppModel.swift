@@ -373,7 +373,7 @@ final class DiaryAppModel {
     let panel = NSOpenPanel()
     panel.title = "Choose Obsidian Vault"
     panel.message =
-      "Select the folder that contains .obsidian, or any folder inside that vault. Diary Transcription will use the vault root."
+      "Select the folder that contains .obsidian, or any folder inside that vault. Yap will use the vault root."
     panel.prompt = "Choose Vault"
     panel.canChooseFiles = false
     panel.canChooseDirectories = true

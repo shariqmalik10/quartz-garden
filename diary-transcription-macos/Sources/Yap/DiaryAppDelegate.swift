@@ -62,7 +62,7 @@ final class DiaryAppDelegate: NSObject, NSApplicationDelegate {
     alert.alertStyle = .informational
     alert.messageText = "Finish the current diary entry first"
     alert.informativeText =
-      "Diary Transcription is still recording, transcribing, or saving. Wait for it to finish so your audio stays recoverable."
+      "Yap is still recording, transcribing, or saving. Wait for it to finish so your audio stays recoverable."
     alert.addButton(withTitle: "Keep Running")
     alert.runModal()
     return .terminateCancel

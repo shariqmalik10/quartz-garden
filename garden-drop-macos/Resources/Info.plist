@@ -14,6 +14,8 @@
     <string>6.0</string>
     <key>CFBundleName</key>
     <string>Garden Drop</string>
+    <key>CFBundleIconFile</key>
+    <string>GardenDrop.icns</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>

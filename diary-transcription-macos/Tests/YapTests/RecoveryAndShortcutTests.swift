@@ -1,7 +1,7 @@
 import AppKit
 import Foundation
 import XCTest
-@testable import DiaryTranscription
+@testable import Yap
 
 @MainActor
 final class RecoveryAndShortcutTests: XCTestCase {

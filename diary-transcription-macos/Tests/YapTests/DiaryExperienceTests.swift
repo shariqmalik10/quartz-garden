@@ -1,7 +1,7 @@
 import Foundation
 import XCTest
 
-@testable import DiaryTranscription
+@testable import Yap
 
 @MainActor
 final class DiaryExperienceTests: XCTestCase {

@@ -5,15 +5,17 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleDisplayName</key>
-    <string>Diary Transcription</string>
+    <string>Yap</string>
     <key>CFBundleExecutable</key>
-    <string>DiaryTranscription</string>
+    <string>Yap</string>
     <key>CFBundleIdentifier</key>
     <string>com.shariq.DiaryTranscription</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-    <string>Diary Transcription</string>
+    <string>Yap</string>
+    <key>CFBundleIconFile</key>
+    <string>Yap.icns</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
@@ -27,7 +29,7 @@
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>NSMicrophoneUsageDescription</key>
-    <string>Diary Transcription uses the microphone only while you record a diary entry. Audio stays on this Mac.</string>
+    <string>Yap uses the microphone only while you record an entry. Audio stays on this Mac.</string>
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
     <key>NSHumanReadableCopyright</key>

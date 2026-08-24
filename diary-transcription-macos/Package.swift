@@ -3,13 +3,13 @@
 import PackageDescription
 
 let package = Package(
-    name: "DiaryTranscription",
+    name: "Yap",
     platforms: [
         .macOS(.v15)
     ],
     products: [
         .library(name: "DiaryCore", targets: ["DiaryCore"]),
-        .executable(name: "DiaryTranscription", targets: ["DiaryTranscription"])
+        .executable(name: "Yap", targets: ["Yap"])
     ],
     dependencies: [
         .package(
@@ -24,7 +24,7 @@ let package = Package(
     targets: [
         .target(name: "DiaryCore"),
         .executableTarget(
-            name: "DiaryTranscription",
+            name: "Yap",
             dependencies: [
                 "DiaryCore",
                 .product(name: "MLXAudioCore", package: "mlx-audio-swift"),
@@ -37,8 +37,8 @@ let package = Package(
             dependencies: ["DiaryCore"]
         ),
         .testTarget(
-            name: "DiaryTranscriptionTests",
-            dependencies: ["DiaryTranscription", "DiaryCore"]
+            name: "YapTests",
+            dependencies: ["Yap", "DiaryCore"]
         )
     ]
 )

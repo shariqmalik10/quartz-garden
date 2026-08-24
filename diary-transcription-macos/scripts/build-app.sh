@@ -4,21 +4,23 @@ set -euo pipefail
 
 SCRIPT_DIRECTORY=${0:A:h}
 PACKAGE_DIRECTORY=${SCRIPT_DIRECTORY:h}
-APP_DIRECTORY="$PACKAGE_DIRECTORY/.build/DiaryTranscription.app"
+APP_DIRECTORY="$PACKAGE_DIRECTORY/.build/Yap.app"
 DERIVED_DATA_DIRECTORY="$PACKAGE_DIRECTORY/.build/xcode-derived"
 PRODUCT_DIRECTORY="$DERIVED_DATA_DIRECTORY/Build/Products/Release"
+ICON_SOURCE="$PACKAGE_DIRECTORY/Resources/Yap-AppIcon-1024.png"
+ICONSET_DIRECTORY="$PACKAGE_DIRECTORY/.build/Yap.iconset"
 
 cd "$PACKAGE_DIRECTORY"
 xcodebuild \
-    -scheme DiaryTranscription \
+    -scheme Yap \
     -configuration Release \
     -destination 'platform=macOS,arch=arm64' \
     -derivedDataPath "$DERIVED_DATA_DIRECTORY" \
     build \
     CODE_SIGNING_ALLOWED=NO
 
-if [[ ! -x "$PRODUCT_DIRECTORY/DiaryTranscription" ]]; then
-    echo "Release executable not found at $PRODUCT_DIRECTORY/DiaryTranscription" >&2
+if [[ ! -x "$PRODUCT_DIRECTORY/Yap" ]]; then
+    echo "Release executable not found at $PRODUCT_DIRECTORY/Yap" >&2
     exit 1
 fi
 
@@ -26,8 +28,22 @@ rm -rf "$APP_DIRECTORY"
 mkdir -p "$APP_DIRECTORY/Contents/MacOS"
 mkdir -p "$APP_DIRECTORY/Contents/Resources"
 cp "$PACKAGE_DIRECTORY/Resources/Info.plist" "$APP_DIRECTORY/Contents/Info.plist"
-cp "$PRODUCT_DIRECTORY/DiaryTranscription" "$APP_DIRECTORY/Contents/MacOS/DiaryTranscription"
+cp "$PRODUCT_DIRECTORY/Yap" "$APP_DIRECTORY/Contents/MacOS/Yap"
 cp "$PACKAGE_DIRECTORY/THIRD_PARTY_NOTICES.md" "$APP_DIRECTORY/Contents/Resources/THIRD_PARTY_NOTICES.md"
+
+rm -rf "$ICONSET_DIRECTORY"
+mkdir -p "$ICONSET_DIRECTORY"
+sips -z 16 16 "$ICON_SOURCE" --out "$ICONSET_DIRECTORY/icon_16x16.png" >/dev/null
+sips -z 32 32 "$ICON_SOURCE" --out "$ICONSET_DIRECTORY/icon_16x16@2x.png" >/dev/null
+sips -z 32 32 "$ICON_SOURCE" --out "$ICONSET_DIRECTORY/icon_32x32.png" >/dev/null
+sips -z 64 64 "$ICON_SOURCE" --out "$ICONSET_DIRECTORY/icon_32x32@2x.png" >/dev/null
+sips -z 128 128 "$ICON_SOURCE" --out "$ICONSET_DIRECTORY/icon_128x128.png" >/dev/null
+sips -z 256 256 "$ICON_SOURCE" --out "$ICONSET_DIRECTORY/icon_128x128@2x.png" >/dev/null
+sips -z 256 256 "$ICON_SOURCE" --out "$ICONSET_DIRECTORY/icon_256x256.png" >/dev/null
+sips -z 512 512 "$ICON_SOURCE" --out "$ICONSET_DIRECTORY/icon_256x256@2x.png" >/dev/null
+sips -z 512 512 "$ICON_SOURCE" --out "$ICONSET_DIRECTORY/icon_512x512.png" >/dev/null
+cp "$ICON_SOURCE" "$ICONSET_DIRECTORY/icon_512x512@2x.png"
+iconutil -c icns "$ICONSET_DIRECTORY" -o "$APP_DIRECTORY/Contents/Resources/Yap.icns"
 
 LICENSE_DIRECTORY="$APP_DIRECTORY/Contents/Resources/Licenses"
 CHECKOUT_DIRECTORY="$DERIVED_DATA_DIRECTORY/SourcePackages/checkouts"
@@ -80,7 +96,7 @@ codesign \
     --force \
     --deep \
     --sign - \
-    --entitlements "$PACKAGE_DIRECTORY/Resources/DiaryTranscription.entitlements" \
+    --entitlements "$PACKAGE_DIRECTORY/Resources/Yap.entitlements" \
     "$APP_DIRECTORY"
 
 echo "$APP_DIRECTORY"

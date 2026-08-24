@@ -22,7 +22,7 @@ final class DiarySettingsWindowController: NSObject, NSWindowDelegate {
       rootView: DiarySettingsView(model: model)
     )
     let window = NSWindow(contentViewController: hostingController)
-    window.title = "Diary Transcription Settings"
+    window.title = "Yap Settings"
     window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
     window.setContentSize(NSSize(width: 680, height: 610))
     window.minSize = NSSize(width: 640, height: 560)

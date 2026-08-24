@@ -2,7 +2,7 @@ import DiaryCore
 import Foundation
 import XCTest
 
-@testable import DiaryTranscription
+@testable import Yap
 
 @MainActor
 final class DiaryPipelineTests: XCTestCase {

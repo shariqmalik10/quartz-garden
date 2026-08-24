@@ -4,21 +4,21 @@ set -euo pipefail
 
 SCRIPT_DIRECTORY=${0:A:h}
 PACKAGE_DIRECTORY=${SCRIPT_DIRECTORY:h}
-APP_DIRECTORY="$PACKAGE_DIRECTORY/.build/DiaryTranscription.app"
+APP_DIRECTORY="$PACKAGE_DIRECTORY/.build/Yap.app"
 STAGING_DIRECTORY="$PACKAGE_DIRECTORY/.build/dmg-staging"
 DIST_DIRECTORY="$PACKAGE_DIRECTORY/dist"
-DMG_PATH="$DIST_DIRECTORY/DiaryTranscription-1.2.0.dmg"
+DMG_PATH="$DIST_DIRECTORY/Yap-1.2.0.dmg"
 
 "$SCRIPT_DIRECTORY/build-app.sh" >/dev/null
 
 rm -rf "$STAGING_DIRECTORY"
 mkdir -p "$STAGING_DIRECTORY" "$DIST_DIRECTORY"
-cp -R "$APP_DIRECTORY" "$STAGING_DIRECTORY/Diary Transcription.app"
+cp -R "$APP_DIRECTORY" "$STAGING_DIRECTORY/Yap.app"
 ln -s /Applications "$STAGING_DIRECTORY/Applications"
 rm -f "$DMG_PATH"
 
 hdiutil create \
-    -volname "Diary Transcription 1.2.0" \
+    -volname "Yap 1.2.0" \
     -srcfolder "$STAGING_DIRECTORY" \
     -ov \
     -format UDZO \

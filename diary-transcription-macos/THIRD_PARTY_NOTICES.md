@@ -1,6 +1,6 @@
 # Third-party notices
 
-Diary Transcription links open-source software from the projects below. The
+Yap links open-source software from the projects below. The
 complete license text for every distributed dependency is included inside the
 application at `Contents/Resources/Licenses/`.
 

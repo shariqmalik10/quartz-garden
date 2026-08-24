@@ -1,4 +1,4 @@
-# Diary Transcription — Design Direction
+# Yap — Design Direction
 
 ## Product mode
 

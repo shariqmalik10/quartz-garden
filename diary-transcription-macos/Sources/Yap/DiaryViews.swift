@@ -94,7 +94,7 @@ struct MenuBarContentView: View {
   private var header: some View {
     HStack(spacing: 12) {
       VStack(alignment: .leading, spacing: 2) {
-        Text("Diary")
+        Text("Yap")
           .font(.system(size: 18, weight: .semibold, design: .rounded))
         Text("Local voice → Obsidian")
           .font(.caption)
@@ -169,7 +169,7 @@ struct MenuBarContentView: View {
         Label("Settings", systemImage: "gearshape")
       }
       .buttonStyle(.plain)
-      .help("Open Diary Transcription Settings")
+      .help("Open Yap Settings")
 
       Spacer()
       Image(systemName: "lock.fill")
@@ -179,14 +179,14 @@ struct MenuBarContentView: View {
         NSApplication.shared.terminate(nil)
       } label: {
         Image(systemName: "power")
-          .accessibilityLabel("Quit Diary Transcription")
+          .accessibilityLabel("Quit Yap")
       }
       .buttonStyle(.plain)
       .disabled(model.capture.isRecording || model.workflowState.isBusy)
       .help(
         model.capture.isRecording || model.workflowState.isBusy
           ? "Finish the current entry before quitting"
-          : "Quit Diary Transcription"
+          : "Quit Yap"
       )
     }
     .font(.caption)
@@ -785,7 +785,7 @@ private struct SpeakModeView: View {
     case .recording: "Stop when you are done; this entry will append to \(model.destinationTitle)."
     case .captured: "Ready to retry local transcription."
     case .interrupted(let message): message
-    case .permissionDenied: "Allow Diary Transcription in Privacy & Security, then try again."
+    case .permissionDenied: "Allow Yap in Privacy & Security, then try again."
     case .failed(let message): message
     }
   }

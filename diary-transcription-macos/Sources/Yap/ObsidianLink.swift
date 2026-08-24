@@ -9,7 +9,7 @@ enum ObsidianLinkError: LocalizedError, Equatable {
     case .fileOutsideVault:
       "The saved entry is outside the connected Obsidian vault."
     case .invalidURL:
-      "Diary Transcription could not build an Obsidian link for this entry."
+      "Yap could not build an Obsidian link for this entry."
     }
   }
 }

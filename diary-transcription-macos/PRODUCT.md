@@ -2,7 +2,7 @@
 
 ## Version 1.2 promise
 
-Diary Transcription is Mac-first and vault-first. The user chooses an existing Obsidian vault, retains ownership of plain Markdown, and can append to a private daily file, a Quartz-ready blog draft, a study note, or any deliberately selected Markdown file in the vault. Voice is transcribed locally with an installable INT8 model and never sent to a transcription service.
+Yap is Mac-first and vault-first. The user chooses an existing Obsidian vault, retains ownership of plain Markdown, and can append to a private daily file, a Quartz-ready blog draft, a study note, or any deliberately selected Markdown file in the vault. Voice is transcribed locally with an installable INT8 model and never sent to a transcription service.
 
 The destination studio has four stable workspaces:
 

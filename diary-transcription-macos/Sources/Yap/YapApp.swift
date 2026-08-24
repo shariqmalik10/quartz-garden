@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct DiaryTranscriptionApp: App {
+struct YapApp: App {
     @NSApplicationDelegateAdaptor(DiaryAppDelegate.self) private var appDelegate
     @State private var model = DiaryAppModel()
 
@@ -10,7 +10,7 @@ struct DiaryTranscriptionApp: App {
             MenuBarContentView(model: model)
         } label: {
             Label(
-                model.capture.isRecording ? "Diary Transcription is recording" : "Diary Transcription",
+                model.capture.isRecording ? "Yap is recording" : "Yap",
                 systemImage: model.capture.isRecording ? "waveform" : "book.pages"
             )
         }
