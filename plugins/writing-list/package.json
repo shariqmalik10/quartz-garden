@@ -1,0 +1,40 @@
+{
+  "name": "@shariq/writing-list",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./dist/index.js",
+    "./components": "./dist/components/index.js"
+  },
+  "main": "./dist/index.js",
+  "quartz": {
+    "name": "writing-list",
+    "displayName": "Latest Writing",
+    "description": "A date-sorted list of Shariq's public writing for the home sidebar.",
+    "category": "component",
+    "version": "1.0.0",
+    "quartzVersion": ">=5.0.0",
+    "dependencies": [],
+    "defaultEnabled": true,
+    "defaultOptions": {
+      "limit": 5,
+      "linkToMore": "/notes"
+    },
+    "components": {
+      "WritingList": {
+        "displayName": "Latest Writing",
+        "defaultPosition": "left",
+        "defaultPriority": 40
+      }
+    },
+    "optionSchema": {
+      "limit": {
+        "type": "number"
+      },
+      "linkToMore": {
+        "type": "string"
+      }
+    }
+  }
+}

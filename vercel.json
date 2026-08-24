@@ -3,6 +3,6 @@
   "framework": null,
   "cleanUrls": true,
   "installCommand": "npm ci",
-  "buildCommand": "npm run install-plugins && npx quartz build",
+  "buildCommand": "rm -rf .quartz/plugins && npm run install-plugins && npx quartz build",
   "outputDirectory": "public"
 }

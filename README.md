@@ -16,16 +16,20 @@ Content lives in [`content/`](content). Site configuration is in [`quartz.config
 
 ## Obsidian publishing
 
-The repository includes a selective Obsidian importer for notes, writings, quotes, and attachments:
+The canonical private vault is `/Users/shariq/Documents/Obsidian Vault`.
+Publishing is explicitly allowlisted by content type:
 
 ```bash
-cp .env.example .env
-npm run vault:check
-npm run vault:sync -- --dry-run
-npm run vault:sync
+npm run writing:export -- --vault "/Users/shariq/Documents/Obsidian Vault" --output "./content/notes"
+npm run quotes:export -- --vault "/Users/shariq/Documents/Obsidian Vault" --output "./content/quotes"
+npm run garden:export -- --vault "/Users/shariq/Documents/Obsidian Vault" --output "./content/garden-sync"
 ```
 
-See [`OBSIDIAN_SYNC.md`](OBSIDIAN_SYNC.md) for vault mappings, draft handling, live watching, daily quote properties, and publishing.
+Private diary logs are never exported. Writing requires `visibility: public`
+and `draft: false`; quotes require `publish: true`; inspiration areas require
+their area map to set `visibility: garden`. See
+[`docs/writing-and-notes.md`](docs/writing-and-notes.md) and
+[`docs/vault-structure.md`](docs/vault-structure.md).
 
 ## Production
 
