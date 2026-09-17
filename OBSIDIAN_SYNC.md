@@ -1,5 +1,11 @@
 # Obsidian → Quartz publishing
 
+> **Legacy direct mirror:** this generic folder copier is currently inactive
+> because no `OBSIDIAN_VAULT_PATH` is set in `.env`. It predates the canonical
+> private-vault exporters and can copy drafts into the public repository. For
+> the live workflow, use `writing:export`, `quotes:export`, and `garden:export`
+> as documented in `docs/writing-and-notes.md` and `docs/vault-structure.md`.
+
 The site is ready to import selected folders from an Obsidian vault without replacing the handcrafted homepage, project pages, or site configuration.
 
 Quartz itself recommends Obsidian for authoring and supports wikilinks, callouts, embeds, properties, highlights, comments, task lists, Mermaid, and common attachments. This project already has Obsidian-flavoured Markdown enabled and uses `shortest` link resolution, matching Quartz’s recommended Obsidian setup.

@@ -2,6 +2,9 @@
 title: Trust is a data product
 description: A working note on why trustworthy data is built through reconciliation, definitions, and visible limits.
 date: 2026-08-10
+kind: writing
+visibility: public
+draft: false
 tags:
   - data-engineering
   - seedling

@@ -5,6 +5,23 @@ import { fetchCanonical } from "./util"
 const p = new DOMParser()
 let activeAnchor: HTMLAnchorElement | null = null
 
+// Hover previews are reserved for Shariq's own writing under /notes. Captures
+// of other people's blogs (garden-sync), project pages, folder indexes, tags,
+// and everything external stay preview-free. Assumes root-relative hrefs,
+// which matches this deployment's apex-domain baseUrl.
+const POPOVER_SLUG_PREFIXES = ["/notes"]
+
+function linkGetsPreview(link: HTMLAnchorElement) {
+  try {
+    const { pathname } = new URL(link.href)
+    return POPOVER_SLUG_PREFIXES.some(
+      (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+    )
+  } catch {
+    return false
+  }
+}
+
 async function mouseEnterHandler(
   this: HTMLAnchorElement,
   { clientX, clientY }: { clientX: number; clientY: number },
@@ -128,6 +145,7 @@ function clearActivePopover() {
 function setupPopovers() {
   const links = [...document.querySelectorAll("a.internal")] as HTMLAnchorElement[]
   for (const link of links) {
+    if (!linkGetsPreview(link)) continue
     link.addEventListener("mouseenter", mouseEnterHandler)
     link.addEventListener("mouseleave", clearActivePopover)
     window.addCleanup(() => {

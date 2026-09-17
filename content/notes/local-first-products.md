@@ -2,6 +2,9 @@
 title: Local-first changes the shape of a product
 description: Notes from building Mouna around local data, attached evidence, and quiet interaction.
 date: 2026-08-10
+kind: writing
+visibility: public
+draft: false
 tags:
   - product-engineering
   - seedling

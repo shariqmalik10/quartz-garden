@@ -1,0 +1,103 @@
+{
+  "version": 1,
+  "generatedAt": "2026-08-21T02:14:03.150Z",
+  "generated": [
+    "inspiration/blogs/gd-20260821-088c85.md",
+    "inspiration/blogs/gd-20260821-5fb1ac.md",
+    "inspiration/blogs/gd-20260821-67a941.md",
+    "inspiration/blogs/gd-20260821-67ca8d.md",
+    "inspiration/blogs/gd-20260821-99b129.md",
+    "inspiration/blogs/gd-20260821-b0fa95.md",
+    "inspiration/blogs/index.md",
+    "inspiration/data-systems/index.md",
+    "inspiration/design-interaction/gd-20260818-b7f26f.md",
+    "inspiration/design-interaction/gd-20260820-publishing-flow.md",
+    "inspiration/design-interaction/gd-20260821-1347d3.md",
+    "inspiration/design-interaction/gd-20260821-5b1f19.md",
+    "inspiration/design-interaction/gd-20260821-a90b0e.md",
+    "inspiration/design-interaction/gd-20260821-e42fb9.md",
+    "inspiration/design-interaction/index.md",
+    "inspiration/machine-learning/index.md",
+    "inspiration/product-engineering/index.md",
+    "inspiration/tools-references/index.md",
+    "inspiration/writing-ideas/index.md"
+  ],
+  "sources": [
+    {
+      "path": "Areas/Blogs/Blogs.md",
+      "sha256": "0ae8db19ae015268d217571339807d38b92195c2435fcf8a2190fb10dba4b051"
+    },
+    {
+      "path": "Areas/Blogs/Captures/gd-20260821-088c85.md",
+      "sha256": "9f492f14227892811f87a441890e220f034ad5eda2579db27217e51202402f17"
+    },
+    {
+      "path": "Areas/Blogs/Captures/gd-20260821-5fb1ac.md",
+      "sha256": "68809eeb90c88095176a198a983d1b74cf37cedba6436181cbc11a6629e2a5e2"
+    },
+    {
+      "path": "Areas/Blogs/Captures/gd-20260821-67a941.md",
+      "sha256": "c224cde19f3e696524ee6228665e9ed9efbeaf2ff418c795948da5ac0c9b0b5d"
+    },
+    {
+      "path": "Areas/Blogs/Captures/gd-20260821-67ca8d.md",
+      "sha256": "c2392c90685cd87fe1fc3a5bf09e103e55fbc33cead2aba6f13fd60c561b9b0e"
+    },
+    {
+      "path": "Areas/Blogs/Captures/gd-20260821-99b129.md",
+      "sha256": "03f64d35e0d6e4def736755fe49cf6d94aca1013b0a875355a685c8b48cd213e"
+    },
+    {
+      "path": "Areas/Blogs/Captures/gd-20260821-b0fa95.md",
+      "sha256": "ab7e613607f3eb451470366df0e25dc53abbfe16b56b74ae391b092461cf61d3"
+    },
+    {
+      "path": "Areas/Data Systems/Data Systems.md",
+      "sha256": "df42ad6fd674a993db7b79bc39df0c2310739504fa4e61720728f8f5cca4886b"
+    },
+    {
+      "path": "Areas/Design & Interaction/Design & Interaction.md",
+      "sha256": "5d965eff2f04e3f9b3b71fe2ab59dfbb9349612db252525d2dbb54a8292c9a26"
+    },
+    {
+      "path": "Areas/Design & Interaction/Captures/gd-20260818-b7f26f.md",
+      "sha256": "26e05a997ed7b77fd8102e515283da535cabfd303fa467d7f233b0d618b79b7a"
+    },
+    {
+      "path": "Areas/Design & Interaction/Captures/gd-20260820-publishing-flow.md",
+      "sha256": "cf205bc8cc921cc5cbbf62fb70182f0a96d4f896ce86f016b65e6585ae002c91"
+    },
+    {
+      "path": "Areas/Design & Interaction/Captures/gd-20260821-1347d3.md",
+      "sha256": "1746f3d72a902e3e1f2ffe249783b95eb70053c447885d5ca997c8cfd5513a03"
+    },
+    {
+      "path": "Areas/Design & Interaction/Captures/gd-20260821-5b1f19.md",
+      "sha256": "a4911d1a95c69c02f4a7d0c57814811b7923ea7cd083eb4d78e388012746b44b"
+    },
+    {
+      "path": "Areas/Design & Interaction/Captures/gd-20260821-a90b0e.md",
+      "sha256": "560e86c9567144758546ce6df97a1dba6c61cd8e39e9b7c9ea726adb71adc651"
+    },
+    {
+      "path": "Areas/Design & Interaction/Captures/gd-20260821-e42fb9.md",
+      "sha256": "34f27edd979dafbfd751317dfb05cce9986a76d130514c8a07cbb23d9c500457"
+    },
+    {
+      "path": "Areas/Machine Learning/Machine Learning.md",
+      "sha256": "50bcd915d9e8c9f63801380e8d6cbcd002f62f35976b62b29cb10ec2912e599d"
+    },
+    {
+      "path": "Areas/Product Engineering/Product Engineering.md",
+      "sha256": "4aa4d66a69e5e46d9f27a3e3e9a395514f1af466a9968933ecddc018cbb71502"
+    },
+    {
+      "path": "Areas/Tools & References/Tools & References.md",
+      "sha256": "73a50b606297af438146bba84c280cfcbf0c7bd5f48c5c138024f75f42c53d83"
+    },
+    {
+      "path": "Areas/Writing & Ideas/Writing & Ideas.md",
+      "sha256": "1f74de527e75b8984db22f794ad2969bdcae4941a4a698848616ac5e7ece5b42"
+    }
+  ]
+}

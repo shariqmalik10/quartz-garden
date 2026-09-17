@@ -1,0 +1,28 @@
+{
+  "name": "@shariq/quote-archive",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./dist/index.js",
+    "./components": "./dist/components/index.js"
+  },
+  "main": "./dist/index.js",
+  "quartz": {
+    "name": "quote-archive",
+    "displayName": "Quote Archive",
+    "description": "Renders the quote collection as a non-linked reading field.",
+    "category": "component",
+    "version": "1.0.0",
+    "quartzVersion": ">=5.0.0",
+    "dependencies": [],
+    "defaultEnabled": true,
+    "components": {
+      "QuoteArchive": {
+        "displayName": "Quote Archive",
+        "defaultPosition": "beforeBody",
+        "defaultPriority": 25
+      }
+    }
+  }
+}

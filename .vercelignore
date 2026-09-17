@@ -1,0 +1,11 @@
+.git
+.vercel
+.playwright-cli
+node_modules
+public
+tmp
+tsconfig.tsbuildinfo
+garden-drop-macos/.build
+garden-drop-macos/.swiftpm
+garden-drop-macos/DerivedData
+garden-drop-macos/dist

@@ -411,6 +411,11 @@ thead {
     color: var(--dark);
     background-color: transparent;
   }
+
+  article > & > a.heading-permalink {
+    color: var(--dark);
+    background-color: transparent;
+  }
 }
 
 h1,
@@ -419,7 +424,7 @@ h3,
 h4,
 h5,
 h6 {
-  &[id] > a[href^="#"] {
+  &[id] > a.heading-permalink {
     margin: 0 0.5rem;
     opacity: 0;
     transition: opacity 0.2s ease;
@@ -428,7 +433,8 @@ h6 {
     user-select: none;
   }
 
-  &[id]:hover > a {
+  &[id]:hover > a.heading-permalink,
+  &[id] > a.heading-permalink:focus-visible {
     opacity: 1;
   }
 

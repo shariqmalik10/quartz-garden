@@ -12,6 +12,11 @@ colors:
   leaf: "#536d59"
   night: "#08172c"
 typography:
+  brand:
+    fontFamily: "Nerko One, system-ui, sans-serif"
+    fontSize: "clamp(1.7rem, 3vw, 2.15rem)"
+    fontWeight: 400
+    lineHeight: 1
   landmark:
     fontFamily: "Fraunces, Georgia, serif"
     fontSize: "clamp(1.45rem, 3vw, 1.85rem)"
@@ -20,39 +25,39 @@ typography:
     letterSpacing: "-0.025em"
   body:
     fontFamily: "Manrope, system-ui, sans-serif"
-    fontSize: "0.96rem"
+    fontSize: "1rem"
     fontWeight: 400
     lineHeight: 1.75
   welcome:
-    fontFamily: "Caveat, Segoe Print, cursive"
+    fontFamily: "Playwrite GB J Guides, Segoe Print, cursive"
     fontSize: "clamp(2rem, 5vw, 2.8rem)"
-    fontWeight: 600
+    fontWeight: 400
     lineHeight: 1
   note:
     fontFamily: "Manrope, system-ui, sans-serif"
-    fontSize: "0.82rem"
+    fontSize: "0.88rem"
     fontWeight: 400
-    lineHeight: 1.5
+    lineHeight: 1.55
   path:
     fontFamily: "Fraunces, Georgia, serif"
     fontSize: "1.03rem"
     fontWeight: 600
     lineHeight: 1.35
   metadata:
-    fontFamily: "Caveat, Segoe Print, cursive"
-    fontSize: "0.94rem"
-    fontWeight: 600
+    fontFamily: "Manrope, system-ui, sans-serif"
+    fontSize: "0.78rem"
+    fontWeight: 400
     lineHeight: 1.4
   marginalia:
-    fontFamily: "Caveat, Segoe Print, cursive"
-    fontSize: "0.76rem / 0.82rem / 0.88rem / 0.9rem"
+    fontFamily: "Playwrite GB J Guides, Segoe Print, cursive"
+    fontSize: "1.75rem"
     fontWeight: 400
     lineHeight: 1.4
   quote:
-    fontFamily: "Fraunces, Georgia, serif"
-    fontSize: "0.96rem / 1.05rem"
-    fontWeight: 550
-    lineHeight: 1.45
+    fontFamily: "Manrope, system-ui, sans-serif"
+    fontSize: "0.92rem"
+    fontWeight: 600
+    lineHeight: 1.6
 spacing:
   xs: "0.3rem"
   sm: "1rem"
@@ -88,7 +93,7 @@ Warm paper and navy ink make the site feel printed and lived-in. Rust is the sec
 
 ## Typography
 
-Fraunces gives headings a literary, slightly irregular character. Manrope keeps long technical notes clear. Caveat is reserved for welcomes, dates, and signoffs so the handwritten layer stays rare.
+Nerko One is reserved for the compact Shariq Malik identity mark. Fraunces gives headings a literary, slightly irregular character, while Manrope carries body text, navigation, dates, and quotes at reading sizes. Playwrite GB J Guides appears only in the large welcome and signoff so the handwritten layer stays rare and legible.
 
 ## Layout
 
@@ -100,7 +105,7 @@ There are no cards or floating résumé surfaces. Depth comes from the framed ga
 
 ## Components
 
-Garden paths and recent notes are compact botanical bullet trails, not cards. The quote rail is a ruled marginal list populated from Markdown frontmatter, with the newest collected lines first. The banner is a canvas-rendered pixel flower with restrained wind motion; the page background carries a five-cell cursor trail that slowly dims. Both become still when reduced motion is requested. Internal links use a rust underline. Article metadata and backlinks remain quiet supporting context on inner pages.
+Garden paths and recent notes are compact botanical trails, not cards. Public writing is date-sorted beneath the site identity without numbered labels; collected external links live in a separate, categorized atlas. The quote rail is a ruled marginal list populated from Markdown frontmatter, with the newest collected lines first and the full collection available in a native dialog drawer. The banner is a canvas-rendered pixel orb; the page background carries a five-cell cursor trail that slowly dims. Both become still when reduced motion is requested. Internal links use a rust underline. Article metadata and backlinks remain quiet supporting context on inner pages.
 
 ## Do’s and Don’ts
 

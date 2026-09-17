@@ -5,8 +5,79 @@ type GardenTrailCell = {
   born: number
 }
 
+type Vec3 = { x: number; y: number; z: number }
+
+type OrbParticle = {
+  direction: Vec3
+  alive: boolean
+  tone: 0 | 1 | 2
+  jitter: number
+  size: number
+}
+
+type OrbHole = {
+  centre: Vec3
+  radius: number
+  cosRadius: number
+}
+
+type OrbTrailPoint = {
+  position: Vec3
+  energy: number
+}
+
+type OrbCrawler = {
+  direction: Vec3
+  heading: Vec3
+}
+
+type OrbDust = {
+  sx: number
+  sy: number
+  vx: number
+  vy: number
+  energy: number
+  tone: 0 | 1
+}
+
 function gardenColour(name: string, fallback: string) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
+}
+
+function normaliseVec(vector: Vec3): Vec3 {
+  const length = Math.hypot(vector.x, vector.y, vector.z) || 1
+  return { x: vector.x / length, y: vector.y / length, z: vector.z / length }
+}
+
+function crossVec(a: Vec3, b: Vec3): Vec3 {
+  return {
+    x: a.y * b.z - a.z * b.y,
+    y: a.z * b.x - a.x * b.z,
+    z: a.x * b.y - a.y * b.x,
+  }
+}
+
+function tangentBasis(direction: Vec3): [Vec3, Vec3] {
+  const reference: Vec3 = Math.abs(direction.y) < 0.92 ? { x: 0, y: 1, z: 0 } : { x: 1, y: 0, z: 0 }
+  const across = normaliseVec(crossVec(reference, direction))
+  return [across, normaliseVec(crossVec(direction, across))]
+}
+
+function randomDirection(): Vec3 {
+  const theta = Math.random() * Math.PI * 2
+  const elevation = Math.acos(2 * Math.random() - 1)
+  const span = Math.sin(elevation)
+  return { x: Math.cos(theta) * span, y: Math.cos(elevation), z: Math.sin(theta) * span }
+}
+
+function rotateTowards(direction: Vec3, heading: Vec3, angle: number): Vec3 {
+  const cos = Math.cos(angle)
+  const sin = Math.sin(angle)
+  return normaliseVec({
+    x: direction.x * cos + heading.x * sin,
+    y: direction.y * cos + heading.y * sin,
+    z: direction.z * cos + heading.z * sin,
+  })
 }
 
 function setupGardenMotion() {
@@ -108,21 +179,200 @@ function setupGardenMotion() {
     if (!reducedMotion.matches) fieldFrame = requestAnimationFrame(drawField)
   }
 
-  const flower = document.querySelector<HTMLCanvasElement>(".garden-flower")
-  const flowerContext = flower?.getContext("2d", { alpha: false }) ?? null
-  let flowerFrame = 0
-  let flowerVisible = true
-  let flowerWidth = 0
-  let flowerHeight = 0
-  let lastFlowerTime = 0
+  const windowCanvas = document.querySelector<HTMLCanvasElement>(".garden-flower")
+  const windowContext = windowCanvas?.getContext("2d", { alpha: false }) ?? null
+  let windowFrame = 0
+  let windowVisible = true
+  let windowWidth = 0
+  let windowHeight = 0
+  let lastWindowTime = 0
+  let horizonY = 0
+  let sphereRadius = 12
+  let sphereCentreX = 0
+  let sphereCentreY = 0
 
-  const resizeFlower = () => {
-    if (!flower) return
-    const bounds = flower.getBoundingClientRect()
-    flowerWidth = Math.max(120, Math.round(bounds.width / 3))
-    flowerHeight = Math.max(48, Math.round(bounds.height / 3))
-    flower.width = flowerWidth
-    flower.height = flowerHeight
+  let particles: OrbParticle[] = []
+  let holes: OrbHole[] = []
+  let trailPoints: OrbTrailPoint[] = []
+  let crawlers: OrbCrawler[] = []
+  let dustMotes: OrbDust[] = []
+
+  let orbPhase: "spin" | "erode" | "fade" | "rebirth" = "spin"
+  let phaseTime = 0
+  let spawnClock = 0
+  let rotOffset = Math.random() * Math.PI * 2
+  let cosYaw = 1
+  let sinYaw = 0
+  let cosPitch = 1
+  let sinPitch = 0
+
+  const ORB_SPIN_MS = 1500
+  const ORB_FADE_MS = 1500
+  const ORB_REBIRTH_MS = 800
+  const ORB_MAX_HOLES = 34
+  const ORB_SPAWN_INTERVAL = 760
+  const ORB_TILT = 0.34
+
+  const resizeWindowScene = () => {
+    if (!windowCanvas) return
+    const bounds = windowCanvas.getBoundingClientRect()
+    windowWidth = Math.max(120, Math.round(bounds.width / 3))
+    windowHeight = Math.max(48, Math.round(bounds.height / 3))
+    windowCanvas.width = windowWidth
+    windowCanvas.height = windowHeight
+    horizonY = Math.round(windowHeight * 0.82)
+    sphereRadius = Math.min(27, Math.max(10, Math.min(windowWidth, windowHeight) * 0.36))
+    sphereCentreX = Math.round(windowWidth * 0.5)
+    sphereCentreY = horizonY - Math.round(sphereRadius * 0.68)
+  }
+
+  const respawnCrawlers = () => {
+    crawlers = []
+    for (let index = 0; index < 3; index += 1) {
+      const direction = randomDirection()
+      const basis = tangentBasis(direction)
+      crawlers.push({ direction, heading: basis[index % 2] })
+    }
+  }
+
+  const buildOrb = () => {
+    const count = Math.round(Math.min(820, Math.max(320, sphereRadius * sphereRadius * 4.4)))
+    const goldenAngle = Math.PI * (3 - Math.sqrt(5))
+    particles = []
+    for (let index = 0; index < count; index += 1) {
+      const y = count > 1 ? 1 - (index / (count - 1)) * 2 : 0
+      const span = Math.sqrt(Math.max(0, 1 - y * y))
+      const theta = goldenAngle * index
+      const roll = Math.random()
+      const tone: 0 | 1 | 2 = roll < 0.055 ? 2 : Math.abs(y) > 0.7 && roll < 0.52 ? 0 : 1
+      particles.push({
+        direction: { x: Math.cos(theta) * span, y, z: Math.sin(theta) * span },
+        alive: true,
+        tone,
+        jitter: Math.random() * 0.07,
+        size: Math.random() < 0.76 ? 2 : 1,
+      })
+    }
+    holes = []
+    trailPoints = []
+    dustMotes = []
+    spawnClock = 0
+    respawnCrawlers()
+  }
+
+  const seedHole = () => {
+    const radius = 0.115
+    holes.push({ centre: randomDirection(), radius, cosRadius: Math.cos(radius) })
+  }
+
+  const spawnChildHole = () => {
+    const parent = holes[Math.floor(Math.random() * holes.length)]
+    if (!parent) {
+      seedHole()
+      return
+    }
+    const [across, along] = tangentBasis(parent.centre)
+    const angle = Math.random() * Math.PI * 2
+    const drift = parent.radius * (0.35 + Math.random() * 0.55)
+    const offsetX = (across.x * Math.cos(angle) + along.x * Math.sin(angle)) * drift
+    const offsetY = (across.y * Math.cos(angle) + along.y * Math.sin(angle)) * drift
+    const offsetZ = (across.z * Math.cos(angle) + along.z * Math.sin(angle)) * drift
+    const radius = Math.max(0.05, parent.radius * (0.5 + Math.random() * 0.24))
+    holes.push({
+      centre: normaliseVec({
+        x: parent.centre.x + offsetX,
+        y: parent.centre.y + offsetY,
+        z: parent.centre.z + offsetZ,
+      }),
+      radius,
+      cosRadius: Math.cos(radius),
+    })
+  }
+
+  const growHoles = (delta: number) => {
+    for (const hole of holes) {
+      hole.radius = Math.min(0.9, hole.radius + delta * 0.0022)
+      hole.cosRadius = Math.cos(hole.radius)
+    }
+  }
+
+  const projectDirection = (direction: Vec3) => {
+    const rotatedX = direction.x * cosYaw + direction.z * sinYaw
+    const rotatedZ = direction.z * cosYaw - direction.x * sinYaw
+    const rotatedY = direction.y * cosPitch - rotatedZ * sinPitch
+    const depth = direction.y * sinPitch + rotatedZ * cosPitch
+    return {
+      sx: sphereCentreX + rotatedX * sphereRadius,
+      sy: sphereCentreY + rotatedY * sphereRadius * 0.96,
+      depth,
+    }
+  }
+
+  const spawnDust = (particle: OrbParticle) => {
+    const projected = projectDirection(particle.direction)
+    dustMotes.push({
+      sx: projected.sx,
+      sy: projected.sy,
+      vx: (projected.sx - sphereCentreX) * 0.004 + (Math.random() - 0.5) * 0.02,
+      vy: -0.012 - Math.random() * 0.028,
+      energy: 0.7 + Math.random() * 0.3,
+      tone: Math.random() < 0.5 ? 0 : 1,
+    })
+    if (dustMotes.length > 160) dustMotes.shift()
+  }
+
+  const runErosionPass = () => {
+    let survivors = 0
+    for (const particle of particles) {
+      if (!particle.alive) continue
+      for (const hole of holes) {
+        const dot =
+          particle.direction.x * hole.centre.x +
+          particle.direction.y * hole.centre.y +
+          particle.direction.z * hole.centre.z
+        if (dot >= hole.cosRadius - particle.jitter) {
+          particle.alive = false
+          spawnDust(particle)
+          break
+        }
+      }
+      if (particle.alive) survivors += 1
+    }
+    return survivors / Math.max(1, particles.length)
+  }
+
+  const advanceCrawlers = (delta: number) => {
+    const step = 0.0021 * delta
+    for (const crawler of crawlers) {
+      crawler.direction = rotateTowards(crawler.direction, crawler.heading, step)
+      const [across] = tangentBasis(crawler.direction)
+      const wobble = (Math.random() - 0.5) * 0.4
+      let hx = crawler.heading.x + across.x * wobble
+      let hy = crawler.heading.y + across.y * wobble
+      let hz = crawler.heading.z + across.z * wobble
+      const alignment =
+        hx * crawler.direction.x + hy * crawler.direction.y + hz * crawler.direction.z
+      hx -= alignment * crawler.direction.x
+      hy -= alignment * crawler.direction.y
+      hz -= alignment * crawler.direction.z
+      crawler.heading = normaliseVec({ x: hx, y: hy, z: hz })
+      trailPoints.push({ position: { ...crawler.direction }, energy: 1 })
+    }
+    while (trailPoints.length > 300) trailPoints.shift()
+    trailPoints = trailPoints.filter((point) => {
+      point.energy -= delta * 0.00042
+      return point.energy > 0.02
+    })
+  }
+
+  const advanceDust = (delta: number) => {
+    dustMotes = dustMotes.filter((mote) => {
+      mote.vy += delta * 0.00016
+      mote.sx += mote.vx * delta
+      mote.sy += mote.vy * delta
+      mote.energy -= delta * 0.0011
+      return mote.energy > 0 && mote.sy < windowHeight
+    })
   }
 
   const pixel = (
@@ -139,118 +389,186 @@ function setupGardenMotion() {
     context.fillRect(Math.round(x), Math.round(y), Math.round(width), Math.round(height))
   }
 
-  const drawFlower = (time: number) => {
-    if (!flower || !flowerContext || !flowerVisible || document.hidden) return
-    if (time - lastFlowerTime < 32 && !reducedMotion.matches) {
-      flowerFrame = requestAnimationFrame(drawFlower)
+  const drawWindowScene = (now: number, frozen = false) => {
+    if (!windowCanvas || !windowContext || !windowVisible || document.hidden) {
+      // Mark the loop dead so the IntersectionObserver can restart it.
+      windowFrame = 0
       return
     }
-    lastFlowerTime = time
+    if (!frozen && now - lastWindowTime < 32 && !reducedMotion.matches) {
+      windowFrame = requestAnimationFrame(drawWindowScene)
+      return
+    }
 
-    const ink = gardenColour("--garden-ink", "#172b4d")
-    const paper = gardenColour("--garden-paper", "#f5efe1")
-    const deep = gardenColour("--garden-paper-deep", "#e8deca")
-    const rust = gardenColour("--garden-rust", "#bd5438")
-    const sky = gardenColour("--garden-sky", "#90a9c5")
-    const leaf = gardenColour("--garden-leaf", "#536d59")
-    flowerContext.imageSmoothingEnabled = false
-    flowerContext.fillStyle = deep
-    flowerContext.fillRect(0, 0, flowerWidth, flowerHeight)
+    const delta = frozen ? 0 : Math.min(50, now - lastWindowTime || 16)
+    lastWindowTime = now
 
-    const phase = reducedMotion.matches ? 0.35 : time * 0.001
-    const wind = Math.sin(phase * 1.35) * 2.2 + Math.sin(phase * 0.47) * 1.1
-    const horizon = Math.round(flowerHeight * 0.72)
-
-    pixel(flowerContext, 0, 0, flowerWidth, horizon, sky, 0.56)
-    for (let y = 3; y < horizon; y += 5) {
-      for (let x = (y * 7) % 11; x < flowerWidth; x += 13) {
-        pixel(flowerContext, x, y, 1, 1, ink, 0.1)
+    if (!frozen) {
+      phaseTime += delta
+      if (orbPhase === "spin") {
+        if (phaseTime >= ORB_SPIN_MS) {
+          orbPhase = "erode"
+          phaseTime = 0
+          seedHole()
+        }
+      } else if (orbPhase === "erode") {
+        growHoles(delta)
+        spawnClock += delta
+        if (spawnClock >= ORB_SPAWN_INTERVAL && holes.length < ORB_MAX_HOLES) {
+          spawnChildHole()
+          spawnClock = 0
+        }
+      } else if (orbPhase === "fade") {
+        if (phaseTime >= ORB_FADE_MS) {
+          orbPhase = "rebirth"
+          phaseTime = 0
+          buildOrb()
+          rotOffset += 1.7
+        }
+      } else if (phaseTime >= ORB_REBIRTH_MS) {
+        orbPhase = "spin"
+        phaseTime = 0
       }
     }
 
-    for (let x = 0; x < flowerWidth; x += 3) {
-      const groundY = horizon + Math.sin(x * 0.11) * 2
-      pixel(flowerContext, x, groundY, 4, flowerHeight - groundY, leaf, 0.48)
+    const angleYaw = now * 0.00042 + rotOffset
+    cosYaw = Math.cos(angleYaw)
+    sinYaw = Math.sin(angleYaw)
+    cosPitch = Math.cos(ORB_TILT)
+    sinPitch = Math.sin(ORB_TILT)
+
+    if (!frozen && orbPhase === "erode") {
+      const ratio = runErosionPass()
+      if (ratio <= 0.16 || phaseTime >= 8200) {
+        orbPhase = "fade"
+        phaseTime = 0
+      }
     }
 
-    for (let line = 0; line < 3; line += 1) {
-      const travel = reducedMotion.matches
-        ? 0.25
-        : (phase * (9 + line * 2) + line * 31) % (flowerWidth + 34)
-      const lineX = flowerWidth - travel
-      pixel(flowerContext, lineX, 10 + line * 11, 24, 1, paper, 0.18)
-      pixel(flowerContext, lineX + 27, 10 + line * 11, 7, 1, paper, 0.1)
+    if (!frozen && orbPhase !== "rebirth") {
+      advanceCrawlers(delta)
+      advanceDust(delta)
     }
 
-    const baseX = flowerWidth * 0.5
-    const baseY = flowerHeight - 4
-    const stemHeight = flowerHeight * 0.58
-    const segments = Math.max(12, Math.floor(stemHeight / 2))
-    let headX = baseX
-    let headY = baseY - stemHeight
-    for (let index = 0; index <= segments; index += 1) {
-      const progress = index / segments
-      const x = baseX + wind * progress * progress + Math.sin(progress * 5 + phase) * progress * 0.8
-      const y = baseY - stemHeight * progress
-      pixel(flowerContext, x, y, 2, 3, leaf)
-      headX = x
-      headY = y
+    const paper = gardenColour("--garden-paper", "#f5efe1")
+    const deep = gardenColour("--garden-paper-deep", "#e8deca")
+    const ink = gardenColour("--garden-ink", "#172b4d")
+    const rust = gardenColour("--garden-rust", "#bd5438")
+    const sky = gardenColour("--garden-sky", "#90a9c5")
+    const leaf = gardenColour("--garden-leaf", "#536d59")
+    const toneColours = [paper, sky, rust]
+
+    const context = windowContext
+    context.fillStyle = deep
+    context.fillRect(0, 0, windowWidth, windowHeight)
+
+    pixel(context, 0, 0, windowWidth, horizonY, sky, 0.5)
+    for (let y = 3; y < horizonY; y += 5) {
+      for (let x = (y * 7) % 11; x < windowWidth; x += 13) {
+        pixel(context, x, y, 1, 1, ink, 0.08)
+      }
     }
 
-    const leafLift = Math.sin(phase * 1.6) * 1.2
-    pixel(flowerContext, baseX - 9, baseY - stemHeight * 0.34 + leafLift, 10, 3, leaf)
-    pixel(flowerContext, baseX - 12, baseY - stemHeight * 0.34 + 1 + leafLift, 5, 3, leaf, 0.82)
-    pixel(flowerContext, baseX + 1, baseY - stemHeight * 0.52 - leafLift, 11, 3, leaf)
-    pixel(flowerContext, baseX + 8, baseY - stemHeight * 0.52 - 2 - leafLift, 5, 3, leaf, 0.82)
+    const drift = frozen ? 0.25 : (now * 0.006) % (windowWidth + 40)
+    pixel(context, windowWidth - drift, 8, 22, 1, paper, 0.16)
+    pixel(context, windowWidth - drift + 25, 19, 8, 1, paper, 0.1)
 
-    const petalDrift = Math.sin(phase * 1.8) * 1.4
-    const petals = [
-      [-1, -8],
-      [6, -5],
-      [8, 1],
-      [4, 7],
-      [-3, 8],
-      [-9, 4],
-      [-9, -3],
-    ]
-    for (const [petalX, petalY] of petals) {
-      pixel(
-        flowerContext,
-        headX + petalX + petalDrift * (petalY < 0 ? 0.8 : 0.35),
-        headY + petalY,
-        6,
-        5,
-        paper,
-      )
-      pixel(
-        flowerContext,
-        headX + petalX + 1 + petalDrift * (petalY < 0 ? 0.8 : 0.35),
-        headY + petalY + 1,
-        4,
-        3,
-        rust,
-        0.28,
-      )
-    }
-    pixel(flowerContext, headX - 2 + petalDrift * 0.25, headY - 2, 7, 7, rust)
-    pixel(flowerContext, headX, headY, 3, 3, paper, 0.68)
-
-    for (let index = 0; index < 5; index += 1) {
-      const pollenPhase = (phase * (0.7 + index * 0.06) + index * 0.19) % 1
-      const pollenX = headX + 12 + pollenPhase * 42 + Math.sin(phase * 2 + index) * 2
-      const pollenY = headY - 5 + index * 3 + Math.sin(phase * 1.4 + index) * 3
-      pixel(flowerContext, pollenX, pollenY, 2, 2, rust, 0.72 * (1 - pollenPhase))
+    for (let x = 0; x < windowWidth; x += 3) {
+      const groundLine = horizonY + Math.sin(x * 0.09) * 2
+      pixel(context, x, groundLine, 4, windowHeight - groundLine, leaf, 0.45)
     }
 
-    flowerContext.globalAlpha = 1
-    if (!reducedMotion.matches) flowerFrame = requestAnimationFrame(drawFlower)
+    const fadeAlpha =
+      orbPhase === "fade"
+        ? Math.max(0, 1 - phaseTime / ORB_FADE_MS)
+        : orbPhase === "rebirth"
+          ? Math.min(1, phaseTime / ORB_REBIRTH_MS)
+          : 1
+    const effRadius = sphereRadius * (orbPhase === "fade" ? 1 + (1 - fadeAlpha) * 0.3 : 1)
+
+    for (const point of trailPoints) {
+      const rotatedZ = point.position.z * cosYaw - point.position.x * sinYaw
+      const rotatedY = point.position.y * cosPitch - rotatedZ * sinPitch
+      const depth = point.position.y * sinPitch + rotatedZ * cosPitch
+      const sx = sphereCentreX + (point.position.x * cosYaw + point.position.z * sinYaw) * effRadius
+      const sy = sphereCentreY + rotatedY * effRadius * 0.96
+      if (depth <= 0) pixel(context, sx, sy, 1, 1, rust, point.energy * 0.32 * fadeAlpha)
+      else if (depth > 0) {
+        const size = point.energy > 0.55 ? 2 : 1
+        pixel(context, sx, sy, size, size, rust, point.energy * 0.78 * fadeAlpha)
+      }
+    }
+
+    for (const particle of particles) {
+      if (!particle.alive) continue
+      const rotatedZ = particle.direction.z * cosYaw - particle.direction.x * sinYaw
+      const rotatedY = particle.direction.y * cosPitch - rotatedZ * sinPitch
+      const depth = particle.direction.y * sinPitch + rotatedZ * cosPitch
+      const sx =
+        sphereCentreX + (particle.direction.x * cosYaw + particle.direction.z * sinYaw) * effRadius
+      const sy = sphereCentreY + rotatedY * effRadius * 0.96
+      if (depth <= 0) {
+        pixel(context, sx, sy, 1, 1, toneColours[particle.tone], 0.3 * fadeAlpha)
+      } else {
+        pixel(
+          context,
+          sx,
+          sy,
+          particle.size,
+          particle.size,
+          toneColours[particle.tone],
+          0.95 * fadeAlpha,
+        )
+      }
+    }
+
+    for (const crawler of crawlers) {
+      const rotatedZ = crawler.direction.z * cosYaw - crawler.direction.x * sinYaw
+      const rotatedY = crawler.direction.y * cosPitch - rotatedZ * sinPitch
+      const depth = crawler.direction.y * sinPitch + rotatedZ * cosPitch
+      if (depth <= 0) continue
+      const sx =
+        sphereCentreX + (crawler.direction.x * cosYaw + crawler.direction.z * sinYaw) * effRadius
+      const sy = sphereCentreY + rotatedY * effRadius * 0.96
+      pixel(context, sx - 1, sy - 1, 3, 3, rust, 0.55 * fadeAlpha)
+      pixel(context, sx, sy, 2, 2, paper, 0.95 * fadeAlpha)
+    }
+
+    for (const mote of dustMotes) {
+      pixel(context, mote.sx, mote.sy, 1, 1, mote.tone === 0 ? leaf : sky, mote.energy * 0.85)
+    }
+
+    context.globalAlpha = 1
+    if (!frozen && !reducedMotion.matches) windowFrame = requestAnimationFrame(drawWindowScene)
   }
 
-  const flowerObserver = flower
+  const composeStaticScene = () => {
+    buildOrb()
+    const seeds: Vec3[] = [
+      { x: 0.28, y: 0.79, z: 0.55 },
+      { x: -0.62, y: 0.31, z: -0.72 },
+      { x: 0.51, y: -0.58, z: 0.64 },
+      { x: -0.18, y: -0.83, z: -0.53 },
+    ]
+    for (const centre of seeds) {
+      const radius = 0.09 + Math.random() * 0.05
+      holes.push({ centre, radius, cosRadius: Math.cos(radius) })
+    }
+    runErosionPass()
+    const walker = crawlers[0]
+    if (walker) {
+      for (let index = 0; index < 70; index += 1) {
+        walker.direction = rotateTowards(walker.direction, walker.heading, 0.021)
+        trailPoints.push({ position: { ...walker.direction }, energy: 1 - index / 74 })
+      }
+    }
+  }
+
+  const windowObserver = windowCanvas
     ? new IntersectionObserver((entries) => {
-        flowerVisible = entries[0]?.isIntersecting ?? false
-        if (flowerVisible && !flowerFrame && !reducedMotion.matches) {
-          flowerFrame = requestAnimationFrame(drawFlower)
+        windowVisible = entries[0]?.isIntersecting ?? false
+        if (windowVisible && !windowFrame && !reducedMotion.matches) {
+          windowFrame = requestAnimationFrame(drawWindowScene)
         }
       })
     : null
@@ -260,33 +578,40 @@ function setupGardenMotion() {
     if (fieldVisible && !reducedMotion.matches) {
       cancelAnimationFrame(fieldFrame)
       fieldFrame = requestAnimationFrame(drawField)
-      if (flowerVisible) {
-        cancelAnimationFrame(flowerFrame)
-        flowerFrame = requestAnimationFrame(drawFlower)
+      if (windowVisible) {
+        cancelAnimationFrame(windowFrame)
+        windowFrame = requestAnimationFrame(drawWindowScene)
       }
     }
   }
 
   const onResize = () => {
     resizeField()
-    resizeFlower()
+    resizeWindowScene()
     drawField(performance.now())
-    drawFlower(performance.now())
+    drawWindowScene(performance.now(), true)
   }
 
   resizeField()
-  resizeFlower()
+  resizeWindowScene()
+  buildOrb()
   document.addEventListener("pointermove", addTrailCell, { passive: true })
   document.addEventListener("visibilitychange", onVisibilityChange)
   window.addEventListener("resize", onResize, { passive: true })
-  if (flower) flowerObserver?.observe(flower)
+  if (windowCanvas) windowObserver?.observe(windowCanvas)
   drawField(performance.now())
-  drawFlower(performance.now())
+
+  if (reducedMotion.matches) {
+    composeStaticScene()
+    drawWindowScene(performance.now() + 4200, true)
+  } else {
+    windowFrame = requestAnimationFrame(drawWindowScene)
+  }
 
   window.addCleanup(() => {
     cancelAnimationFrame(fieldFrame)
-    cancelAnimationFrame(flowerFrame)
-    flowerObserver?.disconnect()
+    cancelAnimationFrame(windowFrame)
+    windowObserver?.disconnect()
     document.removeEventListener("pointermove", addTrailCell)
     document.removeEventListener("visibilitychange", onVisibilityChange)
     window.removeEventListener("resize", onResize)
