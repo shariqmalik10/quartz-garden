@@ -129,7 +129,7 @@ const ARTWORKS: Artwork[] = [
 
 const DeepSeekThoughts: QuartzComponentConstructor = () => {
   const DeepSeekThoughtsComponent = ({ fileData }: QuartzComponentProps) => {
-    if (fileData.slug !== "deepseek-thoughts") return null
+    if (fileData.slug !== "model-sketchbooks/deepseek") return null
 
     return h(
       "section",

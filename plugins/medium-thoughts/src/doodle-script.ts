@@ -1,14 +1,23 @@
-// src/components/index.ts
-import { h } from "preact"
-
-// src/doodle-script.ts
-var DOODLE_SCRIPT = `
-function setupDeepSeekThoughts() {
-  var root = document.querySelector("[data-ds-lab]")
-  if (!(root instanceof HTMLElement) || root.getAttribute("data-ds-ready") === "true") return
-  var pieces = Array.prototype.slice.call(root.querySelectorAll("[data-ds-piece]"))
+/**
+ * The doodle engine for /medium-thoughts.
+ *
+ * Everything a visitor sees on top of the photographs is drawn here, in the
+ * browser, with the Canvas 2D API: hand-trembled strokes, hats, bubbles,
+ * boats, krakens, and little handwritten labels. Marks are generated from a
+ * seed with a small mulberry32 PRNG, so every picture has a stable default
+ * doodle and "doodle again" is just a new seed.
+ *
+ * Each piece can also be opened in a focus dialog with a larger stage; both
+ * the inline and focus surfaces share one scene, one stroke list, and one
+ * animation clock through the small "view" abstraction below.
+ */
+export const DOODLE_SCRIPT = `
+function setupMediumThoughts() {
+  var root = document.querySelector("[data-mt-lab]")
+  if (!(root instanceof HTMLElement) || root.getAttribute("data-mt-ready") === "true") return
+  var pieces = Array.prototype.slice.call(root.querySelectorAll("[data-mt-piece]"))
   if (pieces.length === 0) return
-  root.setAttribute("data-ds-ready", "true")
+  root.setAttribute("data-mt-ready", "true")
 
   var motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)")
   var HAND_FONT = '"Playwrite GB J Guides", "Segoe Print", cursive'
@@ -1165,6 +1174,95 @@ function setupDeepSeekThoughts() {
     },
   }
 
+  var MEDIUM_RECIPES = {
+    cosmic: function (rng) {
+      var marks = []
+      var constellation = [[0.12, 0.16], [0.24, 0.23], [0.38, 0.14], [0.53, 0.27], [0.69, 0.17]]
+      for (var i = 0; i < constellation.length - 1; i++) {
+        marks.push(markLine(squiggle(constellation[i], constellation[i + 1], rng, 0.005, 0.8, 12), "paper", 1.5, 0.72))
+      }
+      constellation.forEach(function (point, index) {
+        marks.push(index % 2 ? markDot(point[0], point[1], 0.006, "sky") : markSparkle(point[0], point[1], 0.011, "paper"))
+      })
+      marks = marks.concat(withMarks(rocket(rng, 0.82, 0.34, 0.052, 34, "paper")))
+      dashPath(qbez([0.78, 0.4], [0.67, 0.52], [0.6, 0.64], 18, rng, 0.004), 0.018, 0.015).forEach(function (dash) {
+        marks.push(markLine(dash, "rust", 1.8, 0.76))
+      })
+      marks.push(markLabel("still under construction", 0.5, 0.82, -4, 0.029, "paper"))
+      marks.push(markLabel("new light", 0.15, 0.57, -8, 0.028, "rust"))
+      return marks
+    },
+
+    salt: function (rng) {
+      var marks = compassRose(rng, 0.84, 0.18, 0.055, "paper")
+      var route = qbez([0.1, 0.76], [0.3, 0.5], [0.5, 0.62], 20, rng, 0.004)
+      var routeB = qbez([0.5, 0.62], [0.7, 0.73], [0.88, 0.46], 20, rng, 0.004)
+      dashPath(route.concat(routeB.slice(1)), 0.024, 0.018).forEach(function (dash) {
+        marks.push(markLine(dash, "paper", 2, 0.72))
+      })
+      marks = marks.concat(withMarks(paperPlane(rng, 0.88, 0.45, 0.045, -18, "rust")))
+      marks.push(markLabel("colour by evaporation", 0.2, 0.2, -5, 0.03, "paper"))
+      marks.push(markSparkle(0.28, 0.34, 0.012, "rust"))
+      marks.push(markSparkle(0.67, 0.83, 0.01, "paper"))
+      return marks
+    },
+
+    fungi: function (rng) {
+      var marks = speechBubble(rng, 0.73, 0.16, 0.16, 0.07, 0.59, 0.35, "rust")
+      marks.push(markLabel("weather report: damp", 0.73, 0.16, -2, 0.024, "navy"))
+      ;[[0.18, 0.23, 0.014], [0.26, 0.17, 0.009], [0.82, 0.52, 0.012], [0.76, 0.6, 0.007]].forEach(function (spore) {
+        marks.push(markLine(ellipsePts(spore[0], spore[1], spore[2], spore[2], rng, { end: Math.PI * 2 + 0.3, wobble: 0.06 }), "rust", 1.7, 0.8))
+      })
+      marks.push(markLine(heartPts(0.19, 0.72, 0.032, rng), "leaf", 2, 0.85))
+      marks.push(markLabel("quiet network", 0.43, 0.88, -5, 0.03, "leaf"))
+      marks.push(markLine(squiggle([0.41, 0.84], [0.3, 0.7], rng, 0.007, 1.4, 16), "leaf", 1.7, 0.75))
+      return marks
+    },
+
+    jelly: function (rng) {
+      var marks = []
+      marks = marks.concat(withMarks(smallJellyfish(rng, 0.17, 0.22, 0.048, "paper")))
+      marks = marks.concat(withMarks(smallJellyfish(rng, 0.78, 0.7, 0.034, "rust")))
+      marks.push(markLine(spiralPts(0.74, 0.2, 0.003, 0.055, 2.8, rng), "sky", 1.8, 0.82))
+      marks.push(markLabel("soft machinery", 0.49, 0.84, -5, 0.032, "paper"))
+      marks.push(markSparkle(0.35, 0.2, 0.011, "paper"))
+      marks.push(markSparkle(0.86, 0.31, 0.009, "rust"))
+      marks.push(markDot(0.29, 0.76, 0.006, "sky"))
+      return marks
+    },
+
+    station: function (rng) {
+      var marks = []
+      marks = marks.concat(withMarks(smokeCurl(rng, 0.19, 0.35, 0.045, "paper")))
+      marks = marks.concat(withMarks(smokeCurl(rng, 0.25, 0.32, 0.032, "paper")))
+      var path = qbez([0.12, 0.82], [0.48, 0.56], [0.86, 0.74], 28, rng, 0.004)
+      dashPath(path, 0.023, 0.018).forEach(function (dash) {
+        marks.push(markLine(dash, "rust", 2, 0.82))
+      })
+      marks.push(markLabel("everybody is almost somewhere", 0.5, 0.16, -3, 0.026, "paper"))
+      marks.push(markLine(ellipsePts(0.85, 0.31, 0.045, 0.045, rng, { end: Math.PI * 2 + 0.3, wobble: 0.04 }), "paper", 2, 0.9))
+      marks.push(markLine([[0.85, 0.31], [0.85, 0.28]], "paper", 1.7, 0.86))
+      marks.push(markLine([[0.85, 0.31], [0.875, 0.325]], "paper", 1.7, 0.86))
+      marks.push(markLine(birdPts(0.66, 0.3, 0.025, rng), "paper", 1.8, 0.78))
+      return marks
+    },
+
+    gullfoss: function (rng) {
+      var marks = []
+      ;[0.28, 0.36, 0.44].forEach(function (y, index) {
+        marks.push(markLine(wavePts(y, 0.1 + index * 0.03, 0.46, 0.008, 3 + index * 0.4), "paper", 1.7, 0.7))
+      })
+      marks = marks.concat(withMarks(ship(rng, 0.72, 0.32, 0.038, "rust")))
+      dashPath(qbez([0.68, 0.35], [0.54, 0.48], [0.62, 0.7], 18, rng, 0.005), 0.018, 0.016).forEach(function (dash) {
+        marks.push(markLine(dash, "rust", 1.8, 0.76))
+      })
+      marks.push(markLabel("gravity rehearsing", 0.42, 0.82, -6, 0.031, "paper"))
+      marks.push(markSparkle(0.19, 0.62, 0.011, "sky"))
+      marks.push(markSparkle(0.84, 0.68, 0.009, "paper"))
+      return marks
+    },
+  }
+
   function smallJellyfish(rng, cx, cy, s, colour) {
     var paint = colour || "rust"
     var bell = ellipsePts(cx, cy, s, s * 0.72, rng, { start: Math.PI, end: Math.PI * 2 + 0.25, wobble: 0.05 })
@@ -1179,7 +1277,7 @@ function setupDeepSeekThoughts() {
   // ---------- scene construction and drawing ----------
 
   function buildScene(pieceId, seed) {
-    var recipe = RECIPES[pieceId]
+    var recipe = MEDIUM_RECIPES[pieceId] || RECIPES[pieceId]
     var rng = makeRng(seed)
     var marks = recipe ? recipe(rng) : []
     var cursor = 60
@@ -1416,7 +1514,7 @@ function setupDeepSeekThoughts() {
   function redoodle(state) {
     var seed = ((Math.random() * 4294967295) >>> 0) || 7
     state.seed = seed
-    state.piece.setAttribute("data-ds-seed", String(seed))
+    state.piece.setAttribute("data-mt-seed", String(seed))
     state.scene = buildScene(state.id, seed)
     if (state.raf) cancelAnimationFrame(state.raf)
     animate(state)
@@ -1447,14 +1545,14 @@ function setupDeepSeekThoughts() {
     var roots = [state.piece]
     if (focusDialog && focusState === state) roots.push(focusDialog)
     roots.forEach(function (rootEl) {
-      var draw = rootEl.querySelector("[data-ds-draw]")
+      var draw = rootEl.querySelector("[data-mt-draw]")
       if (draw) {
         draw.setAttribute("aria-pressed", state.drawMode ? "true" : "false")
         draw.textContent = state.drawMode ? "done drawing" : "draw on it"
       }
-      var clear = rootEl.querySelector("[data-ds-clear]")
+      var clear = rootEl.querySelector("[data-mt-clear]")
       if (clear) clear.hidden = !state.drawMode || !hasStrokes
-      var save = rootEl.querySelector("[data-ds-save]")
+      var save = rootEl.querySelector("[data-mt-save]")
       if (save) save.hidden = !state.drawMode
     })
   }
@@ -1489,7 +1587,7 @@ function setupDeepSeekThoughts() {
         var url = URL.createObjectURL(blob)
         var link = document.createElement("a")
         link.href = url
-        link.download = "deepseek-thoughts-" + state.id + ".jpg"
+        link.download = "medium-thoughts-" + state.id + ".jpg"
         document.body.appendChild(link)
         link.click()
         link.remove()
@@ -1507,16 +1605,16 @@ function setupDeepSeekThoughts() {
   function buildFocusDialog() {
     var dialog = document.createElement("dialog")
     dialog.className = "ds-focus"
-    dialog.setAttribute("data-ds-focus", "true")
-    dialog.setAttribute("aria-labelledby", "ds-focus-title")
+    dialog.setAttribute("data-mt-focus", "true")
+    dialog.setAttribute("aria-labelledby", "mt-focus-title")
     dialog.innerHTML = [
       '<div class="ds-focus-sheet">',
       '<header class="ds-focus-head">',
       '<div class="ds-focus-meta">',
-      '<h3 class="ds-focus-title" id="ds-focus-title"></h3>',
+      '<h3 class="mt-focus-title" id="mt-focus-title"></h3>',
       '<p class="ds-focus-credit"><a target="_blank" rel="noopener noreferrer"></a></p>',
       "</div>",
-      '<button type="button" class="ds-action ds-focus-close" data-ds-focus-close="true" aria-label="Close the focus view">close</button>',
+      '<button type="button" class="ds-action ds-focus-close" data-mt-focus-close="true" aria-label="Close the focus view">close</button>',
       "</header>",
       '<div class="ds-focus-wrap">',
       '<div class="ds-focus-stage">',
@@ -1526,10 +1624,10 @@ function setupDeepSeekThoughts() {
       "</div>",
       "</div>",
       '<div class="ds-tools ds-focus-tools">',
-      '<button type="button" class="ds-action" data-ds-redoodle="true">doodle again</button>',
-      '<button type="button" class="ds-action" data-ds-draw="true" aria-pressed="false">draw on it</button>',
-      '<button type="button" class="ds-action ds-action-quiet" data-ds-clear="true" hidden>clear my marks</button>',
-      '<button type="button" class="ds-action ds-action-quiet" data-ds-save="true" hidden>save a copy</button>',
+      '<button type="button" class="ds-action" data-mt-redoodle="true">doodle again</button>',
+      '<button type="button" class="ds-action" data-mt-draw="true" aria-pressed="false">draw on it</button>',
+      '<button type="button" class="ds-action ds-action-quiet" data-mt-clear="true" hidden>clear my marks</button>',
+      '<button type="button" class="ds-action ds-action-quiet" data-mt-save="true" hidden>save a copy</button>',
       "</div>",
       "</div>",
     ].join("")
@@ -1570,7 +1668,7 @@ function setupDeepSeekThoughts() {
     lastFocusTrigger = document.activeElement
     var title = state.piece.querySelector(".ds-title")
     var credit = state.piece.querySelector(".ds-credit")
-    var titleEl = focusDialog.querySelector("#ds-focus-title")
+    var titleEl = focusDialog.querySelector("#mt-focus-title")
     if (titleEl) titleEl.textContent = title ? title.textContent : ""
     var creditLink = focusDialog.querySelector(".ds-focus-credit a")
     if (creditLink instanceof HTMLAnchorElement) {
@@ -1598,7 +1696,7 @@ function setupDeepSeekThoughts() {
     refreshPad(state)
     if (state.scene.started) drawView(focusView, null)
     else animate(state)
-    var closeButton = focusDialog.querySelector("[data-ds-focus-close]")
+    var closeButton = focusDialog.querySelector("[data-mt-focus-close]")
     if (closeButton instanceof HTMLButtonElement) closeButton.focus({ preventScroll: true })
   }
 
@@ -1695,41 +1793,41 @@ function setupDeepSeekThoughts() {
     if (!(target instanceof Element)) return
     var button = target.closest("button")
     if (!button) return
-    if (button.hasAttribute("data-ds-redoodle-all")) {
+    if (button.hasAttribute("data-mt-redoodle-all")) {
       states.forEach(function (state) {
         redoodle(state)
       })
       return
     }
-    if (button.hasAttribute("data-ds-toggle-doodles")) {
+    if (button.hasAttribute("data-mt-toggle-doodles")) {
       var hidden = root.classList.toggle("ds-hide-ink")
       button.setAttribute("aria-pressed", hidden ? "true" : "false")
       button.textContent = hidden ? "show the doodles" : "hide the doodles"
       return
     }
-    if (button.hasAttribute("data-ds-focus-close")) {
+    if (button.hasAttribute("data-mt-focus-close")) {
       closeFocus()
       return
     }
     var state = null
-    var piece = button.closest("[data-ds-piece]")
+    var piece = button.closest("[data-mt-piece]")
     if (piece) {
       state = byPiece.get(piece)
-    } else if (button.closest("[data-ds-focus]")) {
+    } else if (button.closest("[data-mt-focus]")) {
       state = focusState
     }
     if (!state) return
-    if (button.hasAttribute("data-ds-open")) {
+    if (button.hasAttribute("data-mt-open")) {
       openFocus(state)
-    } else if (button.hasAttribute("data-ds-redoodle")) {
+    } else if (button.hasAttribute("data-mt-redoodle")) {
       redoodle(state)
-    } else if (button.hasAttribute("data-ds-draw")) {
+    } else if (button.hasAttribute("data-mt-draw")) {
       setDrawMode(state, !state.drawMode)
-    } else if (button.hasAttribute("data-ds-clear")) {
+    } else if (button.hasAttribute("data-mt-clear")) {
       state.strokes = []
       redrawAllPads(state)
       refreshPad(state)
-    } else if (button.hasAttribute("data-ds-save")) {
+    } else if (button.hasAttribute("data-mt-save")) {
       savePiece(state)
     }
   }
@@ -1782,13 +1880,13 @@ function setupDeepSeekThoughts() {
     if (!(ink instanceof HTMLCanvasElement) || !(pad instanceof HTMLCanvasElement)) return
     if (!(photo instanceof HTMLImageElement)) return
     var state = {
-      id: pieceEl.getAttribute("data-ds-piece"),
+      id: pieceEl.getAttribute("data-mt-piece"),
       piece: pieceEl,
       stage: stage,
       ink: ink,
       pad: pad,
       photo: photo,
-      seed: Number(pieceEl.getAttribute("data-ds-seed")) || 7,
+      seed: Number(pieceEl.getAttribute("data-mt-seed")) || 7,
       colours: palette(),
       scene: null,
       raf: 0,
@@ -1876,284 +1974,9 @@ function setupDeepSeekThoughts() {
       window.removeEventListener("resize", onWindowResize)
       if (typeof motionQuery.removeEventListener === "function")
         motionQuery.removeEventListener("change", motionListener)
-      root.removeAttribute("data-ds-ready")
+      root.removeAttribute("data-mt-ready")
     })
 }
 
-document.addEventListener("nav", setupDeepSeekThoughts)
+document.addEventListener("nav", setupMediumThoughts)
 `
-
-// src/components/index.ts
-var ARTWORKS = [
-  {
-    id: "hubble",
-    src: "/static/deepseek-thoughts/hubble-deep-field.jpg",
-    width: 1400,
-    height: 1400,
-    alt: "The Hubble Ultra Deep Field: thousands of distant galaxies scattered across black space, with a few bright foreground stars.",
-    title: "A very deep field",
-    credit: "NASA & ESA \xB7 public domain",
-    creditUrl: "https://commons.wikimedia.org/wiki/File:Hubble_ultra_deep_field_high_rez_edit1.jpg",
-    seed: 20140603,
-  },
-  {
-    id: "haeckel",
-    src: "/static/deepseek-thoughts/haeckel-narcomedusae.jpg",
-    width: 992,
-    height: 1400,
-    alt: "Ernst Haeckel's 1904 lithograph plate of narcomedusae: nine jellyfish rendered in teal and cream on paper.",
-    title: "Narcomedusae, plate 16",
-    credit: "Ernst Haeckel, Kunstformen der Natur, 1904 \xB7 public domain",
-    creditUrl: "https://commons.wikimedia.org/wiki/File:Haeckel_Narcomedusae.jpg",
-    seed: 1904,
-  },
-  {
-    id: "mirror",
-    src: "/static/deepseek-thoughts/mirror-lake-mount-hood.jpg",
-    width: 1400,
-    height: 1111,
-    alt: "Mount Hood reflected in Mirror Lake, Oregon, on a clear day, with forested shorelines on both sides.",
-    title: "Mount Hood, twice",
-    credit: "Oregon's Mt. Hood Territory / FHWA \xB7 public domain",
-    creditUrl:
-      "https://commons.wikimedia.org/wiki/File:Mount_Hood_reflected_in_Mirror_Lake,_Oregon.jpg",
-    seed: 62736,
-    wide: true,
-  },
-  {
-    id: "mekong",
-    src: "/static/deepseek-thoughts/mekong-sunset.jpg",
-    width: 1400,
-    height: 933,
-    alt: "Sunset over the Mekong at Don Det, Laos: grey and orange clouds reflected in still water beside moored wooden boats.",
-    title: "Two pirogues at dusk",
-    credit: "Basile Morin \xB7 CC BY-SA 4.0",
-    creditUrl:
-      "https://commons.wikimedia.org/wiki/File:Water_reflection_of_sunset_with_gray_and_orange_clouds_and_pirogues_moored_to_the_bank_in_Don_Det_Laos.jpg",
-    seed: 20191127,
-  },
-  {
-    id: "vang-vieng",
-    src: "/static/deepseek-thoughts/vang-vieng-rays.jpg",
-    width: 1400,
-    height: 875,
-    alt: "Karst mountains in Vang Vieng, Laos, with shafts of evening light falling through clouds onto flooded rice fields.",
-    title: "Borrowed light",
-    credit: "Basile Morin \xB7 CC BY-SA 4.0",
-    creditUrl:
-      "https://commons.wikimedia.org/wiki/File:Water_reflection_of_the_mountains_of_Vang_Vieng_with_crepuscular_rays.jpg",
-    seed: 20200618,
-  },
-  {
-    id: "cat",
-    src: "/static/deepseek-thoughts/tabby-cat.jpg",
-    width: 1400,
-    height: 852,
-    alt: "A tabby cat lying against a white wall, one paw stretched out, looking thoroughly unbothered.",
-    title: "The stretch",
-    credit: "Alvesgaspar \xB7 CC BY-SA 3.0",
-    creditUrl: "https://commons.wikimedia.org/wiki/File:Cat_August_2010-3.jpg",
-    seed: 20100803,
-  },
-  {
-    id: "whale",
-    src: "/static/deepseek-thoughts/whale-breaching.jpg",
-    width: 1400,
-    height: 933,
-    alt: "A humpback whale breaching clear of the water in Ballena Marine National Park, spray falling around it.",
-    title: "Quite deep, actually",
-    credit: "Giles Laurent \xB7 CC BY-SA 4.0",
-    creditUrl:
-      "https://commons.wikimedia.org/wiki/File:001_Humpback_whale_breaching_in_Ballena_Marine_National_Park_Photo_by_Giles_Laurent.jpg",
-    seed: 20220722,
-  },
-  {
-    id: "chart",
-    src: "/static/deepseek-thoughts/porcupine-chart-1870.jpg",
-    width: 1400,
-    height: 706,
-    alt: "An 1870 bathymetric chart of the western Mediterranean from the cruise of HMS Porcupine, with sounding depths dotted along the coastlines.",
-    title: "The deeps, 1870",
-    credit: "Cruise of the Porcupine, 1870 \xB7 public domain",
-    creditUrl:
-      "https://commons.wikimedia.org/wiki/File:Carpenter_Porcupine_1871_Chart_1_02398928_0076.jpg",
-    seed: 1870,
-    wide: true,
-  },
-]
-var DeepSeekThoughts = () => {
-  const DeepSeekThoughtsComponent = ({ fileData }) => {
-    if (fileData.slug !== "model-sketchbooks/deepseek") return null
-    return h(
-      "section",
-      {
-        class: "deepseek-lab",
-        "data-ds-lab": "true",
-        "aria-labelledby": "deepseek-lab-title",
-      },
-      [
-        h("div", { class: "ds-lab-head" }, [
-          h("div", { class: "ds-lab-lede" }, [
-            h("h2", { id: "deepseek-lab-title" }, "The sketchbook"),
-            h(
-              "p",
-              null,
-              "Every mark below was drawn in your browser with the Canvas 2D API \u2014 no pixels painted in advance. Tap a picture to open it big, reseed the ink, or pick up the pencil and add your own.",
-            ),
-          ]),
-          h("div", { class: "ds-lab-actions" }, [
-            h(
-              "button",
-              {
-                type: "button",
-                class: "ds-action ds-action-strong",
-                "data-ds-redoodle-all": "true",
-              },
-              "doodle them all again",
-            ),
-            h(
-              "button",
-              {
-                type: "button",
-                class: "ds-action",
-                "data-ds-toggle-doodles": "true",
-                "aria-pressed": "false",
-              },
-              "hide the doodles",
-            ),
-          ]),
-        ]),
-        h(
-          "ol",
-          { class: "ds-grid" },
-          ARTWORKS.map((artwork) =>
-            h(
-              "li",
-              {
-                key: artwork.id,
-                class: "ds-piece" + (artwork.wide ? " ds-piece-wide" : ""),
-              },
-              h(
-                "figure",
-                {
-                  class: "ds-frame",
-                  "data-ds-piece": artwork.id,
-                  "data-ds-seed": String(artwork.seed),
-                },
-                h("div", { class: "ds-stage" }, [
-                  h("img", {
-                    class: "ds-photo",
-                    src: artwork.src,
-                    alt: artwork.alt,
-                    width: artwork.width,
-                    height: artwork.height,
-                    loading: "lazy",
-                    decoding: "async",
-                  }),
-                  h(
-                    "button",
-                    {
-                      type: "button",
-                      class: "ds-open",
-                      "data-ds-open": "true",
-                      "aria-label": `Open ${artwork.title} in the focus view`,
-                    },
-                    h("span", { class: "ds-open-mark", "aria-hidden": "true" }, "\u2922"),
-                  ),
-                  h("canvas", { class: "ds-ink", "aria-hidden": "true" }),
-                  h("canvas", {
-                    class: "ds-pad",
-                    "data-ds-pad": "true",
-                    "aria-hidden": "true",
-                    hidden: true,
-                  }),
-                ]),
-                h("figcaption", { class: "ds-caption" }, [
-                  h("span", { class: "ds-title" }, artwork.title),
-                  h(
-                    "a",
-                    {
-                      class: "ds-credit",
-                      href: artwork.creditUrl,
-                      target: "_blank",
-                      rel: "noopener noreferrer",
-                    },
-                    artwork.credit,
-                  ),
-                ]),
-                h("div", { class: "ds-tools" }, [
-                  h(
-                    "button",
-                    { type: "button", class: "ds-action", "data-ds-redoodle": "true" },
-                    "doodle again",
-                  ),
-                  h(
-                    "button",
-                    {
-                      type: "button",
-                      class: "ds-action",
-                      "data-ds-draw": "true",
-                      "aria-pressed": "false",
-                    },
-                    "draw on it",
-                  ),
-                  h(
-                    "button",
-                    {
-                      type: "button",
-                      class: "ds-action ds-action-quiet",
-                      "data-ds-clear": "true",
-                      hidden: true,
-                    },
-                    "clear my marks",
-                  ),
-                  h(
-                    "button",
-                    {
-                      type: "button",
-                      class: "ds-action ds-action-quiet",
-                      "data-ds-save": "true",
-                      hidden: true,
-                    },
-                    "save a copy",
-                  ),
-                ]),
-              ),
-            ),
-          ),
-        ),
-        h("p", { class: "ds-footnote" }, [
-          "Pictures: NASA & ESA (public domain); Ernst Haeckel, ",
-          h("i", null, "Kunstformen der Natur"),
-          ", 1904 (public domain); Oregon's Mt. Hood Territory / FHWA (public domain); ",
-          "Cruise of HMS Porcupine, 1870 (public domain); Basile Morin, ",
-          h(
-            "a",
-            {
-              href: "https://creativecommons.org/licenses/by-sa/4.0/",
-              target: "_blank",
-              rel: "noopener noreferrer",
-            },
-            "CC BY-SA 4.0",
-          ),
-          " (Don Det, Vang Vieng, and the whale by Giles Laurent); Alvesgaspar, ",
-          h(
-            "a",
-            {
-              href: "https://creativecommons.org/licenses/by-sa/3.0/",
-              target: "_blank",
-              rel: "noopener noreferrer",
-            },
-            "CC BY-SA 3.0",
-          ),
-          " (the cat). Doodles live on a separate canvas and never touch the originals.",
-        ]),
-      ],
-    )
-  }
-  DeepSeekThoughtsComponent.displayName = "DeepSeek Thoughts"
-  DeepSeekThoughtsComponent.afterDOMLoaded = DOODLE_SCRIPT
-  return DeepSeekThoughtsComponent
-}
-var index_default = DeepSeekThoughts
-export { DeepSeekThoughts, index_default as default }

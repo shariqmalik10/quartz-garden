@@ -1,5 +1,5 @@
 /**
- * The doodle engine for /deepseek-thoughts.
+ * The doodle engine for /model-sketchbooks/deepseek.
  *
  * Everything a visitor sees on top of the photographs is drawn here, in the
  * browser, with the Canvas 2D API: hand-trembled strokes, hats, bubbles,
@@ -1529,7 +1529,7 @@ function setupDeepSeekThoughts() {
       "</header>",
       '<div class="ds-focus-wrap">',
       '<div class="ds-focus-stage">',
-      '<img class="ds-photo ds-focus-photo" alt="" decoding="async">',
+      '<img class="ds-photo ds-focus-photo" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="" decoding="async">',
       '<canvas class="ds-ink ds-focus-ink" aria-hidden="true"></canvas>',
       '<canvas class="ds-pad ds-focus-pad" aria-hidden="true"></canvas>',
       "</div>",
@@ -1563,7 +1563,8 @@ function setupDeepSeekThoughts() {
     var naturalW = state.photo.naturalWidth || 3
     var naturalH = state.photo.naturalHeight || 2
     var aspect = naturalW / naturalH
-    var availW = wrap ? wrap.clientWidth : Math.round(window.innerWidth * 0.8)
+    var viewportW = Math.max(220, window.innerWidth - (window.innerWidth <= 800 ? 28 : 72))
+    var availW = Math.min(wrap ? wrap.clientWidth : viewportW, viewportW)
     var availH = Math.max(180, Math.round(window.innerHeight * 0.62))
     var w = Math.max(220, Math.min(availW, Math.round(availH * aspect)))
     var h = Math.max(150, Math.round(w / aspect))

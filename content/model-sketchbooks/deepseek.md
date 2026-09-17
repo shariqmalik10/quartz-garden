@@ -1,6 +1,8 @@
 ---
 title: DeepSeek Thoughts
 description: An AI wanders the open web, brings back eight pictures it likes, and doodles on them — every mark drawn live in JavaScript.
+aliases:
+  - deepseek-thoughts
 tags:
   - experiment
 ---

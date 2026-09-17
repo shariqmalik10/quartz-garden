@@ -1453,9 +1453,76 @@ footer {
 }
 
 // ---------------------------------------------------------------------------
-// DeepSeek Thoughts (/deepseek-thoughts)
-// A photograph sketchbook whose ink is drawn live in the browser.
+// Model Sketchbooks (/model-sketchbooks/*)
+// Each experiment reuses these shared "ds-*" presentation classes while its
+// JavaScript behaviour remains isolated behind model-specific data attributes.
 // ---------------------------------------------------------------------------
+
+.sketchbook-index {
+  margin-top: 2.2rem;
+}
+
+.center:has(.sketchbook-index) .page-listing {
+  display: none;
+}
+
+.sketchbook-intro {
+  max-width: 42rem;
+  color: var(--garden-body);
+  line-height: 1.7;
+}
+
+.sketchbook-paths {
+  margin: 2.25rem 0 0;
+  padding: 0;
+  border-top: 1px solid var(--garden-rule);
+  list-style: none;
+}
+
+.sketchbook-paths li {
+  margin: 0;
+  border-bottom: 1px solid var(--garden-rule);
+}
+
+.sketchbook-paths a {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.15rem 0.25rem;
+  color: var(--garden-ink);
+  text-decoration: none;
+  transition:
+    color 160ms ease,
+    padding-inline 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sketchbook-paths a:hover,
+.sketchbook-paths a:focus-visible {
+  padding-inline: 0.65rem 0;
+  color: var(--garden-rust);
+}
+
+.sketchbook-paths strong,
+.sketchbook-paths small {
+  display: block;
+}
+
+.sketchbook-paths strong {
+  font-family: var(--headerFont);
+  font-size: clamp(1.1rem, 2.5vw, 1.35rem);
+  font-weight: 600;
+}
+
+.sketchbook-paths small,
+.sketchbook-number {
+  color: var(--garden-faded);
+  font-size: 0.78rem;
+}
+
+.sketchbook-paths small {
+  margin-top: 0.15rem;
+}
 
 .deepseek-lab {
   margin-top: 3.5rem;
@@ -1717,15 +1784,15 @@ footer {
   height: 100dvh;
   max-height: none;
   margin: 0;
-  padding: 1.1rem;
+  padding: clamp(0.85rem, 2.5vw, 2rem);
   background: transparent;
   border: 0;
   overflow: hidden;
 }
 
 .ds-focus::backdrop {
-  background: color-mix(in srgb, var(--garden-ink) 54%, transparent);
-  backdrop-filter: blur(2px);
+  background: rgba(5, 12, 24, 0.84);
+  backdrop-filter: blur(10px) saturate(0.72);
 }
 
 .ds-focus[open] {
@@ -1736,13 +1803,14 @@ footer {
 .ds-focus-sheet {
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
-  width: min(80rem, 100%);
+  box-sizing: border-box;
+  gap: 0.7rem;
+  width: min(88rem, 100%);
   max-height: 100%;
   margin: 0 auto;
-  padding: 1rem 1.15rem 1.05rem;
-  background: var(--garden-paper);
-  border: 1px solid var(--garden-rule);
+  padding: 0;
+  background: transparent;
+  border: 0;
 }
 
 .ds-focus-head {
@@ -1758,7 +1826,7 @@ footer {
 
 .ds-focus-title {
   margin: 0;
-  color: var(--garden-ink);
+  color: #ffffff;
   font-family: var(--headerFont);
   font-size: clamp(1.1rem, 2.2vw, 1.4rem);
   font-weight: 600;
@@ -1767,11 +1835,12 @@ footer {
 
 .ds-focus-credit {
   margin: 0.2rem 0 0;
-  color: var(--garden-faded);
+  color: rgba(255, 255, 255, 0.66);
   font-size: 0.72rem;
 }
 
 .ds-focus-credit a {
+  color: inherit;
   text-decoration-color: color-mix(in srgb, var(--garden-rust) 45%, transparent);
 }
 
@@ -1781,11 +1850,14 @@ footer {
 
 .ds-focus-close {
   flex: none;
+  color: rgba(255, 255, 255, 0.82);
 }
 
 .ds-focus-wrap {
   display: grid;
   place-items: center;
+  width: 100%;
+  min-width: 0;
   min-height: 0;
   overflow: hidden;
 }
@@ -1793,8 +1865,10 @@ footer {
 .ds-focus-stage {
   position: relative;
   overflow: hidden;
+  max-width: 100%;
   background: var(--garden-paper-deep);
-  border: 1px solid color-mix(in srgb, var(--garden-rule) 75%, transparent);
+  border: 0;
+  box-shadow: 0 1.5rem 4.5rem rgba(0, 0, 0, 0.32);
 }
 
 .ds-focus .ds-photo {
@@ -1817,18 +1891,63 @@ footer {
 }
 
 .ds-focus-tools {
+  justify-content: center;
+  gap: 0.5rem 1.35rem;
   margin-top: 0;
 }
 
+.ds-focus-tools .ds-action {
+  color: rgba(255, 255, 255, 0.78);
+  text-decoration-color: color-mix(in srgb, var(--garden-rust) 70%, transparent);
+}
+
+.ds-focus-tools .ds-action:hover,
+.ds-focus-tools .ds-action[aria-pressed="true"] {
+  color: #ffffff;
+}
+
 @media (prefers-reduced-motion: no-preference) {
-  .ds-focus[open] .ds-focus-sheet {
-    animation: ds-focus-in 200ms ease;
+  .ds-focus[open]::backdrop {
+    animation: ds-focus-backdrop-in 260ms ease-out;
   }
 
-  @keyframes ds-focus-in {
+  .ds-focus[open] .ds-focus-stage {
+    animation: ds-focus-image-in 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .ds-focus[open] .ds-focus-head,
+  .ds-focus[open] .ds-focus-tools {
+    animation: ds-focus-controls-in 340ms 80ms ease-out both;
+  }
+
+  @keyframes ds-focus-backdrop-in {
     from {
       opacity: 0;
-      transform: translateY(10px) scale(0.985);
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes ds-focus-image-in {
+    from {
+      opacity: 0;
+      filter: blur(8px);
+      transform: translateY(12px) scale(0.94);
+    }
+
+    to {
+      opacity: 1;
+      filter: none;
+      transform: none;
+    }
+  }
+
+  @keyframes ds-focus-controls-in {
+    from {
+      opacity: 0;
+      transform: translateY(7px);
     }
 
     to {
@@ -1848,6 +1967,7 @@ footer {
     height: 100%;
     max-height: none;
     padding: 0.85rem 0.9rem 1rem;
+    background: transparent;
     border: 0;
   }
 
