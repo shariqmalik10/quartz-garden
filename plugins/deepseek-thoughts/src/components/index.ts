@@ -89,6 +89,42 @@ const ARTWORKS: Artwork[] = [
       "https://commons.wikimedia.org/wiki/File:Water_reflection_of_the_mountains_of_Vang_Vieng_with_crepuscular_rays.jpg",
     seed: 20200618,
   },
+  {
+    id: "cat",
+    src: "/static/deepseek-thoughts/tabby-cat.jpg",
+    width: 1400,
+    height: 852,
+    alt: "A tabby cat lying against a white wall, one paw stretched out, looking thoroughly unbothered.",
+    title: "The stretch",
+    credit: "Alvesgaspar · CC BY-SA 3.0",
+    creditUrl: "https://commons.wikimedia.org/wiki/File:Cat_August_2010-3.jpg",
+    seed: 20100803,
+  },
+  {
+    id: "whale",
+    src: "/static/deepseek-thoughts/whale-breaching.jpg",
+    width: 1400,
+    height: 933,
+    alt: "A humpback whale breaching clear of the water in Ballena Marine National Park, spray falling around it.",
+    title: "Quite deep, actually",
+    credit: "Giles Laurent · CC BY-SA 4.0",
+    creditUrl:
+      "https://commons.wikimedia.org/wiki/File:001_Humpback_whale_breaching_in_Ballena_Marine_National_Park_Photo_by_Giles_Laurent.jpg",
+    seed: 20220722,
+  },
+  {
+    id: "chart",
+    src: "/static/deepseek-thoughts/porcupine-chart-1870.jpg",
+    width: 1400,
+    height: 706,
+    alt: "An 1870 bathymetric chart of the western Mediterranean from the cruise of HMS Porcupine, with sounding depths dotted along the coastlines.",
+    title: "The deeps, 1870",
+    credit: "Cruise of the Porcupine, 1870 · public domain",
+    creditUrl:
+      "https://commons.wikimedia.org/wiki/File:Carpenter_Porcupine_1871_Chart_1_02398928_0076.jpg",
+    seed: 1870,
+    wide: true,
+  },
 ]
 
 const DeepSeekThoughts: QuartzComponentConstructor = () => {
@@ -109,7 +145,7 @@ const DeepSeekThoughts: QuartzComponentConstructor = () => {
             h(
               "p",
               null,
-              "Every mark below was drawn in your browser with the Canvas 2D API — no pixels painted in advance. Reseed a picture for a fresh set of scribbles, or pick up the pencil and add your own.",
+              "Every mark below was drawn in your browser with the Canvas 2D API — no pixels painted in advance. Tap a picture to open it big, reseed the ink, or pick up the pencil and add your own.",
             ),
           ]),
           h("div", { class: "ds-lab-actions" }, [
@@ -161,6 +197,16 @@ const DeepSeekThoughts: QuartzComponentConstructor = () => {
                     loading: "lazy",
                     decoding: "async",
                   }),
+                  h(
+                    "button",
+                    {
+                      type: "button",
+                      class: "ds-open",
+                      "data-ds-open": "true",
+                      "aria-label": `Open ${artwork.title} in the focus view`,
+                    },
+                    h("span", { class: "ds-open-mark", "aria-hidden": "true" }, "⤢"),
+                  ),
                   h("canvas", { class: "ds-ink", "aria-hidden": "true" }),
                   h("canvas", {
                     class: "ds-pad",
@@ -226,7 +272,8 @@ const DeepSeekThoughts: QuartzComponentConstructor = () => {
         h("p", { class: "ds-footnote" }, [
           "Pictures: NASA & ESA (public domain); Ernst Haeckel, ",
           h("i", null, "Kunstformen der Natur"),
-          ", 1904 (public domain); Oregon's Mt. Hood Territory / FHWA (public domain); Basile Morin, ",
+          ", 1904 (public domain); Oregon's Mt. Hood Territory / FHWA (public domain); ",
+          "Cruise of HMS Porcupine, 1870 (public domain); Basile Morin, ",
           h(
             "a",
             {
@@ -236,7 +283,17 @@ const DeepSeekThoughts: QuartzComponentConstructor = () => {
             },
             "CC BY-SA 4.0",
           ),
-          " (Don Det and Vang Vieng). Doodles live on a separate canvas and never touch the originals.",
+          " (Don Det, Vang Vieng, and the whale by Giles Laurent); Alvesgaspar, ",
+          h(
+            "a",
+            {
+              href: "https://creativecommons.org/licenses/by-sa/3.0/",
+              target: "_blank",
+              rel: "noopener noreferrer",
+            },
+            "CC BY-SA 3.0",
+          ),
+          " (the cat). Doodles live on a separate canvas and never touch the originals.",
         ]),
       ],
     )
