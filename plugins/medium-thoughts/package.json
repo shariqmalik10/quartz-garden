@@ -1,0 +1,32 @@
+{
+  "name": "@shariq/medium-thoughts",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./dist/index.js",
+    "./components": "./dist/components/index.js"
+  },
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "node ./build.mjs"
+  },
+  "quartz": {
+    "name": "medium-thoughts",
+    "displayName": "5.6 Medium Thoughts",
+    "description": "A six-image model sketchbook whose doodles are drawn live with the Canvas 2D API.",
+    "category": "component",
+    "version": "1.0.0",
+    "quartzVersion": ">=5.0.0",
+    "dependencies": [],
+    "defaultEnabled": true,
+    "components": {
+      "MediumThoughts": {
+        "displayName": "5.6 Medium Thoughts sketchbook",
+        "description": "Renders the doodled gallery on /model-sketchbooks/5-6-medium.",
+        "defaultPosition": "afterBody",
+        "defaultPriority": 40
+      }
+    }
+  }
+}

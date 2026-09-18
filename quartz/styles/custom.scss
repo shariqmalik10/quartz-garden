@@ -1451,3 +1451,532 @@ footer {
     columns: 1;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Model Sketchbooks (/model-sketchbooks/*)
+// Each experiment reuses these shared "ds-*" presentation classes while its
+// JavaScript behaviour remains isolated behind model-specific data attributes.
+// ---------------------------------------------------------------------------
+
+.sketchbook-index {
+  margin-top: 2.2rem;
+}
+
+.center:has(.sketchbook-index) .page-listing {
+  display: none;
+}
+
+.sketchbook-intro {
+  max-width: 42rem;
+  color: var(--garden-body);
+  line-height: 1.7;
+}
+
+.sketchbook-paths {
+  margin: 2.25rem 0 0;
+  padding: 0;
+  border-top: 1px solid var(--garden-rule);
+  list-style: none;
+}
+
+.sketchbook-paths li {
+  margin: 0;
+  border-bottom: 1px solid var(--garden-rule);
+}
+
+.sketchbook-paths a {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.15rem 0.25rem;
+  color: var(--garden-ink);
+  text-decoration: none;
+  transition:
+    color 160ms ease,
+    padding-inline 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sketchbook-paths a:hover,
+.sketchbook-paths a:focus-visible {
+  padding-inline: 0.65rem 0;
+  color: var(--garden-rust);
+}
+
+.sketchbook-paths strong,
+.sketchbook-paths small {
+  display: block;
+}
+
+.sketchbook-paths strong {
+  font-family: var(--headerFont);
+  font-size: clamp(1.1rem, 2.5vw, 1.35rem);
+  font-weight: 600;
+}
+
+.sketchbook-paths small,
+.sketchbook-number {
+  color: var(--garden-faded);
+  font-size: 0.78rem;
+}
+
+.sketchbook-paths small {
+  margin-top: 0.15rem;
+}
+
+.deepseek-lab {
+  margin-top: 3.5rem;
+  padding-top: 2.5rem;
+  border-top: 1px solid var(--garden-rule);
+}
+
+.ds-lab-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.25rem 2rem;
+}
+
+.ds-lab-lede {
+  flex: 1 1 22rem;
+}
+
+.ds-lab-lede h2 {
+  margin: 0;
+  color: var(--garden-ink);
+  font-family: var(--headerFont);
+  font-size: clamp(1.3rem, 2.6vw, 1.6rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.ds-lab-lede p {
+  max-width: 34rem;
+  margin: 0.65rem 0 0;
+  color: var(--garden-body);
+  font-size: 0.9rem;
+  line-height: 1.65;
+}
+
+.ds-lab-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.3rem;
+}
+
+.ds-action {
+  appearance: none;
+  padding: 0.15rem 0;
+  color: var(--garden-body);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  cursor: pointer;
+  font-family: var(--bodyFont);
+  font-size: 0.8rem;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--garden-rust) 50%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.24em;
+  transition:
+    color 140ms ease,
+    text-decoration-color 140ms ease;
+}
+
+.ds-action:hover,
+.ds-action[aria-pressed="true"] {
+  color: var(--garden-rust);
+  text-decoration-color: currentColor;
+}
+
+.ds-action-strong {
+  color: var(--garden-rust);
+}
+
+.ds-action-quiet {
+  color: var(--garden-faded);
+  font-size: 0.76rem;
+}
+
+.ds-action[hidden] {
+  display: none;
+}
+
+.ds-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2.75rem 1.75rem;
+  margin: 2.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ds-piece {
+  margin: 0;
+}
+
+.ds-piece-wide {
+  grid-column: 1 / -1;
+}
+
+.ds-frame {
+  margin: 0;
+}
+
+.ds-stage {
+  position: relative;
+  overflow: hidden;
+  background: var(--garden-paper-deep);
+  border: 1px solid color-mix(in srgb, var(--garden-rule) 75%, transparent);
+}
+
+.ds-photo {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0;
+}
+
+.ds-ink {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transition: opacity 220ms ease;
+}
+
+.ds-hide-ink .ds-ink {
+  opacity: 0;
+}
+
+.ds-pad {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  touch-action: none;
+}
+
+.ds-drawing .ds-pad {
+  pointer-events: auto;
+  cursor: crosshair;
+}
+
+.ds-drawing .ds-stage {
+  outline: 2px solid color-mix(in srgb, var(--garden-rust) 55%, transparent);
+  outline-offset: 3px;
+}
+
+.ds-caption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.2rem 1rem;
+  margin-top: 0.7rem;
+}
+
+.ds-title {
+  color: var(--garden-ink);
+  font-family: var(--headerFont);
+  font-size: 1.02rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+.ds-credit {
+  color: var(--garden-faded);
+  font-size: 0.72rem;
+  text-decoration-color: color-mix(in srgb, var(--garden-rust) 45%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+.ds-credit:hover {
+  color: var(--garden-rust);
+}
+
+.ds-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.1rem;
+  margin-top: 0.5rem;
+}
+
+.ds-footnote {
+  margin: 3rem 0 0;
+  padding-top: 1.25rem;
+  border-top: 1px dashed color-mix(in srgb, var(--garden-rule) 85%, transparent);
+  color: var(--garden-faded);
+  font-size: 0.76rem;
+  line-height: 1.6;
+}
+
+@media (max-width: 800px) {
+  .deepseek-lab {
+    margin-top: 2.5rem;
+    padding-top: 2rem;
+  }
+
+  .ds-lab-head {
+    align-items: flex-start;
+  }
+
+  .ds-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2.5rem;
+    margin-top: 2rem;
+  }
+}
+
+// Tap a picture to open the focus view.
+.ds-open {
+  position: absolute;
+  inset: 0;
+  appearance: none;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  cursor: zoom-in;
+}
+
+.ds-open-mark {
+  position: absolute;
+  right: 0.55rem;
+  bottom: 0.55rem;
+  display: grid;
+  place-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  color: var(--garden-paper);
+  background: color-mix(in srgb, var(--garden-ink) 68%, transparent);
+  border-radius: 3px;
+  font-size: 0.95rem;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 160ms ease;
+  pointer-events: none;
+}
+
+.ds-open:hover .ds-open-mark,
+.ds-open:focus-visible .ds-open-mark {
+  opacity: 1;
+}
+
+.ds-drawing .ds-open {
+  pointer-events: none;
+}
+
+.ds-drawing .ds-open-mark {
+  opacity: 0;
+}
+
+@media (hover: none) {
+  .ds-open-mark {
+    opacity: 0.7;
+  }
+}
+
+// The focus dialog keeps one scene at a much larger size.
+.ds-focus {
+  width: 100%;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: clamp(0.85rem, 2.5vw, 2rem);
+  background: transparent;
+  border: 0;
+  overflow: hidden;
+}
+
+.ds-focus::backdrop {
+  background: rgba(5, 12, 24, 0.84);
+  backdrop-filter: blur(10px) saturate(0.72);
+}
+
+.ds-focus[open] {
+  display: grid;
+  place-items: center;
+}
+
+.ds-focus-sheet {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  gap: 0.7rem;
+  width: min(88rem, 100%);
+  max-height: 100%;
+  margin: 0 auto;
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+
+.ds-focus-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.ds-focus-meta {
+  min-width: 0;
+}
+
+.ds-focus-title {
+  margin: 0;
+  color: #ffffff;
+  font-family: var(--headerFont);
+  font-size: clamp(1.1rem, 2.2vw, 1.4rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.ds-focus-credit {
+  margin: 0.2rem 0 0;
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 0.72rem;
+}
+
+.ds-focus-credit a {
+  color: inherit;
+  text-decoration-color: color-mix(in srgb, var(--garden-rust) 45%, transparent);
+}
+
+.ds-focus-credit a:hover {
+  color: var(--garden-rust);
+}
+
+.ds-focus-close {
+  flex: none;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.ds-focus-wrap {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ds-focus-stage {
+  position: relative;
+  overflow: hidden;
+  max-width: 100%;
+  background: var(--garden-paper-deep);
+  border: 0;
+  box-shadow: 0 1.5rem 4.5rem rgba(0, 0, 0, 0.32);
+}
+
+.ds-focus .ds-photo {
+  width: 100%;
+  height: 100%;
+}
+
+.ds-focus .ds-pad {
+  pointer-events: none;
+}
+
+.ds-focus.ds-drawing .ds-pad {
+  pointer-events: auto;
+  cursor: crosshair;
+}
+
+.ds-focus.ds-drawing .ds-focus-stage {
+  outline: 2px solid color-mix(in srgb, var(--garden-rust) 55%, transparent);
+  outline-offset: 3px;
+}
+
+.ds-focus-tools {
+  justify-content: center;
+  gap: 0.5rem 1.35rem;
+  margin-top: 0;
+}
+
+.ds-focus-tools .ds-action {
+  color: rgba(255, 255, 255, 0.78);
+  text-decoration-color: color-mix(in srgb, var(--garden-rust) 70%, transparent);
+}
+
+.ds-focus-tools .ds-action:hover,
+.ds-focus-tools .ds-action[aria-pressed="true"] {
+  color: #ffffff;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ds-focus[open]::backdrop {
+    animation: ds-focus-backdrop-in 260ms ease-out;
+  }
+
+  .ds-focus[open] .ds-focus-stage {
+    animation: ds-focus-image-in 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .ds-focus[open] .ds-focus-head,
+  .ds-focus[open] .ds-focus-tools {
+    animation: ds-focus-controls-in 340ms 80ms ease-out both;
+  }
+
+  @keyframes ds-focus-backdrop-in {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes ds-focus-image-in {
+    from {
+      opacity: 0;
+      filter: blur(8px);
+      transform: translateY(12px) scale(0.94);
+    }
+
+    to {
+      opacity: 1;
+      filter: none;
+      transform: none;
+    }
+  }
+
+  @keyframes ds-focus-controls-in {
+    from {
+      opacity: 0;
+      transform: translateY(7px);
+    }
+
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+@media (max-width: 800px) {
+  .ds-focus {
+    padding: 0;
+  }
+
+  .ds-focus-sheet {
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    padding: 0.85rem 0.9rem 1rem;
+    background: transparent;
+    border: 0;
+  }
+
+  .ds-focus-wrap {
+    flex: 1;
+    width: 100%;
+  }
+
+  .ds-focus-title {
+    font-size: 1.05rem;
+  }
+}
