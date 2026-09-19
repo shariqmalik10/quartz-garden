@@ -8,6 +8,7 @@ const navigation = [
   { href: "/collection/writing", label: "Writing", mark: "W" },
   { href: "/collection/links", label: "Saved links", mark: "↗" },
   { href: "/collection/quotes", label: "Quotes", mark: "“" },
+  { href: "/publish", label: "Review & publish", mark: "↑" },
   { href: "/history", label: "History", mark: "↻" },
   { href: "/health", label: "Connection", mark: "●" },
 ]

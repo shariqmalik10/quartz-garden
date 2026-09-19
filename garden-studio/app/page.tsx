@@ -31,6 +31,7 @@ export default async function DashboardPage() {
             <Link href="/new?type=writing">New writing</Link>
             <Link href="/new?type=quotes">Add quote</Link>
             <Link href="/new?type=links">Save link</Link>
+            <Link href="/publish">Review changes</Link>
           </div>
           <span className="header-date">
             {new Intl.DateTimeFormat("en", {

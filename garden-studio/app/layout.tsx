@@ -11,6 +11,7 @@ import type { ReactNode } from "react"
 import "./globals.css"
 import "./editor.css"
 import "./revisions.css"
+import "./publish.css"
 
 export const metadata: Metadata = {
   title: { default: "Garden Studio", template: "%s · Garden Studio" },

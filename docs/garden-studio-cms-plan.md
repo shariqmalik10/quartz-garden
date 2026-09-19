@@ -11,7 +11,8 @@ Implementation progress on `codex/garden-studio`:
   and dry-run migration tooling.
 - Checkpoint 3 complete: authenticated read-only Garden Studio, isolated Vercel project, and managed collection browser.
 - Checkpoint 4 implementation complete: Obsidian-compatible editor, conditional Git writes, conflict handling, revision restore, and deep links.
-- Checkpoints 5–6 not started.
+- Checkpoint 5 implementation complete: isolated exporter dispatch, fixed review branch, pull-request checks, preview links, and confirmation-gated merge.
+- Checkpoint 6 in progress: richer modules, media, accessibility, performance, and operations hardening.
 
 ## Decision
 

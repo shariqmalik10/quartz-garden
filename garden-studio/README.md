@@ -12,12 +12,27 @@ For local vault inspection, set `GARDEN_STUDIO_LOCAL_VAULT` to the absolute vaul
 
 ## GitHub setup
 
-Create two GitHub integrations:
+Create one GitHub App and use its OAuth credentials for Studio login:
 
-- An OAuth app for Studio login. Its callback is `https://YOUR-STUDIO-DOMAIN/api/auth/callback`. The allowed account is controlled by `GARDEN_STUDIO_ALLOWED_LOGIN`.
-- A GitHub App installed only on the private vault and public garden repositories. Give it **Contents: Read and write** on the private vault and **Metadata: Read-only** on both repositories. Public-site writes are introduced only by the publishing checkpoint.
+- Set the user authorization callback to `https://YOUR-STUDIO-DOMAIN/api/auth/callback`. The allowed account is controlled by `GARDEN_STUDIO_ALLOWED_LOGIN`.
+- Install the App only on `obsidian-vault-private` and `quartz-garden`.
+- Repository permissions: **Contents: Read and write**, **Actions: Read and write**, **Pull requests: Read and write**, **Checks: Read-only**, **Deployments: Read-only**, and **Metadata: Read-only**.
+- Put the App client ID and client secret in `GITHUB_OAUTH_CLIENT_ID` and `GITHUB_OAUTH_CLIENT_SECRET`. Put its App ID, installation ID, and private key in the matching server-only variables.
 
 The app exchanges its private key for a short-lived installation token on the server. Neither the private key nor installation token is sent to the browser.
+
+## Obsidian and publishing flow
+
+Studio writes only contract-backed Markdown to the private vault repository. Obsidian receives those commits through its normal Git pull; Studio receives local Obsidian edits after they are pushed. The **Open in Obsidian** action uses the local `obsidian://open` protocol and the vault name configured by `GARDEN_STUDIO_OBSIDIAN_VAULT_NAME`.
+
+The Review & publish screen dispatches `publish-garden.yml` in the private repository. That workflow validates the vault, exports only public entries, and pushes them to `studio/garden-preview` in the public Quartz repository. Studio then shows the exact pull request, required checks, and Vercel preview. A merge is possible only after checks pass and the user types `publish`. The production domain remains untouched until that reviewed pull request is merged.
+
+Required repository settings:
+
+- Private repository Actions variable: `PUBLIC_QUARTZ_BRANCH=studio/garden-preview`.
+- Private repository Actions secrets: the existing deploy key and public repository connection used by `publish-garden.yml`.
+- Public repository: Vercel branch previews enabled for pull requests.
+- Protect `main`; do not let the export workflow push directly to it.
 
 ## Deploy separately on Vercel
 
