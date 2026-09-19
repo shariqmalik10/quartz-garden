@@ -10,6 +10,7 @@ import type { ReactNode } from "react"
 
 import "./globals.css"
 import "./editor.css"
+import "./authoring.css"
 import "./revisions.css"
 import "./publish.css"
 

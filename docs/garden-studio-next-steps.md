@@ -16,6 +16,8 @@ This file is the continuation guide. It records what exists, the first known iss
 
 - **2026-09-19 · Baseline repaired:** added the generated `garden-studio/next-env.d.ts` file to the repository-root Prettier ignore. Root checks, 191 tests, Studio checks, 6 Studio tests, and the Studio production build all pass locally. Richer editor work can now proceed from a green baseline.
 
+- **2026-09-19 · Authoring tools complete:** added 17 Markdown and Obsidian commands, a `Cmd/Ctrl + K` searchable command palette, four writing templates, managed-note wikilink insertion, copyable current-note wikilinks, and live word/character/reading-time statistics. The implementation remains dependency-light, preserves plain Markdown, passed desktop and 390 px browser interaction checks, returned no Impeccable detector findings, passed 10 Studio tests, and completed a production build.
+
 ## Current state
 
 ### Completed in the public Quartz repository

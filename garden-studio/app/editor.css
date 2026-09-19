@@ -382,7 +382,7 @@
   color: #717a89;
   font-size: 0.61rem;
 }
-.editor-footer span:nth-child(2) {
+.editor-footer .editor-compat {
   margin-left: auto;
 }
 .editor-footer kbd {

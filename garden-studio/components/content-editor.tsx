@@ -1,11 +1,19 @@
 "use client"
 
-import { useDeferredValue, useEffect, useRef, useState } from "react"
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import ReactMarkdown from "react-markdown"
+
+import { AuthoringToolbox, type VaultLinkTarget } from "@/components/authoring-toolbox"
 import remarkGfm from "remark-gfm"
 
 import { serializeFields, slugify, validateFields, type EditorFields } from "@/lib/content"
+import {
+  applyMarkdownCommand,
+  documentStats,
+  fieldsWithTemplate,
+  MARKDOWN_COMMANDS,
+} from "@/lib/editor-tools"
 
 type SaveState = "idle" | "dirty" | "saving" | "saved" | "error"
 type EditorMode = "write" | "split" | "preview"
@@ -20,17 +28,6 @@ type SaveResponse = {
   details?: unknown
 }
 
-const tools = [
-  ["Heading", "## ", ""],
-  ["Bold", "**", "**"],
-  ["Italic", "_", "_"],
-  ["Link", "[", "](https://)"],
-  ["Quote", "> ", ""],
-  ["Bullets", "- ", ""],
-  ["Code", "`", "`"],
-  ["Wikilink", "[[", "]]"],
-] as const
-
 function labelFor(collection: EditorFields["collection"]) {
   return collection === "writing" ? "writing" : collection === "quotes" ? "quote" : "saved link"
 }
@@ -42,6 +39,7 @@ export function ContentEditor({
   areas,
   demo,
   obsidianUri,
+  linkTargets = [],
 }: {
   initialFields: EditorFields
   originalPath?: string
@@ -49,6 +47,7 @@ export function ContentEditor({
   areas: string[]
   demo: boolean
   obsidianUri?: string
+  linkTargets?: VaultLinkTarget[]
 }) {
   const router = useRouter()
   const [fields, setFields] = useState(initialFields)
@@ -62,6 +61,7 @@ export function ContentEditor({
   const [slugTouched, setSlugTouched] = useState(Boolean(initialFields.slug))
   const editorRef = useRef<HTMLTextAreaElement>(null)
   const deferredBody = useDeferredValue(fields.body)
+  const stats = useMemo(() => documentStats(fields.body), [fields.body])
   const draftKey = `garden-studio:draft:${originalPath || initialFields.collection}`
 
   useEffect(() => {
@@ -131,17 +131,53 @@ export function ContentEditor({
     setSaveState("dirty")
   }
 
-  function insert(prefix: string, suffix: string) {
+  function runCommand(id: string) {
     const textarea = editorRef.current
-    if (!textarea) return
-    const start = textarea.selectionStart
-    const end = textarea.selectionEnd
-    const selected = fields.body.slice(start, end)
-    const next = `${fields.body.slice(0, start)}${prefix}${selected}${suffix}${fields.body.slice(end)}`
-    update("body", next)
+    const command = MARKDOWN_COMMANDS.find((item) => item.id === id)
+    if (!textarea || !command) return
+    const result = applyMarkdownCommand(
+      fields.body,
+      textarea.selectionStart,
+      textarea.selectionEnd,
+      command,
+    )
+    update("body", result.body)
     requestAnimationFrame(() => {
       textarea.focus()
-      textarea.setSelectionRange(start + prefix.length, end + prefix.length)
+      textarea.setSelectionRange(result.selectionStart, result.selectionEnd)
+    })
+  }
+
+  function applyTemplate(templateId: string) {
+    const hasDraft = Boolean(fields.body.trim())
+    if (hasDraft && !window.confirm("Replace the current body with this template?")) return
+    setFields((current) => fieldsWithTemplate(current, templateId))
+    setSaveState("dirty")
+    setNotice("Template applied. Your entry is still a private draft.")
+  }
+
+  function insertWikilink(targetPath: string) {
+    const notePath = targetPath.endsWith(".md") ? targetPath.slice(0, -3) : targetPath
+    const textarea = editorRef.current
+    if (!textarea) return
+    const command = {
+      id: "vault-link",
+      label: "Vault link",
+      group: "Obsidian" as const,
+      prefix: "[[",
+      suffix: "]]",
+      placeholder: notePath,
+    }
+    const result = applyMarkdownCommand(
+      fields.body,
+      textarea.selectionStart,
+      textarea.selectionEnd,
+      command,
+    )
+    update("body", result.body)
+    requestAnimationFrame(() => {
+      textarea.focus()
+      textarea.setSelectionRange(result.selectionEnd, result.selectionEnd)
     })
   }
 
@@ -196,6 +232,9 @@ export function ContentEditor({
 
   const issueFor = (field: keyof EditorFields) =>
     serverIssues.find((issue) => issue.field === field)?.message
+  const currentWikilink = filePath
+    ? `[[${filePath.endsWith(".md") ? filePath.slice(0, -3) : filePath}]]`
+    : undefined
 
   return (
     <div className="editor-workspace">
@@ -462,6 +501,14 @@ export function ContentEditor({
         </aside>
 
         <section className="editor-document" aria-label="Markdown editor">
+          <AuthoringToolbox
+            isNewWriting={!filePath && fields.collection === "writing"}
+            linkTargets={linkTargets}
+            currentWikilink={currentWikilink}
+            onCommand={runCommand}
+            onTemplate={applyTemplate}
+            onInsertWikilink={insertWikilink}
+          />
           <div className="editor-tabs" role="group" aria-label="Editor view">
             <button
               className={mode === "write" ? "active" : ""}
@@ -486,14 +533,14 @@ export function ContentEditor({
             </button>
           </div>
           <div className="format-toolbar" aria-label="Markdown formatting">
-            {tools.map(([label, prefix, suffix]) => (
+            {MARKDOWN_COMMANDS.slice(0, 11).map((command) => (
               <button
-                key={label}
+                key={command.id}
                 type="button"
-                onClick={() => insert(prefix, suffix)}
-                title={`Insert ${label.toLowerCase()}`}
+                onClick={() => runCommand(command.id)}
+                title={`Insert ${command.label.toLowerCase()}`}
               >
-                {label}
+                {command.label}
               </button>
             ))}
           </div>
@@ -526,8 +573,10 @@ export function ContentEditor({
             )}
           </div>
           <footer className="editor-footer">
-            <span>{fields.body.trim() ? fields.body.trim().split(/\s+/).length : 0} words</span>
-            <span>Markdown · Obsidian compatible</span>
+            <span>{stats.words} words</span>
+            <span>{stats.characters} characters</span>
+            <span>{stats.readingMinutes ? `~${stats.readingMinutes} min read` : "New note"}</span>
+            <span className="editor-compat">Markdown · Obsidian compatible</span>
             <kbd>⌘ S</kbd>
             <span>save</span>
           </footer>

@@ -1,0 +1,223 @@
+.authoring-toolbox {
+  position: relative;
+  border-bottom: 1px solid var(--line);
+}
+
+.authoring-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.8rem;
+  align-items: center;
+  min-height: 3.4rem;
+  padding: 0.55rem 0;
+}
+
+.authoring-shortcuts > button,
+.inline-tool button {
+  min-height: 2.25rem;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--line);
+  background: var(--white);
+  color: var(--ink-soft);
+  font-size: 0.64rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.authoring-shortcuts > button:hover,
+.inline-tool button:hover {
+  border-color: var(--ink-soft);
+  color: var(--ink);
+}
+
+.authoring-shortcuts kbd {
+  margin-left: 0.35rem;
+  color: #788193;
+  font: inherit;
+  font-weight: 500;
+}
+
+.inline-tool {
+  display: grid;
+  grid-template-columns: auto minmax(7.5rem, 1fr) auto;
+  align-items: center;
+  min-height: 2.25rem;
+  border: 1px solid var(--line);
+  background: rgba(255, 253, 247, 0.46);
+}
+
+.inline-tool label {
+  padding-inline: 0.65rem 0.35rem;
+  color: #687386;
+  font-size: 0.61rem;
+  font-weight: 750;
+}
+
+.inline-tool select {
+  min-width: 0;
+  height: 2.15rem;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: 0.66rem;
+}
+
+.inline-tool button {
+  min-height: 2.15rem;
+  border-block: 0;
+  border-right: 0;
+}
+
+.vault-link-tool {
+  flex: 1 1 19rem;
+  max-width: 30rem;
+}
+
+.command-palette {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  z-index: 12;
+  width: min(36rem, calc(100vw - 4rem));
+  padding: 0;
+  border: 1px solid var(--ink);
+  background: var(--white);
+  box-shadow: 0 0.85rem 2rem rgba(23, 43, 77, 0.18);
+}
+
+.command-palette header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+  padding: 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.command-palette header p,
+.command-palette header small {
+  margin: 0;
+}
+
+.command-palette header p {
+  font-family: var(--serif);
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.command-palette header small {
+  display: block;
+  margin-top: 0.2rem;
+  color: #687386;
+  font-size: 0.63rem;
+}
+
+.command-palette header button {
+  min-width: 2.6rem;
+  min-height: 2.2rem;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink-soft);
+  font-size: 0.62rem;
+  cursor: pointer;
+}
+
+.command-palette > input {
+  width: calc(100% - 2rem);
+  min-height: 2.75rem;
+  margin: 1rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #a99e89;
+  border-radius: 0;
+  background: var(--white);
+  color: var(--ink);
+}
+
+.command-results {
+  max-height: min(25rem, 48vh);
+  overflow-y: auto;
+  border-top: 1px solid var(--line);
+  overscroll-behavior: contain;
+}
+
+.command-results > button {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 0.8rem;
+  align-items: center;
+  width: 100%;
+  min-height: 2.9rem;
+  padding: 0.65rem 1rem;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.command-results > button:hover,
+.command-results > button:focus-visible {
+  background: var(--paper-deep);
+}
+
+.command-results strong {
+  font-size: 0.7rem;
+}
+
+.command-results small,
+.command-results span {
+  color: #737d8e;
+  font-size: 0.61rem;
+}
+
+.command-results > p {
+  margin: 0;
+  padding: 1.2rem 1rem;
+  color: #687386;
+  font-size: 0.7rem;
+}
+
+@media (max-width: 760px) {
+  .authoring-shortcuts {
+    align-items: stretch;
+  }
+
+  .authoring-shortcuts > button {
+    min-height: 2.75rem;
+  }
+
+  .inline-tool {
+    flex: 1 1 100%;
+    max-width: none;
+    min-height: 2.75rem;
+  }
+
+  .inline-tool select,
+  .inline-tool button {
+    min-height: 2.65rem;
+  }
+
+  .command-palette {
+    position: fixed;
+    inset: 1rem;
+    width: auto;
+    max-height: calc(100dvh - 2rem);
+    overflow: hidden;
+  }
+
+  .command-results {
+    max-height: calc(100dvh - 10.5rem);
+  }
+}
+
+@media (max-width: 460px) {
+  .inline-tool {
+    grid-template-columns: 1fr auto;
+  }
+
+  .inline-tool label {
+    grid-column: 1 / -1;
+    padding-top: 0.45rem;
+  }
+}
