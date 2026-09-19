@@ -3,6 +3,14 @@
 Status: approved direction, implementation in checkpoints  
 Last updated: 2026-09-19
 
+Implementation progress on `codex/garden-studio`:
+
+- Checkpoint 0 complete: plan recorded.
+- Checkpoint 1 complete: narrow publishing pipeline and combined preflight.
+- Checkpoint 2 complete: versioned contracts, file-level audit, collision checks,
+  and dry-run migration tooling.
+- Checkpoints 3–6 not started.
+
 ## Decision
 
 Build a small private, authenticated **Garden Studio** that edits the same Markdown content as Obsidian. Obsidian and the private vault repository remain the source of truth; Garden Studio is a faster second editor, not a replacement database. Publishing continues through narrow, validated exporters into the public Quartz repository.

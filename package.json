@@ -19,6 +19,7 @@
     "quotes:export": "node scripts/export-quotes.mjs",
     "writing:export": "node scripts/export-writing.mjs",
     "publish:check": "node scripts/check-publishing.mjs",
+    "publish:migrate": "node scripts/migrate-content.mjs",
     "links:sync": "node scripts/import-signal-atlas.mjs",
     "check": "tsc --noEmit && npx prettier . --check",
     "format": "npx prettier . --write",

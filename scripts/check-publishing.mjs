@@ -6,10 +6,12 @@ import { pathToFileURL } from "node:url"
 import { exportGarden } from "./export-garden.mjs"
 import { exportQuotes } from "./export-quotes.mjs"
 import { exportWriting } from "./export-writing.mjs"
+import { auditVault } from "./publishing/audit-vault.mjs"
 
 export async function checkPublishing({ vaultRoot, siteRoot }) {
   const resolvedVault = path.resolve(vaultRoot)
   const resolvedSite = path.resolve(siteRoot)
+  const audit = await auditVault(resolvedVault)
   const collections = [
     {
       key: "garden",
@@ -45,12 +47,15 @@ export async function checkPublishing({ vaultRoot, siteRoot }) {
 
   const results = []
   for (const collection of collections) {
+    const records = audit.records.filter((record) => record.collection === collection.key)
+    const auditBlocked = records.filter((record) => record.status === "blocked")
     try {
       const result = await collection.run()
       results.push({
         key: collection.key,
         label: collection.label,
-        status: "ready",
+        status: auditBlocked.length === 0 ? "ready" : "blocked",
+        records,
         ...result,
       })
     } catch (error) {
@@ -58,6 +63,7 @@ export async function checkPublishing({ vaultRoot, siteRoot }) {
         key: collection.key,
         label: collection.label,
         status: "blocked",
+        records,
         error: error instanceof Error ? error.message : String(error),
       })
     }
@@ -65,6 +71,8 @@ export async function checkPublishing({ vaultRoot, siteRoot }) {
 
   return {
     ok: results.every((result) => result.status === "ready"),
+    contractVersion: audit.contractVersion,
+    summary: audit.summary,
     vaultRoot: resolvedVault,
     siteRoot: resolvedSite,
     collections: results,
@@ -72,14 +80,24 @@ export async function checkPublishing({ vaultRoot, siteRoot }) {
 }
 
 export function formatPublishingReport(report) {
-  const lines = [report.ok ? "Publication check passed." : "Publication check is blocked."]
+  const lines = [
+    report.ok ? "Publication check passed." : "Publication check is blocked.",
+    `Content contract v${report.contractVersion}: ${report.summary.included} included, ${report.summary.skipped} skipped, ${report.summary.blocked} blocked.`,
+  ]
   for (const result of report.collections) {
-    if (result.status === "blocked") {
-      lines.push(`✗ ${result.label}: ${result.error}`)
-      continue
-    }
+    const counts = { included: 0, skipped: 0, blocked: 0 }
+    for (const record of result.records) counts[record.status] += 1
     const areaSummary = typeof result.areas === "number" ? `${result.areas} areas, ` : ""
-    lines.push(`✓ ${result.label}: ${areaSummary}${result.files} files ready`)
+    lines.push(
+      `${result.status === "ready" ? "✓" : "✗"} ${result.label}: ${areaSummary}${result.files ?? 0} generated; ${counts.included} included, ${counts.skipped} skipped, ${counts.blocked} blocked`,
+    )
+    if (result.error) lines.push(`  BLOCKED exporter — ${result.error}`)
+    for (const record of result.records) {
+      const target = record.target ? ` → ${record.target}` : ""
+      lines.push(
+        `  ${record.status.toUpperCase()} ${record.path}${target} — ${record.reason ?? record.message}`,
+      )
+    }
   }
   return lines.join("\n")
 }
