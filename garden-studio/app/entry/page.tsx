@@ -38,13 +38,24 @@ export default async function EntryPage({
           <h1>{item.title}</h1>
           <p>{item.detail}</p>
         </div>
-        <StatusPill status={item.status} />
+        <div className="entry-actions">
+          <StatusPill status={item.status} />
+          <Link
+            className="secondary-button"
+            href={"/revisions?path=" + encodeURIComponent(item.path)}
+          >
+            History
+          </Link>
+          <Link className="primary-button" href={"/edit?path=" + encodeURIComponent(item.path)}>
+            Edit entry
+          </Link>
+        </div>
       </header>
       <div className="entry-grid">
         <article className="markdown-preview">
           <div className="preview-label">
             <span>Rendered note</span>
-            <small>Edits arrive in a later checkpoint</small>
+            <small>Rendered from the vault source</small>
           </div>
           {item.body ? (
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{item.body}</ReactMarkdown>

@@ -40,7 +40,7 @@ async function appJwt() {
     .sign(key)
 }
 
-async function installationToken() {
+export async function installationToken() {
   if (cachedInstallationToken && cachedInstallationToken.expiresAt > Date.now() + 60_000) {
     return cachedInstallationToken.token
   }

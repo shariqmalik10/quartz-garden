@@ -6,6 +6,7 @@ import { readFile, readdir, stat } from "node:fs/promises"
 import path from "node:path"
 import YAML from "yaml"
 
+import { areasFromDocuments } from "./areas"
 import { githubConfigured, readBlobs, readRecentCommits, readRepositoryTree } from "./github"
 import type {
   ActivityItem,
@@ -22,7 +23,7 @@ const COLLECTION_LABELS: Record<CollectionKey, { label: string; description: str
   links: { label: "Saved links", description: "Blogs and references grouped by area." },
 }
 
-type SourceDocument = { path: string; content: string; modifiedAt?: string }
+type SourceDocument = { path: string; content: string; modifiedAt?: string; revision?: string }
 
 function parseMarkdown(content: string) {
   const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)([\s\S]*)$/)
@@ -86,6 +87,7 @@ function documentsToItems(documents: SourceDocument[]) {
         status: areaVisibility.get(area) === "garden" ? "public" : "private",
         detail: stringValue(data.source) || area,
         modifiedAt: document.modifiedAt,
+        revision: document.revision,
         body: document.body,
         frontmatter: data,
       })
@@ -99,6 +101,7 @@ function documentsToItems(documents: SourceDocument[]) {
         status: data.publish === true ? "public" : "draft",
         detail: stringValue(data.author) || stringValue(data.source) || "Unattributed",
         modifiedAt: document.modifiedAt,
+        revision: document.revision,
         body: document.body,
         frontmatter: data,
       })
@@ -112,6 +115,7 @@ function documentsToItems(documents: SourceDocument[]) {
         status: statusForWriting(data),
         detail: stringValue(data.description) || stringValue(data.date) || "Working note",
         modifiedAt: document.modifiedAt,
+        revision: document.revision,
         body: document.body,
         frontmatter: data,
       })
@@ -158,6 +162,7 @@ async function localDocuments(root: string) {
           path: relativePath,
           content: await readFile(absolutePath, "utf8"),
           modifiedAt: metadata.mtime.toISOString(),
+          revision: String(metadata.mtimeMs),
         })
       }
     }
@@ -177,6 +182,7 @@ function demoSnapshot(): VaultSnapshot {
       detail: "A working note about attention and personal software.",
       body: "This is synthetic preview content used to review the read-only Studio interface.",
       frontmatter: { kind: "writing", visibility: "private", draft: true, date: "2026-09-19" },
+      revision: "demo-writing-1",
     },
     {
       collection: "quotes",
@@ -186,6 +192,7 @@ function demoSnapshot(): VaultSnapshot {
       detail: "Unattributed",
       body: "",
       frontmatter: { kind: "quote", publish: true },
+      revision: "demo-quote-1",
     },
     {
       collection: "links",
@@ -195,6 +202,7 @@ function demoSnapshot(): VaultSnapshot {
       detail: "https://example.com/quiet-interfaces",
       body: "Saved as synthetic preview data.",
       frontmatter: { kind: "capture", source: "https://example.com/quiet-interfaces" },
+      revision: "demo-link-1",
     },
   ]
   return {
@@ -208,6 +216,10 @@ function demoSnapshot(): VaultSnapshot {
       message: "No private vault content is loaded in preview mode.",
     },
     collections: summarize(items),
+    areas: [
+      { name: "Blogs", visibility: "garden" },
+      { name: "Design & Interaction", visibility: "garden" },
+    ],
     items,
     activity: [
       {
@@ -233,6 +245,7 @@ async function githubSnapshot(): Promise<VaultSnapshot> {
   const documents = treeItems.map((item) => ({
     path: item.path,
     content: blobs.get(item.path) || "",
+    revision: item.sha,
   }))
   const items = documentsToItems(documents)
   const activity: ActivityItem[] = [
@@ -261,9 +274,10 @@ async function githubSnapshot(): Promise<VaultSnapshot> {
       branch: tree.branch,
       revision: tree.revision.slice(0, 7),
       checkedAt: now,
-      message: "Read-only GitHub App connection is healthy.",
+      message: "GitHub App connection is healthy.",
     },
     collections: summarize(items),
+    areas: areasFromDocuments(documents),
     items,
     activity,
   }
@@ -281,9 +295,10 @@ async function localSnapshot(root: string): Promise<VaultSnapshot> {
       branch: "local",
       revision: "working tree",
       checkedAt: now,
-      message: "Reading the local vault without write access.",
+      message: "Reading the local vault; browser writes stay disabled in local mode.",
     },
     collections: summarize(items),
+    areas: areasFromDocuments(documents),
     items,
     activity: [],
   }

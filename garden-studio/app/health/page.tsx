@@ -55,10 +55,10 @@ export default async function HealthPage() {
       <aside className="security-note">
         <span aria-hidden="true">◈</span>
         <div>
-          <h2>Read-only by design</h2>
+          <h2>Private-vault writes only</h2>
           <p>
-            This checkpoint can inspect the allowlisted vault paths and repository history. It
-            cannot create, edit, publish, merge, or delete anything.
+            Studio can create and revise managed Markdown in the private vault. Public-site
+            publishing, merges, and destructive deletion remain unavailable in this checkpoint.
           </p>
         </div>
       </aside>

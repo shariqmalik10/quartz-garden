@@ -1,6 +1,6 @@
 # Garden Studio
 
-Garden Studio is the private, authenticated publishing desk for the Quartz garden. Checkpoint 3 is deliberately read-only: it can inspect allowlisted vault content and recent repository history, but has no mutation endpoints.
+Garden Studio is the private, authenticated publishing desk for the Quartz garden. The Studio reads managed vault content and creates conditional Git commits for draft edits. It never silently overwrites a newer Obsidian change.
 
 ## Run locally
 
@@ -15,7 +15,7 @@ For local vault inspection, set `GARDEN_STUDIO_LOCAL_VAULT` to the absolute vaul
 Create two GitHub integrations:
 
 - An OAuth app for Studio login. Its callback is `https://YOUR-STUDIO-DOMAIN/api/auth/callback`. The allowed account is controlled by `GARDEN_STUDIO_ALLOWED_LOGIN`.
-- A GitHub App installed only on the private vault and public garden repositories. Give it **Contents: Read-only** and **Metadata: Read-only** repository permissions. No write permission is required.
+- A GitHub App installed only on the private vault and public garden repositories. Give it **Contents: Read and write** on the private vault and **Metadata: Read-only** on both repositories. Public-site writes are introduced only by the publishing checkpoint.
 
 The app exchanges its private key for a short-lived installation token on the server. Neither the private key nor installation token is sent to the browser.
 

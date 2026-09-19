@@ -52,20 +52,34 @@ export default async function CollectionPage({
           <h1>{summary.label}</h1>
           <p>{summary.description}</p>
         </div>
-        <dl className="collection-counts">
-          <div>
-            <dt>Public</dt>
-            <dd>{summary.public}</dd>
-          </div>
-          <div>
-            <dt>Draft</dt>
-            <dd>{summary.draft}</dd>
-          </div>
-          <div>
-            <dt>Private</dt>
-            <dd>{summary.private}</dd>
-          </div>
-        </dl>
+        <div className="collection-heading-actions">
+          <Link
+            className="primary-button"
+            href={
+              key === "writing"
+                ? "/new?type=writing"
+                : key === "quotes"
+                  ? "/new?type=quotes"
+                  : "/new?type=links"
+            }
+          >
+            New {key === "writing" ? "writing" : key === "quotes" ? "quote" : "link"}
+          </Link>
+          <dl className="collection-counts">
+            <div>
+              <dt>Public</dt>
+              <dd>{summary.public}</dd>
+            </div>
+            <div>
+              <dt>Draft</dt>
+              <dd>{summary.draft}</dd>
+            </div>
+            <div>
+              <dt>Private</dt>
+              <dd>{summary.private}</dd>
+            </div>
+          </dl>
+        </div>
       </header>
       <form className="filter-bar" method="get">
         <label>

@@ -49,6 +49,9 @@ jobs:
       - name: Check Garden Studio
         run: npm run studio:check
 
+      - name: Test Garden Studio
+        run: npm run studio:test
+
       - name: Run tests
         run: npm test
 

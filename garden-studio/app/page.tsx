@@ -26,11 +26,20 @@ export default async function DashboardPage() {
           <h1>Publishing overview</h1>
           <p>See what is growing, what stays private, and whether the path to the site is clear.</p>
         </div>
-        <span className="header-date">
-          {new Intl.DateTimeFormat("en", { weekday: "long", month: "long", day: "numeric" }).format(
-            new Date(),
-          )}
-        </span>
+        <div className="header-tools">
+          <div className="quick-create">
+            <Link href="/new?type=writing">New writing</Link>
+            <Link href="/new?type=quotes">Add quote</Link>
+            <Link href="/new?type=links">Save link</Link>
+          </div>
+          <span className="header-date">
+            {new Intl.DateTimeFormat("en", {
+              weekday: "long",
+              month: "long",
+              day: "numeric",
+            }).format(new Date())}
+          </span>
+        </div>
       </header>
 
       <section className="source-strip" aria-labelledby="source-heading">

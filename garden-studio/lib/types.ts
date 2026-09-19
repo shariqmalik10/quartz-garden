@@ -8,6 +8,7 @@ export type VaultItem = {
   status: ItemStatus
   detail: string
   modifiedAt?: string
+  revision?: string
   body: string
   frontmatter: Record<string, unknown>
 }
@@ -39,10 +40,13 @@ export type SyncHealth = {
   message: string
 }
 
+export type VaultArea = { name: string; visibility: "garden" | "private" }
+
 export type VaultSnapshot = {
   generatedAt: string
   health: SyncHealth
   collections: CollectionSummary[]
+  areas: VaultArea[]
   items: VaultItem[]
   activity: ActivityItem[]
 }

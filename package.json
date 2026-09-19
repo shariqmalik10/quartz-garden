@@ -23,6 +23,7 @@
     "links:sync": "node scripts/import-signal-atlas.mjs",
     "studio:check": "npm --prefix garden-studio run check",
     "studio:build": "npm --prefix garden-studio run build",
+    "studio:test": "npm --prefix garden-studio run test",
     "check": "tsc --noEmit && npx prettier . --check",
     "format": "npx prettier . --write",
     "test": "tsx --test",

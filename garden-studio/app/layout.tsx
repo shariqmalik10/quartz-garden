@@ -9,6 +9,8 @@ import type { Metadata } from "next"
 import type { ReactNode } from "react"
 
 import "./globals.css"
+import "./editor.css"
+import "./revisions.css"
 
 export const metadata: Metadata = {
   title: { default: "Garden Studio", template: "%s · Garden Studio" },
