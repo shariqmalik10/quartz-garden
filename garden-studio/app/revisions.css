@@ -1,0 +1,83 @@
+.revision-notice {
+  min-height: 1.2rem;
+  color: var(--rust);
+  font-size: 0.7rem;
+}
+.revision-list {
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--ink);
+  list-style: none;
+}
+.revision-list li {
+  display: grid;
+  grid-template-columns: 2rem minmax(12rem, 1fr) 5rem 5rem 1.5rem;
+  gap: 1rem;
+  align-items: center;
+  min-height: 5rem;
+  border-bottom: 1px solid var(--line);
+}
+.revision-index {
+  color: #8a91a0;
+  font-family: var(--serif);
+  font-size: 0.7rem;
+}
+.revision-list div {
+  display: grid;
+  gap: 0.25rem;
+}
+.revision-list strong {
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+.revision-list small {
+  color: #737c8d;
+  font-size: 0.65rem;
+}
+.revision-list code {
+  color: var(--ink-soft);
+  font-size: 0.68rem;
+}
+.revision-list button {
+  min-height: 2.3rem;
+  border: 1px solid var(--line);
+  background: var(--white);
+  color: var(--ink);
+  font-size: 0.67rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+.revision-list button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+.revision-list a {
+  color: var(--rust);
+  text-align: right;
+  text-decoration: none;
+}
+.current-revision {
+  color: var(--leaf);
+  font-size: 0.65rem;
+  font-weight: 750;
+  text-align: center;
+}
+@media (max-width: 620px) {
+  .revision-list li {
+    grid-template-columns: 1.5rem 1fr auto;
+    gap: 0.65rem;
+    padding-block: 0.75rem;
+  }
+  .revision-list code {
+    grid-column: 2;
+  }
+  .revision-list button,
+  .current-revision {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
+  .revision-list a {
+    display: none;
+  }
+}

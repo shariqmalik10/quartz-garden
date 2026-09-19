@@ -3,10 +3,12 @@
 import { createHash } from "node:crypto"
 import { existsSync } from "node:fs"
 import { cp, mkdir, readFile, readdir, rename, rm, stat, writeFile } from "node:fs/promises"
+import os from "node:os"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 import { format as prettierFormat } from "prettier"
 import YAML from "yaml"
+import { validateDocument } from "./publishing/contracts.mjs"
 
 const MANIFEST = ".garden-sync-manifest.json"
 const MARKDOWN_EXTENSIONS = new Set([".md", ".markdown"])
@@ -216,6 +218,7 @@ export async function exportGarden({ vaultRoot, outputRoot, dryRun = false }) {
     const areaMapPath = path.join(areasRoot, entry.name, `${entry.name}.md`)
     if (!existsSync(areaMapPath)) continue
     const parsed = parseMarkdown(await readFile(areaMapPath, "utf8"), areaMapPath)
+    validateDocument("area", parsed.data, areaMapPath)
     if (parsed.data.kind !== "area") throw new Error(`${areaMapPath} must set kind: area`)
     const visibility = parsed.data.visibility
     if (visibility !== "garden" && visibility !== "private") {
@@ -235,7 +238,8 @@ export async function exportGarden({ vaultRoot, outputRoot, dryRun = false }) {
   const publicAreas = areas.filter((area) => area.data.visibility === "garden")
   const oldManifest = await readManifest(outputRoot)
   const parent = path.dirname(outputRoot)
-  const stageRoot = path.join(parent, `.garden-sync-stage-${process.pid}-${Date.now()}`)
+  const stageParent = dryRun ? os.tmpdir() : parent
+  const stageRoot = path.join(stageParent, `.garden-sync-stage-${process.pid}-${Date.now()}`)
   const backupRoot = path.join(parent, `.garden-sync-backup-${process.pid}-${Date.now()}`)
   await rm(stageRoot, { recursive: true, force: true })
   await mkdir(stageRoot, { recursive: true })
@@ -261,6 +265,7 @@ export async function exportGarden({ vaultRoot, outputRoot, dryRun = false }) {
       const captures = []
       for (const capturePath of await markdownFiles(path.join(area.root, "Captures"))) {
         const capture = parseMarkdown(await readFile(capturePath, "utf8"), capturePath)
+        validateDocument("capture", capture.data, capturePath)
         if (capture.data.kind !== "capture")
           throw new Error(`${capturePath} must set kind: capture`)
         captures.push({ path: capturePath, ...capture })
@@ -287,6 +292,9 @@ export async function exportGarden({ vaultRoot, outputRoot, dryRun = false }) {
       })
       assertPublicSafe(mapText, area.mapPath)
       const mapRelative = path.posix.join(outputArea, "index.md")
+      if (generated.includes(mapRelative)) {
+        throw new Error(`More than one public area resolves to ${mapRelative}`)
+      }
       const mapTarget = path.resolve(stageRoot, mapRelative)
       if (!inside(stageRoot, mapTarget)) throw new Error(`Area output escaped root: ${mapRelative}`)
       await mkdir(path.dirname(mapTarget), { recursive: true })
@@ -341,6 +349,9 @@ export async function exportGarden({ vaultRoot, outputRoot, dryRun = false }) {
         const captureText = await prettierFormat(renderMarkdown(data, body), { parser: "markdown" })
         assertPublicSafe(captureText, capturePath)
         const captureRelative = path.posix.join(outputArea, `${captureId}.md`)
+        if (generated.includes(captureRelative)) {
+          throw new Error(`More than one public capture resolves to ${captureRelative}`)
+        }
         const captureTarget = path.resolve(stageRoot, captureRelative)
         if (!inside(stageRoot, captureTarget))
           throw new Error(`Capture output escaped root: ${captureRelative}`)
