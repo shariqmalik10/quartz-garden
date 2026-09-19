@@ -9,7 +9,8 @@ Implementation progress on `codex/garden-studio`:
 - Checkpoint 1 complete: narrow publishing pipeline and combined preflight.
 - Checkpoint 2 complete: versioned contracts, file-level audit, collision checks,
   and dry-run migration tooling.
-- Checkpoints 3–6 not started.
+- Checkpoint 3 complete: authenticated read-only Garden Studio, isolated Vercel project, and managed collection browser.
+- Checkpoints 4–6 not started.
 
 ## Decision
 
