@@ -149,14 +149,16 @@ Quartz repository, runs the publication exporter, and pushes only validated
 generated content. Riyadh is UTC+3 year-round, so the equivalent UTC time is
 20:00.
 
-The exporter boundary is deliberately narrow:
+The exporter boundary is deliberately narrow and split by collection:
 
 ```text
 public Quartz repository
-└── content/garden-sync/     # exporter-owned subtree only
+├── content/garden-sync/     # area captures and saved links
+├── content/quotes/          # published quote collection
+└── content/notes/           # explicitly public writing only
 ```
 
-The exporter must:
+The exporters must:
 
 - export only areas explicitly marked `visibility: garden`;
 - inject `publish: true` into generated frontmatter;
@@ -164,12 +166,20 @@ The exporter must:
 - omit third-party downloaded media unless `media_policy: owned`;
 - replace private wikilinks with `[private reference omitted]`;
 - block email, LinkedIn, phone, résumé, credential, and secret-like content;
-- maintain a generated manifest inside `content/garden-sync/`;
+- maintain generated manifests for their owned content;
 - remove only generated files listed by that manifest; and
 - leave handcrafted pages, site configuration, and other `content/` folders
   untouched.
 
-The exporter must validate generated Markdown, links, and the Quartz build
+Before writing generated content, the workflow runs the non-mutating combined
+publication check:
+
+```bash
+npm run publish:check -- --vault /path/to/vault --site .
+```
+
+It reports the garden, quotes, and writing collections independently. The
+exporters must then validate generated Markdown, links, and the Quartz build
 before creating a public commit. A failed validation must produce no public
 commit. This prevents an incomplete or accidentally private capture from
 reaching Vercel.
@@ -178,6 +188,11 @@ The private workflow uses a dedicated SSH deploy key stored only as the
 private-repository secret `PUBLIC_REPO_DEPLOY_KEY`. Its public half must be a
 write-enabled deploy key on the single public Quartz repository. It must not be
 copied into the public repository, the vault, or the macOS app.
+
+Push-triggered runs use the private repository variable
+`PUBLIC_QUARTZ_BRANCH`; this should be `main` after acceptance. Manual runs
+default to `automation/vault-publish-preview`, which provides a safe Vercel
+preview branch without changing production.
 
 ## Vercel preview and production behavior
 
