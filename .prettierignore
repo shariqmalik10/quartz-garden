@@ -8,3 +8,4 @@ garden-drop-macos/dist
 
 garden-studio/.next
 garden-studio/node_modules
+garden-studio/next-env.d.ts
