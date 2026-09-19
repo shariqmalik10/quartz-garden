@@ -41,6 +41,9 @@ export default async function EditEntryPage({
         originalPath={item.path}
         initialRevision={item.revision}
         areas={snapshot.areas.map((area) => area.name)}
+        areaPolicies={Object.fromEntries(
+          snapshot.areas.map((area) => [area.name, area.mediaPolicy]),
+        )}
         linkTargets={snapshot.items
           .filter((candidate) => candidate.path !== item.path)
           .map((candidate) => ({ title: candidate.title, path: candidate.path }))}

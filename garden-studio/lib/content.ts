@@ -1,5 +1,6 @@
 import YAML from "yaml"
 
+import { attachmentPathFromWikilink } from "./attachments"
 import type { CollectionKey, VaultItem } from "./types"
 
 export type EditorFields = {
@@ -20,6 +21,7 @@ export type EditorFields = {
   publish: boolean
   area: string
   metadataStatus: "complete" | "partial" | "pending"
+  attachments: string[]
 }
 
 export type ContentValidation = { field: keyof EditorFields | "path"; message: string }
@@ -66,6 +68,9 @@ export function validateFields(fields: EditorFields) {
     if (!fields.sourceUrl) issues.push({ field: "sourceUrl", message: "Add the original URL." })
     if (!/^[\p{L}\p{N}][\p{L}\p{N} &'()-]*$/u.test(fields.area)) {
       issues.push({ field: "area", message: "Choose a valid vault area." })
+    }
+    if (fields.attachments.some((attachment) => !attachmentPathFromWikilink(attachment))) {
+      issues.push({ field: "attachments", message: "Remove the invalid attachment reference." })
     }
   } else if (fields.sourceUrl && !httpUrl(fields.sourceUrl)) {
     issues.push({ field: "sourceUrl", message: "Use a full HTTP or HTTPS URL." })
@@ -123,7 +128,7 @@ export function serializeFields(fields: EditorFields, existingPath?: string) {
       area: `[[${fields.area}]]`,
       tags: cleanTags(["capture", ...tags]),
       metadata_status: fields.metadataStatus,
-      attachments: [],
+      attachments: fields.attachments,
     }
   }
   return `---\n${YAML.stringify(frontmatter, { lineWidth: 0 }).trim()}\n---\n${fields.body.trim()}\n`
@@ -162,6 +167,7 @@ export function fieldsFromItem(item: VaultItem): EditorFields {
       data.metadata_status === "partial" || data.metadata_status === "pending"
         ? data.metadata_status
         : "complete",
+    attachments: tagsValue(data.attachments),
   }
 }
 
@@ -185,6 +191,7 @@ export function emptyFields(collection: CollectionKey): EditorFields {
     publish: false,
     area: "Blogs",
     metadataStatus: "complete",
+    attachments: [],
   }
 }
 

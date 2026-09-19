@@ -4,6 +4,7 @@ import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import ReactMarkdown from "react-markdown"
 
+import { AttachmentManager } from "@/components/attachment-manager"
 import { AuthoringToolbox, type VaultLinkTarget } from "@/components/authoring-toolbox"
 import remarkGfm from "remark-gfm"
 
@@ -37,6 +38,7 @@ export function ContentEditor({
   originalPath,
   initialRevision,
   areas,
+  areaPolicies = {},
   demo,
   obsidianUri,
   linkTargets = [],
@@ -45,6 +47,7 @@ export function ContentEditor({
   originalPath?: string
   initialRevision?: string
   areas: string[]
+  areaPolicies?: Record<string, "reference" | "owned">
   demo: boolean
   obsidianUri?: string
   linkTargets?: VaultLinkTarget[]
@@ -179,6 +182,38 @@ export function ContentEditor({
       textarea.focus()
       textarea.setSelectionRange(result.selectionEnd, result.selectionEnd)
     })
+  }
+
+  function attachFile(wikilink: string, attachmentFilePath: string, isImage: boolean) {
+    setFields((current) => {
+      const imageEmbed = `![[${attachmentFilePath}]]`
+      const body =
+        isImage && !current.body.includes(imageEmbed)
+          ? `${current.body.trimEnd()}${current.body.trim() ? "\n\n" : ""}${imageEmbed}\n`
+          : current.body
+      return {
+        ...current,
+        body,
+        attachments: [...new Set([...current.attachments, wikilink])],
+      }
+    })
+    setSaveState("dirty")
+    setNotice("Attachment referenced. Save the entry to keep this link in Obsidian.")
+    setServerIssues([])
+  }
+
+  function removeAttachment(wikilink: string, attachmentFilePath: string) {
+    setFields((current) => ({
+      ...current,
+      attachments: current.attachments.filter((attachment) => attachment !== wikilink),
+      body: current.body
+        .replaceAll(`![[${attachmentFilePath}]]`, "")
+        .replaceAll(`[[${attachmentFilePath}]]`, "")
+        .replace(/\n{3,}/g, "\n\n"),
+    }))
+    setSaveState("dirty")
+    setNotice("Attachment reference removed. The private vault file was not deleted.")
+    setServerIssues([])
   }
 
   async function save(intent: "draft" | "ready") {
@@ -464,6 +499,14 @@ export function ContentEditor({
                   <option value="pending">Pending</option>
                 </select>
               </Field>
+              <AttachmentManager
+                entryPath={filePath}
+                attachments={fields.attachments}
+                mediaPolicy={areaPolicies[fields.area] || "reference"}
+                demo={demo}
+                onAttach={attachFile}
+                onRemove={removeAttachment}
+              />
             </div>
           )}
 

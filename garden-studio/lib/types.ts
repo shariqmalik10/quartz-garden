@@ -40,7 +40,11 @@ export type SyncHealth = {
   message: string
 }
 
-export type VaultArea = { name: string; visibility: "garden" | "private" }
+export type VaultArea = {
+  name: string
+  visibility: "garden" | "private"
+  mediaPolicy: "reference" | "owned"
+}
 
 export type VaultSnapshot = {
   generatedAt: string

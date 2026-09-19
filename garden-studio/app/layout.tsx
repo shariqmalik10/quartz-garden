@@ -11,6 +11,7 @@ import type { ReactNode } from "react"
 import "./globals.css"
 import "./editor.css"
 import "./authoring.css"
+import "./media.css"
 import "./revisions.css"
 import "./publish.css"
 

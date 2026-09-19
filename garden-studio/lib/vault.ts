@@ -217,8 +217,8 @@ function demoSnapshot(): VaultSnapshot {
     },
     collections: summarize(items),
     areas: [
-      { name: "Blogs", visibility: "garden" },
-      { name: "Design & Interaction", visibility: "garden" },
+      { name: "Blogs", visibility: "garden", mediaPolicy: "reference" },
+      { name: "Design & Interaction", visibility: "garden", mediaPolicy: "owned" },
     ],
     items,
     activity: [

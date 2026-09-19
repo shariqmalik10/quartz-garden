@@ -44,6 +44,9 @@ export default async function NewEntryPage({
       <ContentEditor
         initialFields={emptyFields(collection)}
         areas={snapshot.areas.map((area) => area.name)}
+        areaPolicies={Object.fromEntries(
+          snapshot.areas.map((area) => [area.name, area.mediaPolicy]),
+        )}
         linkTargets={snapshot.items.map((item) => ({ title: item.title, path: item.path }))}
         demo={snapshot.health.status === "demo"}
       />

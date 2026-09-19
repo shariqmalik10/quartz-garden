@@ -2,21 +2,24 @@
 
 Last updated: 2026-09-19  
 Implementation branch: `codex/garden-studio`  
-Last implementation commit: `eec1d8e` (`feat: add reviewed garden publishing`)  
+Prior checkpoint commit: `b853922` (`feat: expand Obsidian authoring tools`)
+Current checkpoint: private saved-link attachments (verified; this log ships with the checkpoint)
 Public repository PR: <https://github.com/shariqmalik10/quartz-garden/pull/6>  
 Private vault workflow PR: <https://github.com/shariqmalik10/obsidian-vault-private/pull/1>
 
-## Why implementation stops here
+## Handoff status
 
-The implementation is intentionally paused after Checkpoint 5. The current branch contains the complete safe editing and review-publishing foundation. No Checkpoint 6 media, expanded-module, or final hardening work was started after this checkpoint.
+Implementation is active on the isolated `codex/garden-studio` branch. This document is updated at every verified checkpoint so another session can resume without reconstructing decisions from chat history.
 
-This file is the continuation guide. It records what exists, the first known issue to fix, the remaining product work, the security boundaries, and the acceptance checks required before the Studio should be treated as production-ready.
+The Studio now has the safe editing and review-publishing foundation, expanded Markdown/Obsidian authoring tools, and private saved-link attachments. The next code checkpoint is operational hardening. Real-vault verification remains intentionally blocked until the GitHub App credentials are configured and private workflow PR #1 is reviewed and merged.
 
 ## Continuation log
 
 - **2026-09-19 · Baseline repaired:** added the generated `garden-studio/next-env.d.ts` file to the repository-root Prettier ignore. Root checks, 191 tests, Studio checks, 6 Studio tests, and the Studio production build all pass locally. Richer editor work can now proceed from a green baseline.
 
 - **2026-09-19 · Authoring tools complete:** added 17 Markdown and Obsidian commands, a `Cmd/Ctrl + K` searchable command palette, four writing templates, managed-note wikilink insertion, copyable current-note wikilinks, and live word/character/reading-time statistics. The implementation remains dependency-light, preserves plain Markdown, passed desktop and 390 px browser interaction checks, returned no Impeccable detector findings, passed 10 Studio tests, and completed a production build.
+
+- **2026-09-19 · Private capture media complete:** added authenticated JPEG, PNG, WebP, GIF, and PDF uploads to `Attachments/Captures/<capture-id>/`, with signature and extension verification, an 8 MB limit, collision-safe filenames, strict path allowlists, GitHub App binary reads/writes, Obsidian attachment lists, automatic image embeds, and non-destructive reference removal. The editor reads each area’s existing `media_policy` and clearly explains `reference` versus `owned`; it never changes policy during upload. Browser verification covered first save, PNG upload, embed insertion, removal, policy switching, desktop and 390×844 layouts, and a zero-error console. Studio checks, 13 Studio tests, the production build, root checks, and all 198 repository tests pass.
 
 ## Current state
 
@@ -52,6 +55,14 @@ This file is the continuation guide. It records what exists, the first known iss
    - Explicit confirmation by typing `publish`.
    - Demo mode can exercise the interface but cannot merge.
 
+5. **Private saved-link attachments**
+   - Authenticated private-vault upload and viewing routes for JPEG, PNG, WebP, GIF, and PDF files.
+   - Signature, extension, size, filename, and path validation before GitHub writes.
+   - Capture-local Obsidian storage and frontmatter attachment references.
+   - Automatic image embed insertion and non-destructive reference removal.
+   - Explicit `reference`/`owned` area-policy display without silent policy mutation.
+   - Writing uploads remain intentionally unavailable until their exporter contract exists.
+
 ### Completed in the private vault branch
 
 - The publishing workflow defaults to `studio/garden-preview`.
@@ -67,33 +78,18 @@ This file is the continuation guide. It records what exists, the first known iss
 - Private repository `main`.
 - Any real GitHub App credentials; the deployed Studio is still configured as a synthetic demo.
 
-## Known issue to fix first
+## Resolved baseline issue
 
-The latest public PR CI run is red only at the root formatting check:
+The root formatting failure caused by generated `garden-studio/next-env.d.ts` was fixed by adding that file to the repository-root Prettier ignore. The repaired baseline was committed before feature work, and repository-wide checks now pass.
 
-```text
-garden-studio/next-env.d.ts
-Code style issues found in the above file.
-```
+## Active external blockers
 
-Next.js regenerates this file with semicolons, while the repository Prettier configuration removes them. The nested `garden-studio/.prettierignore` does not affect the root `prettier . --check` command.
+The remaining blockers are configuration and approval boundaries, not unresolved local code failures:
 
-Recommended fix:
-
-1. Add `garden-studio/next-env.d.ts` to the repository-root `.prettierignore`.
-2. Do not hand-format the generated file as part of normal development.
-3. Run the complete checks below.
-4. Commit this as a small checkpoint before any new feature work.
-
-```bash
-npm run check
-npm test
-npm run studio:check
-npm run studio:test
-npm run studio:build
-```
-
-Expected result: all checks pass. The last local full test run completed **191 tests with zero failures**; the current CI failure is the generated-file formatting mismatch described above.
+1. Create and install the scoped GitHub App, then add its secrets to the separate Garden Studio Vercel project.
+2. Review and merge private workflow PR #1 before attempting a real private-vault publish dispatch.
+3. Run the disposable real-vault round trip and owned/reference export proof after those two prerequisites.
+4. Do not merge public PR #6 or change the production domain until the real-data preview is explicitly approved.
 
 ## Recommended continuation order
 
@@ -257,6 +253,8 @@ Performance targets:
 Exit gate: a long writing can be authored comfortably on desktop, and essential metadata/save actions remain usable on a phone.
 
 ### Step 5 — Add owned media safely
+
+**Status: implemented and locally verified for saved-link captures; real-vault export proof awaits GitHub App setup.**
 
 Goal: support images and PDFs that remain private until a managed entry is published.
 

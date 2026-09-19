@@ -57,5 +57,8 @@ describe("Garden Studio content editor contracts", () => {
       sourceUrl: "javascript:alert(1)",
     }
     assert.ok(validateFields(fields).some((issue) => issue.field === "sourceUrl"))
+    fields.sourceUrl = "https://example.com"
+    fields.attachments = ["[[Attachments/Captures/gd-one/../../secret.png]]"]
+    assert.ok(validateFields(fields).some((issue) => issue.field === "attachments"))
   })
 })
