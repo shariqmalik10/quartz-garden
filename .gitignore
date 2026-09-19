@@ -21,3 +21,4 @@ DerivedData/
 garden-drop-macos/dist/
 diary-transcription-macos/dist/
 .vercel
+/.env.local
