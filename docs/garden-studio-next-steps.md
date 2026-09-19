@@ -12,6 +12,10 @@ The implementation is intentionally paused after Checkpoint 5. The current branc
 
 This file is the continuation guide. It records what exists, the first known issue to fix, the remaining product work, the security boundaries, and the acceptance checks required before the Studio should be treated as production-ready.
 
+## Continuation log
+
+- **2026-09-19 · Baseline repaired:** added the generated `garden-studio/next-env.d.ts` file to the repository-root Prettier ignore. Root checks, 191 tests, Studio checks, 6 Studio tests, and the Studio production build all pass locally. Richer editor work can now proceed from a green baseline.
+
 ## Current state
 
 ### Completed in the public Quartz repository
