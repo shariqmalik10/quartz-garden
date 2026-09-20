@@ -4,18 +4,26 @@ import {
   attachmentPath,
   attachmentWikilink,
   detectAttachmentMime,
+  MAX_ATTACHMENT_BYTES,
   validateAttachment,
 } from "@/lib/attachments"
-import { writeVaultBinary } from "@/lib/github-binary"
 import { githubConfigured } from "@/lib/github"
-import { jsonError, sameOrigin } from "@/lib/request"
+import { writeVaultBinary } from "@/lib/github-binary"
+import { contentLengthExceeds, enforceRateLimit, jsonError, sameOrigin } from "@/lib/request"
 import { readSession } from "@/lib/session"
+
+const MAX_MULTIPART_BYTES = MAX_ATTACHMENT_BYTES + 512 * 1024
 
 export async function POST(request: Request) {
   const session = await readSession()
   if (!session) return jsonError("Sign in again before uploading.", 401, "session_required")
   if (!sameOrigin(request))
     return jsonError("This upload request was not accepted.", 403, "origin_invalid")
+  const limited = enforceRateLimit(request, "upload", session.login, 20)
+  if (limited) return limited
+  if (contentLengthExceeds(request, MAX_MULTIPART_BYTES)) {
+    return jsonError("Keep each attachment under 8 MB.", 413, "request_too_large")
+  }
 
   let form: FormData
   try {
@@ -27,6 +35,8 @@ export async function POST(request: Request) {
   const entryPath = form.get("entryPath")
   if (!(file instanceof File) || typeof entryPath !== "string")
     return jsonError("Choose a file and a saved link entry.", 400, "upload_incomplete")
+  if (file.size > MAX_ATTACHMENT_BYTES)
+    return jsonError("Keep each attachment under 8 MB.", 413, "request_too_large")
 
   const bytes = new Uint8Array(await file.arrayBuffer())
   const issue = validateAttachment(file.name, file.type, bytes)
@@ -70,10 +80,7 @@ export async function POST(request: Request) {
       message: "Attachment saved to the private vault. Save the entry to keep its reference.",
     })
   } catch (error) {
-    return jsonError(
-      error instanceof Error ? error.message : "The attachment upload failed.",
-      502,
-      "upload_failed",
-    )
+    console.error("Garden Studio attachment upload failed", error)
+    return jsonError("The attachment could not be saved.", 502, "upload_failed")
   }
 }

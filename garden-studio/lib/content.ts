@@ -24,6 +24,56 @@ export type EditorFields = {
   attachments: string[]
 }
 
+export function parseEditorFields(value: unknown): EditorFields | null {
+  if (!value || typeof value !== "object") return null
+  const input = value as Record<string, unknown>
+  const strings = [
+    "title",
+    "slug",
+    "body",
+    "description",
+    "date",
+    "quote",
+    "author",
+    "sourceName",
+    "sourceUrl",
+    "capturedAt",
+    "area",
+  ]
+  if (strings.some((key) => typeof input[key] !== "string")) return null
+  if (!["writing", "quotes", "links"].includes(String(input.collection))) return null
+  if (!["public", "private"].includes(String(input.visibility))) return null
+  if (!["complete", "partial", "pending"].includes(String(input.metadataStatus))) return null
+  if (typeof input.draft !== "boolean" || typeof input.publish !== "boolean") return null
+  if (!Array.isArray(input.tags) || input.tags.some((tag) => typeof tag !== "string")) return null
+  if (
+    input.attachments !== undefined &&
+    (!Array.isArray(input.attachments) ||
+      input.attachments.some((attachment) => typeof attachment !== "string"))
+  )
+    return null
+  return {
+    collection: input.collection as CollectionKey,
+    title: input.title as string,
+    slug: input.slug as string,
+    body: input.body as string,
+    description: input.description as string,
+    date: input.date as string,
+    tags: input.tags as string[],
+    visibility: input.visibility as EditorFields["visibility"],
+    draft: input.draft,
+    quote: input.quote as string,
+    author: input.author as string,
+    sourceName: input.sourceName as string,
+    sourceUrl: input.sourceUrl as string,
+    capturedAt: input.capturedAt as string,
+    publish: input.publish,
+    area: input.area as string,
+    metadataStatus: input.metadataStatus as EditorFields["metadataStatus"],
+    attachments: (input.attachments as string[] | undefined) || [],
+  }
+}
+
 export type ContentValidation = { field: keyof EditorFields | "path"; message: string }
 
 export function slugify(value: string) {

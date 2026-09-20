@@ -1,12 +1,14 @@
 import { detectAttachmentMime, isAttachmentPath } from "@/lib/attachments"
-import { readVaultBinary } from "@/lib/github-binary"
 import { githubConfigured } from "@/lib/github"
-import { jsonError } from "@/lib/request"
+import { readVaultBinary } from "@/lib/github-binary"
+import { enforceRateLimit, jsonError } from "@/lib/request"
 import { readSession } from "@/lib/session"
 
 export async function GET(request: Request) {
   const session = await readSession()
   if (!session) return jsonError("Sign in to view this attachment.", 401, "session_required")
+  const limited = enforceRateLimit(request, "attachment-view", session.login, 120)
+  if (limited) return limited
   const filePath = new URL(request.url).searchParams.get("path") || ""
   if (!isAttachmentPath(filePath))
     return jsonError("That attachment path is not allowed.", 400, "path_unsafe")
@@ -28,10 +30,7 @@ export async function GET(request: Request) {
       },
     })
   } catch (error) {
-    return jsonError(
-      error instanceof Error ? error.message : "The attachment could not be loaded.",
-      502,
-      "attachment_failed",
-    )
+    console.error("Garden Studio attachment read failed", error)
+    return jsonError("The attachment could not be loaded.", 502, "attachment_failed")
   }
 }

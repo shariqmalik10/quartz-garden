@@ -5,18 +5,28 @@ import { pathAllowed } from "@/lib/content"
 import { githubConfigured } from "@/lib/github"
 import { readVaultFile, RepositoryConflictError, writeVaultFile } from "@/lib/github-write"
 import { collectionForPath } from "@/lib/paths"
-import { jsonError, sameOrigin } from "@/lib/request"
+import { enforceRateLimit, jsonError, payloadError, readJsonBody, sameOrigin } from "@/lib/request"
 import { readSession } from "@/lib/session"
+
+type RestoreRequest = {
+  path?: string
+  targetRevision?: string
+  expectedRevision?: string
+}
 
 export async function POST(request: Request) {
   const session = await readSession()
   if (!session) return jsonError("Sign in again before restoring.", 401, "session_required")
   if (!sameOrigin(request))
     return jsonError("This restore request was not accepted.", 403, "origin_invalid")
-  const payload = (await request.json()) as {
-    path?: string
-    targetRevision?: string
-    expectedRevision?: string
+  const limited = enforceRateLimit(request, "restore", session.login, 10)
+  if (limited) return limited
+
+  let payload: RestoreRequest
+  try {
+    payload = await readJsonBody<RestoreRequest>(request, 16 * 1024)
+  } catch (error) {
+    return payloadError(error, "The restore request could not be read.")
   }
   const collection = collectionForPath(payload.path || "")
   if (!collection || !pathAllowed(payload.path || "", collection))
@@ -48,10 +58,7 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof RepositoryConflictError)
       return jsonError(error.message, 409, "edit_conflict")
-    return jsonError(
-      error instanceof Error ? error.message : "Restore failed.",
-      502,
-      "restore_failed",
-    )
+    console.error("Garden Studio vault restore failed", error)
+    return jsonError("The private vault could not be restored.", 502, "restore_failed")
   }
 }

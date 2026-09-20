@@ -1,8 +1,8 @@
 import { revalidatePath } from "next/cache"
 import { NextResponse } from "next/server"
 
-import { readSession } from "@/lib/session"
 import {
+  parseEditorFields,
   pathAllowed,
   pathForFields,
   serializeFields,
@@ -11,7 +11,8 @@ import {
 } from "@/lib/content"
 import { githubConfigured } from "@/lib/github"
 import { readVaultFile, RepositoryConflictError, writeVaultFile } from "@/lib/github-write"
-import { jsonError, sameOrigin } from "@/lib/request"
+import { enforceRateLimit, jsonError, payloadError, readJsonBody, sameOrigin } from "@/lib/request"
+import { readSession } from "@/lib/session"
 import { getVaultSnapshot } from "@/lib/vault"
 
 type SaveRequest = {
@@ -26,18 +27,19 @@ export async function POST(request: Request) {
   if (!session) return jsonError("Sign in again before saving.", 401, "session_required")
   if (!sameOrigin(request))
     return jsonError("This save request was not accepted.", 403, "origin_invalid")
+  const limited = enforceRateLimit(request, "save", session.login, 30)
+  if (limited) return limited
 
   let payload: SaveRequest
   try {
-    payload = (await request.json()) as SaveRequest
-  } catch {
-    return jsonError("The editor sent an unreadable request.", 400, "request_invalid")
+    payload = await readJsonBody<SaveRequest>(request, 512 * 1024)
+  } catch (error) {
+    return payloadError(error, "The editor sent an unreadable request.")
   }
-  if (!payload.fields || !["writing", "quotes", "links"].includes(payload.fields.collection)) {
-    return jsonError("Choose a managed collection.", 400, "collection_invalid")
-  }
+  const parsedFields = parseEditorFields(payload.fields)
+  if (!parsedFields) return jsonError("Choose a managed collection.", 400, "collection_invalid")
 
-  const fields = structuredClone(payload.fields)
+  const fields = structuredClone(parsedFields)
   if (payload.intent === "ready") {
     if (fields.collection === "writing") {
       fields.visibility = "public"
@@ -103,8 +105,9 @@ export async function POST(request: Request) {
       const latest = await readVaultFile(filePath)
       return jsonError(error.message, 409, "edit_conflict", latest)
     }
+    console.error("Garden Studio vault save failed", error)
     return jsonError(
-      error instanceof Error ? error.message : "The vault write failed.",
+      "The private vault could not be updated. Try again shortly.",
       502,
       "save_failed",
     )

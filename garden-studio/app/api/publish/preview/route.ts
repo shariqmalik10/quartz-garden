@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 
 import { githubConfigured } from "@/lib/github"
 import { dispatchPublication } from "@/lib/publication"
-import { jsonError, sameOrigin } from "@/lib/request"
+import { enforceRateLimit, jsonError, sameOrigin } from "@/lib/request"
 import { readSession } from "@/lib/session"
 
 export async function POST(request: Request) {
@@ -11,6 +11,8 @@ export async function POST(request: Request) {
     return jsonError("Sign in again before creating a preview.", 401, "session_required")
   if (!sameOrigin(request))
     return jsonError("This preview request was not accepted.", 403, "origin_invalid")
+  const limited = enforceRateLimit(request, "preview", session.login, 5)
+  if (limited) return limited
   if (session.mode === "preview" || process.env.GARDEN_STUDIO_DEMO === "true") {
     return NextResponse.json({
       ok: true,
@@ -28,10 +30,7 @@ export async function POST(request: Request) {
       message: "Preview requested from the private vault.",
     })
   } catch (error) {
-    return jsonError(
-      error instanceof Error ? error.message : "Preview dispatch failed.",
-      502,
-      "dispatch_failed",
-    )
+    console.error("Garden Studio preview dispatch failed", error)
+    return jsonError("The preview could not be started.", 502, "dispatch_failed")
   }
 }

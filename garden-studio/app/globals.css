@@ -785,6 +785,15 @@ a {
 .check-state.attention {
   color: var(--rust);
 }
+.check-state.demo {
+  color: #687386;
+}
+.setup-sheet {
+  margin-top: 1.5rem;
+}
+.setup-mark {
+  background: var(--ink-soft);
+}
 .security-note {
   display: flex;
   gap: 1rem;

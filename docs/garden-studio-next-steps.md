@@ -1,9 +1,9 @@
 # Garden Studio — implementation handoff and next steps
 
-Last updated: 2026-09-19  
+Last updated: 2026-09-20
 Implementation branch: `codex/garden-studio`  
 Prior checkpoint commit: `b853922` (`feat: expand Obsidian authoring tools`)
-Current checkpoint: private saved-link attachments (verified; this log ships with the checkpoint)
+Current checkpoint: operational hardening and recovery runbook (locally complete)
 Public repository PR: <https://github.com/shariqmalik10/quartz-garden/pull/6>  
 Private vault workflow PR: <https://github.com/shariqmalik10/obsidian-vault-private/pull/1>
 
@@ -11,7 +11,7 @@ Private vault workflow PR: <https://github.com/shariqmalik10/obsidian-vault-priv
 
 Implementation is active on the isolated `codex/garden-studio` branch. This document is updated at every verified checkpoint so another session can resume without reconstructing decisions from chat history.
 
-The Studio now has the safe editing and review-publishing foundation, expanded Markdown/Obsidian authoring tools, and private saved-link attachments. The next code checkpoint is operational hardening. Real-vault verification remains intentionally blocked until the GitHub App credentials are configured and private workflow PR #1 is reviewed and merged.
+The Studio now has the safe editing and review-publishing foundation, expanded Markdown/Obsidian authoring tools, private saved-link attachments, operational safeguards, and a recovery runbook. All feasible local checkpoints are complete. Real-vault verification remains intentionally blocked until the GitHub App credentials are configured and private workflow PR #1 is reviewed and merged.
 
 ## Continuation log
 
@@ -20,6 +20,8 @@ The Studio now has the safe editing and review-publishing foundation, expanded M
 - **2026-09-19 · Authoring tools complete:** added 17 Markdown and Obsidian commands, a `Cmd/Ctrl + K` searchable command palette, four writing templates, managed-note wikilink insertion, copyable current-note wikilinks, and live word/character/reading-time statistics. The implementation remains dependency-light, preserves plain Markdown, passed desktop and 390 px browser interaction checks, returned no Impeccable detector findings, passed 10 Studio tests, and completed a production build.
 
 - **2026-09-19 · Private capture media complete:** added authenticated JPEG, PNG, WebP, GIF, and PDF uploads to `Attachments/Captures/<capture-id>/`, with signature and extension verification, an 8 MB limit, collision-safe filenames, strict path allowlists, GitHub App binary reads/writes, Obsidian attachment lists, automatic image embeds, and non-destructive reference removal. The editor reads each area’s existing `media_policy` and clearly explains `reference` versus `owned`; it never changes policy during upload. Browser verification covered first save, PNG upload, embed insertion, removal, policy switching, desktop and 390×844 layouts, and a zero-error console. Studio checks, 13 Studio tests, the production build, root checks, and all 198 repository tests pass.
+
+- **2026-09-20 · Operational hardening complete:** added bounded streaming JSON parsing, pre-parse upload limits, strict runtime editor-payload validation, best-effort per-session/IP rate limits, generic browser-facing upstream errors, security headers, and a Connection checklist that reports configuration presence without values. Updated obsolete publishing-boundary copy and added `docs/garden-studio-operations.md` with conflict, restore, preview-abandonment, credential, rollback, and real-data readiness procedures. The hardened Studio passes 17 focused tests, all 202 repository tests, root checks, and a production build. Browser verification confirmed the deployment checklist at desktop and 390×844 widths, the expected CSP and anti-framing headers, and a zero-error console.
 
 ## Current state
 
@@ -315,6 +317,8 @@ Do not reuse the generic writing contract for projects unless their public route
 Exit gate: every migrated page/project is either explicitly generated or explicitly left handmade, with no ambiguous ownership.
 
 ### Step 7 — Operations and security hardening
+
+**Status: locally complete; real credential and workflow drills remain externally gated.**
 
 Goal: make failures understandable and writes appropriately constrained.
 

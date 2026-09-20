@@ -38,6 +38,12 @@ Required repository settings:
 
 Create a new Vercel project from the same repository and set its root directory to `garden-studio`. Add the environment variables from `.env.example`. This keeps Quartz's static build and deployment unchanged.
 
+## Operational safeguards
+
+Mutation endpoints enforce same-origin requests, bounded bodies, and best-effort per-session/IP rate limits. Browser-facing failures are deliberately generic; detailed upstream errors stay in server logs. The Studio sends a restrictive content security policy and anti-framing, referrer, permissions, and MIME-sniffing headers.
+
+The Connection page reports only whether configuration groups are present. It never prints secret values. Recovery and publication drills are documented in [`docs/garden-studio-operations.md`](../docs/garden-studio-operations.md).
+
 ## Read boundary
 
 Studio recognizes only contract-backed Markdown files in:

@@ -2,15 +2,25 @@ import { NextResponse } from "next/server"
 
 import { githubConfigured } from "@/lib/github"
 import { mergePublication } from "@/lib/publication"
-import { jsonError, sameOrigin } from "@/lib/request"
+import { enforceRateLimit, jsonError, payloadError, readJsonBody, sameOrigin } from "@/lib/request"
 import { readSession } from "@/lib/session"
+
+type MergeRequest = { pullRequest?: number; confirmation?: string }
 
 export async function POST(request: Request) {
   const session = await readSession()
   if (!session) return jsonError("Sign in again before publishing.", 401, "session_required")
   if (!sameOrigin(request))
     return jsonError("This publish request was not accepted.", 403, "origin_invalid")
-  const payload = (await request.json()) as { pullRequest?: number; confirmation?: string }
+  const limited = enforceRateLimit(request, "merge", session.login, 5)
+  if (limited) return limited
+
+  let payload: MergeRequest
+  try {
+    payload = await readJsonBody<MergeRequest>(request, 8 * 1024)
+  } catch (error) {
+    return payloadError(error, "The publish request could not be read.")
+  }
   if (!Number.isInteger(payload.pullRequest) || payload.confirmation !== "publish") {
     return jsonError("Type publish to confirm the merge.", 400, "confirmation_required")
   }
@@ -22,13 +32,10 @@ export async function POST(request: Request) {
   try {
     const result = await mergePublication(payload.pullRequest!)
     if (!result.merged)
-      return jsonError(result.message || "GitHub did not merge the preview.", 409, "merge_rejected")
+      return jsonError("GitHub did not merge the reviewed preview.", 409, "merge_rejected")
     return NextResponse.json({ ok: true, ...result, message: "Published to the public garden." })
   } catch (error) {
-    return jsonError(
-      error instanceof Error ? error.message : "Publish failed.",
-      409,
-      "merge_failed",
-    )
+    console.error("Garden Studio publication merge failed", error)
+    return jsonError("The reviewed preview could not be merged.", 409, "merge_failed")
   }
 }

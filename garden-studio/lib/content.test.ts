@@ -5,6 +5,7 @@ import YAML from "yaml"
 
 import {
   emptyFields,
+  parseEditorFields,
   pathAllowed,
   pathForFields,
   serializeFields,
@@ -45,6 +46,15 @@ describe("Garden Studio content editor contracts", () => {
       tags: ["notes", "garden"],
     })
     assert.match(output, /\[\[Obsidian Link\]\]/)
+  })
+
+  it("parses complete editor payloads and rejects malformed values", () => {
+    const fields = emptyFields("writing")
+    assert.deepEqual(parseEditorFields(fields), fields)
+    assert.equal(parseEditorFields({ ...fields, body: 42 }), null)
+    const legacy = { ...fields } as Record<string, unknown>
+    delete legacy.attachments
+    assert.deepEqual(parseEditorFields(legacy)?.attachments, [])
   })
 
   it("rejects unsafe paths and non-http saved links", () => {
