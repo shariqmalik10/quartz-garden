@@ -2,10 +2,12 @@
 
 Last updated: 2026-09-20
 Implementation branch: `codex/garden-studio`  
-Prior checkpoint commit: `b853922` (`feat: expand Obsidian authoring tools`)
-Current checkpoint: operational hardening and recovery runbook (locally complete)
+Latest checkpoint commit: `f447f72` (`fix: harden Studio operations`)
+Current checkpoint: all feasible local implementation complete; CI and both Vercel previews green
 Public repository PR: <https://github.com/shariqmalik10/quartz-garden/pull/6>  
 Private vault workflow PR: <https://github.com/shariqmalik10/obsidian-vault-private/pull/1>
+Studio preview: <https://garden-studio-git-codex-garden-studio-shariq-s-projects.vercel.app> (Vercel-auth protected)
+Quartz branch preview: <https://shariq-quartz-garden-git-codex-garden-studio-shariq-s-projects.vercel.app> (Vercel-auth protected)
 
 ## Handoff status
 
@@ -22,6 +24,8 @@ The Studio now has the safe editing and review-publishing foundation, expanded M
 - **2026-09-19 · Private capture media complete:** added authenticated JPEG, PNG, WebP, GIF, and PDF uploads to `Attachments/Captures/<capture-id>/`, with signature and extension verification, an 8 MB limit, collision-safe filenames, strict path allowlists, GitHub App binary reads/writes, Obsidian attachment lists, automatic image embeds, and non-destructive reference removal. The editor reads each area’s existing `media_policy` and clearly explains `reference` versus `owned`; it never changes policy during upload. Browser verification covered first save, PNG upload, embed insertion, removal, policy switching, desktop and 390×844 layouts, and a zero-error console. Studio checks, 13 Studio tests, the production build, root checks, and all 198 repository tests pass.
 
 - **2026-09-20 · Operational hardening complete:** added bounded streaming JSON parsing, pre-parse upload limits, strict runtime editor-payload validation, best-effort per-session/IP rate limits, generic browser-facing upstream errors, security headers, and a Connection checklist that reports configuration presence without values. Updated obsolete publishing-boundary copy and added `docs/garden-studio-operations.md` with conflict, restore, preview-abandonment, credential, rollback, and real-data readiness procedures. The hardened Studio passes 17 focused tests, all 202 repository tests, root checks, and a production build. Browser verification confirmed the deployment checklist at desktop and 390×844 widths, the expected CSP and anti-framing headers, and a zero-error console.
+
+- **2026-09-20 · Final preview verification:** pushed `f447f72`, then verified GitHub `build-and-test`, the standalone `garden-studio` deployment, the Quartz branch deployment, and Vercel Preview Comments all passed on public PR #6. Both exact preview aliases are recorded above; Vercel authentication protection remains enabled, so unauthenticated requests intentionally redirect to login.
 
 ## Current state
 
