@@ -12,10 +12,12 @@ import {
   unlink,
   writeFile,
 } from "node:fs/promises"
+import os from "node:os"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 import { format as prettierFormat } from "prettier"
 import YAML from "yaml"
+import { validateDocument } from "./publishing/contracts.mjs"
 
 const MANIFEST = ".writing-sync-manifest.json"
 
@@ -107,7 +109,7 @@ export async function exportWriting({ vaultRoot, outputRoot, dryRun = false }) {
   }
 
   const stageRoot = path.join(
-    path.dirname(outputRoot),
+    dryRun ? os.tmpdir() : path.dirname(outputRoot),
     `.writing-sync-stage-${process.pid}-${Date.now()}`,
   )
   await rm(stageRoot, { recursive: true, force: true })
@@ -120,6 +122,7 @@ export async function exportWriting({ vaultRoot, outputRoot, dryRun = false }) {
       const parsed = parseMarkdown(await readFile(sourcePath, "utf8"), sourcePath)
       if (!parsed) continue
       if (parsed.data.visibility !== "public" || parsed.data.draft !== false) continue
+      validateDocument("writing", parsed.data, sourcePath)
       if (parsed.data.kind !== "writing") {
         throw new Error(`${sourcePath} must set kind: writing`)
       }

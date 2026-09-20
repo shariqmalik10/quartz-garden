@@ -2,10 +2,12 @@
 
 import { existsSync } from "node:fs"
 import { mkdir, readFile, readdir, rename, rm, stat, writeFile } from "node:fs/promises"
+import os from "node:os"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 import { format as prettierFormat } from "prettier"
 import YAML from "yaml"
+import { validateDocument } from "./publishing/contracts.mjs"
 
 const MANIFEST = ".quotes-sync-manifest.json"
 
@@ -65,6 +67,7 @@ export async function exportQuotes({ vaultRoot, outputRoot, dryRun = false }) {
   if (!existsSync(mapPath)) throw new Error(`Vault is missing Quotes/Quotes.md: ${vaultRoot}`)
 
   const map = parseMarkdown(await readFile(mapPath, "utf8"), mapPath)
+  validateDocument("quote-collection", map.data, mapPath)
   if (map.data.kind !== "quote-collection") {
     throw new Error(`${mapPath} must set kind: quote-collection`)
   }
@@ -73,7 +76,8 @@ export async function exportQuotes({ vaultRoot, outputRoot, dryRun = false }) {
   }
 
   const parent = path.dirname(outputRoot)
-  const stageRoot = path.join(parent, `.quotes-sync-stage-${process.pid}-${Date.now()}`)
+  const stageParent = dryRun ? os.tmpdir() : parent
+  const stageRoot = path.join(stageParent, `.quotes-sync-stage-${process.pid}-${Date.now()}`)
   const backupRoot = path.join(parent, `.quotes-sync-backup-${process.pid}-${Date.now()}`)
   await rm(stageRoot, { recursive: true, force: true })
   await mkdir(stageRoot, { recursive: true })
@@ -96,11 +100,15 @@ export async function exportQuotes({ vaultRoot, outputRoot, dryRun = false }) {
       const parsed = parseMarkdown(await readFile(sourcePath, "utf8"), sourcePath)
       if (parsed.data.kind !== "quote") throw new Error(`${sourcePath} must set kind: quote`)
       if (parsed.data.publish !== true) continue
+      validateDocument("quote", parsed.data, sourcePath)
       if (typeof parsed.data.quote !== "string" || parsed.data.quote.trim() === "") {
         throw new Error(`${sourcePath} must contain a non-empty quote`)
       }
       const filename = path.basename(sourcePath, path.extname(sourcePath))
       const slug = safeSlug(parsed.data.slug ?? filename, sourcePath)
+      if (generated.includes(`${slug}.md`)) {
+        throw new Error(`More than one published quote resolves to ${slug}.md`)
+      }
       const data = {
         ...parsed.data,
         title: parsed.data.title ?? parsed.data.quote,

@@ -140,6 +140,11 @@ files. On a later run it deletes only files named by the previous manifest and
 preserves untracked/handmade files. Validation happens in a staging directory,
 so a failed export does not mutate the current public output.
 
+The older generic folder-copy sync has been retired. It could copy broad vault
+folders without applying the publication rules above and its `Writings/` path
+did not match the real `Writing/` directory. Use only the collection-specific
+exporters documented here.
+
 Personal writing has a separate, opt-in bridge:
 
 ```bash
@@ -152,6 +157,18 @@ It reads only `Writing/` and exports only notes with `kind: writing`,
 `visibility: public`, and `draft: false`. `Diary/`, `Daily/`, `Notes/`,
 `Private/`, `Karage Work/`, and private `Writing/` drafts remain outside the
 public repository.
+
+Before publishing any collection, run one non-mutating check:
+
+```bash
+npm run publish:check -- \
+  --vault "/Users/shariq/Documents/Obsidian Vault" \
+  --site "."
+```
+
+It validates garden captures, quotes, and writing and prints each collection's
+status. A blocked collection makes the command fail without changing generated
+site content.
 
 ## Link storage
 

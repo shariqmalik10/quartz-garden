@@ -1,0 +1,152 @@
+.attachment-manager {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.attachment-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  align-items: start;
+}
+
+.attachment-heading > div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.attachment-heading strong {
+  color: var(--ink-soft);
+  font-size: 0.68rem;
+}
+
+.attachment-heading small,
+.attachment-upload small {
+  color: #687386;
+  font-size: 0.61rem;
+  line-height: 1.4;
+}
+
+.media-policy {
+  padding: 0.2rem 0.4rem;
+  background: var(--paper-deep);
+  color: var(--ink-soft);
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.policy-owned {
+  background: var(--leaf-soft);
+  color: var(--leaf);
+}
+
+.attachment-upload {
+  display: grid;
+  gap: 0.2rem;
+  justify-items: start;
+  padding: 0.8rem;
+  border: 1px dashed #9f947f;
+  background: rgba(255, 253, 247, 0.45);
+  cursor: pointer;
+}
+
+.attachment-upload:hover {
+  border-color: var(--rust);
+  background: var(--white);
+}
+
+.attachment-upload input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+.attachment-upload span {
+  color: var(--rust);
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.attachment-upload.busy {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.attachment-first-save,
+.attachment-notice {
+  margin: 0;
+  padding: 0.7rem;
+  background: var(--paper-deep);
+  color: var(--ink-soft);
+  font-size: 0.63rem;
+  line-height: 1.45;
+}
+
+.attachment-notice.error {
+  background: var(--rust-soft);
+  color: #7b2e20;
+}
+
+.attachment-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.attachment-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.45rem 0.7rem;
+  align-items: center;
+  padding: 0.65rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.attachment-list li > span {
+  display: grid;
+  min-width: 0;
+}
+
+.attachment-list strong,
+.attachment-list small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-list strong {
+  font-size: 0.65rem;
+}
+
+.attachment-list small {
+  color: #747d8d;
+  font-size: 0.56rem;
+}
+
+.attachment-list a,
+.attachment-list button {
+  color: var(--rust);
+  font-size: 0.6rem;
+  font-weight: 750;
+}
+
+.attachment-list a {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.attachment-list button {
+  grid-column: 1 / -1;
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-decoration: underline;
+  cursor: pointer;
+}

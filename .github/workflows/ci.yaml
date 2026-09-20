@@ -37,14 +37,26 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install Garden Studio dependencies
+        run: npm ci --prefix garden-studio
+
       - name: Install Quartz plugins
         run: npm run install-plugins
 
       - name: Check types and formatting
         run: npm run check
 
+      - name: Check Garden Studio
+        run: npm run studio:check
+
+      - name: Test Garden Studio
+        run: npm run studio:test
+
       - name: Run tests
         run: npm test
 
       - name: Build the site from content
         run: npx quartz build -d content
+
+      - name: Build Garden Studio
+        run: npm run studio:build
